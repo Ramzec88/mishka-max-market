@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Маркет Мишки Макса — песни, сценарии, материалы для детей</title>
+<meta name="description" content="Готовые материалы для детских праздников, развивающих занятий и утренников. Мгновенная отправка на email после оплаты.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<!-- YooKassa Checkout Widget (реальный URL) -->
+<script src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js"></script>
+<style>
+  :root {
+    --orange: #FF7A3D;
+    --orange-dark: #E85D1A;
+    --orange-light: #FFF1E8;
+    --ink: #1F1B16;
+    --ink-soft: #5A4F45;
+    --cream: #FFFAF4;
+    --border: #F0E4D6;
+    --success: #4CAF50;
+    --lavender: #8B7AB8;
+    --shadow-sm: 0 2px 8px rgba(255, 122, 61, 0.08);
+    --shadow-md: 0 8px 24px rgba(255, 122, 61, 0.12);
+    --shadow-lg: 0 16px 48px rgba(31, 27, 22, 0.14);
+    --radius: 16px;
+    --radius-lg: 24px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Nunito', -apple-system, sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+  /* Header */
+  header {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 900;
+    font-size: 20px;
+  }
+  .logo-mark {
+    width: 40px; height: 40px;
+    background: var(--orange);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    color: #fff;
+    font-weight: 900;
+    font-size: 20px;
+  }
+  .cart-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--orange);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 15px;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .cart-btn:hover { background: var(--orange-dark); transform: translateY(-1px); }
+  .cart-count {
+    background: #fff;
+    color: var(--orange);
+    border-radius: 100px;
+    min-width: 22px;
+    height: 22px;
+    display: grid; place-items: center;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 0 6px;
+  }
+
+  /* Hero */
+  .hero {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px 32px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .hero h1 span { color: var(--orange); }
+  .hero p {
+    color: var(--ink-soft);
+    font-size: 17px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  /* Filters */
+  .filters {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 24px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .filter-btn {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    padding: 10px 18px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--ink-soft);
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: var(--orange); color: var(--orange); }
+  .filter-btn.active {
+    background: var(--orange);
+    color: #fff;
+    border-color: var(--orange);
+  }
+
+  /* Catalog */
+  .catalog {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+  }
+  .card {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.25s;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+  }
+  .card-cover {
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, var(--orange-light), #FFE4D1);
+    display: grid; place-items: center;
+    font-size: 64px;
+    position: relative;
+  }
+  .card-cover.lavender { background: linear-gradient(135deg, #E8E0F5, #D4C7ED); }
+  .card-cover.green { background: linear-gradient(135deg, #E0F2E4, #C7E8CF); }
+  .card-cover.blue { background: linear-gradient(135deg, #E0EBF5, #C7DAED); }
+  .card-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: #fff;
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .card-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
+  .card-format {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .card-title {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+  .card-desc {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-bottom: 16px;
+    flex: 1;
+  }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .card-price { font-size: 22px; font-weight: 900; }
+  .card-price-old {
+    text-decoration: line-through;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  .buy-btn {
+    background: var(--ink);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .buy-btn:hover { background: var(--orange); }
+
+  /* Cart Drawer */
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 27, 22, 0.4);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .drawer-overlay.open { opacity: 1; pointer-events: all; }
+  .drawer {
+    position: fixed;
+    top: 0; right: 0;
+    width: 100%;
+    max-width: 440px;
+    height: 100vh;
+    background: var(--cream);
+    z-index: 101;
+    transform: translateX(100%);
+    transition: transform 0.3s;
+    display: flex;
+    flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+  }
+  .drawer-title { font-size: 20px; font-weight: 900; }
+  .close-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--border);
+    display: grid; place-items: center;
+    font-size: 18px;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+  .close-btn:hover { background: var(--orange); color: #fff; }
+  .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+  }
+  .cart-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+  }
+  .cart-empty-icon { font-size: 64px; margin-bottom: 16px; }
+  .cart-item {
+    display: flex;
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .cart-item:last-child { border-bottom: none; }
+  .cart-item-cover {
+    width: 64px; height: 64px;
+    border-radius: 12px;
+    background: var(--orange-light);
+    display: grid; place-items: center;
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+  .cart-item-body { flex: 1; min-width: 0; }
+  .cart-item-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .cart-item-price { font-weight: 800; color: var(--orange); }
+  .remove-btn {
+    color: var(--ink-soft);
+    font-size: 13px;
+    text-decoration: underline;
+    align-self: flex-start;
+  }
+  .drawer-footer {
+    padding: 20px 24px;
+    background: #fff;
+    border-top: 1px solid var(--border);
+  }
+  .email-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .email-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 15px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .email-input:focus { outline: none; border-color: var(--orange); }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 18px;
+    font-weight: 900;
+  }
+  .checkout-btn {
+    width: 100%;
+    background: var(--orange);
+    color: #fff;
+    padding: 16px;
+    border-radius: 100px;
+    font-size: 16px;
+    font-weight: 800;
+    transition: all 0.2s;
+  }
+  .checkout-btn:hover:not(:disabled) { background: var(--orange-dark); }
+  .checkout-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .legal {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .legal a { color: var(--orange); text-decoration: underline; }
+
+  /* Footer */
+  footer {
+    background: #fff;
+    border-top: 1px solid var(--border);
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  footer a { color: var(--orange); text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 32px 20px 24px; }
+    .catalog { padding: 0 20px 60px; gap: 16px; }
+    .card-cover { font-size: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">
+      <div class="logo-mark">M</div>
+      <span>Мишка Макс</span>
+    </a>
+    <button class="cart-btn" onclick="openCart()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+      </svg>
+      Корзина
+      <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Маркет <span>Мишки Макса</span></h1>
+  <p>Готовые материалы для утренников, развивающих занятий и домашних праздников. Мгновенная доставка на email сразу после оплаты.</p>
+</section>
+
+<div class="filters">
+  <button class="filter-btn active" data-cat="all">Все</button>
+  <button class="filter-btn" data-cat="songs">Песни</button>
+  <button class="filter-btn" data-cat="scenarios">Сценарии</button>
+  <button class="filter-btn" data-cat="materials">Материалы</button>
+  <button class="filter-btn" data-cat="bundles">Комплекты</button>
+</div>
+
+<div class="catalog" id="catalog"></div>
+
+<footer>
+  <p>© 2026 ИП Роман [Фамилия] · ИНН [номер]</p>
+  <p style="margin-top:8px">
+    <a href="/offer">Оферта</a> ·
+    <a href="/privacy">Политика конфиденциальности</a> ·
+    <a href="/contacts">Контакты</a>
+  </p>
+</footer>
+
+<!-- Cart Drawer -->
+<div class="drawer-overlay" id="overlay" onclick="closeCart()"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title">Ваш заказ</div>
+    <button class="close-btn" onclick="closeCart()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-footer" id="drawerFooter" style="display:none">
+    <label class="email-label" for="emailInput">Email для получения файлов</label>
+    <input type="email" class="email-input" id="emailInput" placeholder="your@email.ru" required>
+    <div class="total-row">
+      <span>Итого:</span>
+      <span id="totalPrice">0 ₽</span>
+    </div>
+    <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">Перейти к оплате</button>
+    <p class="legal">
+      Нажимая кнопку, вы принимаете условия <a href="/offer">оферты</a>
+      и соглашаетесь на обработку персональных данных
+    </p>
+  </div>
+</aside>
+
+<script>
+  // Каталог товаров — в реальном проекте подтягивается из Supabase
+  const PRODUCTS = [
+    {
+      id: 'songs-graduation',
+      category: 'songs',
+      emoji: '🎵',
+      cover: 'orange',
+      badge: 'хит',
+      format: 'MP3 + тексты',
+      title: 'Песни на выпускной в детском саду',
+      desc: '12 авторских песен для выпускного утренника: mp3, минусовки, тексты в PDF.',
+      price: 599,
+      priceOld: 999
+    },
+    {
+      id: 'scenario-first-ticket',
+      category: 'scenarios',
+      emoji: '🎓',
+      cover: 'lavender',
+      badge: null,
+      format: 'PDF сценарий',
+      title: 'Сценарий «Билет в первый класс»',
+      desc: 'Готовый сценарий выпускного утренника на 45 минут. С ролями, репликами и тайм-кодами.',
+      price: 499,
+      priceOld: null
+    },
+    {
+      id: 'materials-autumn',
+      category: 'materials',
+      emoji: '🍂',
+      cover: 'orange',
+      format: 'PDF + изображения',
+      title: 'Осенний комплект материалов',
+      desc: 'Карточки, раскраски, задания для детей 3–5 лет по теме «Осень». 42 страницы.',
+      price: 349,
+      priceOld: null
+    },
+    {
+      id: 'songs-new-year',
+      category: 'songs',
+      emoji: '🎄',
+      cover: 'green',
+      format: 'MP3',
+      title: 'Новогодние песни — сборник',
+      desc: '8 песен про Деда Мороза, ёлку и зиму в исполнении Мишки Макса.',
+      price: 449,
+      priceOld: null
+    },
+    {
+      id: 'scenario-8march',
+      category: 'scenarios',
+      emoji: '🌷',
+      cover: 'lavender',
+      format: 'PDF',
+      title: 'Сценарий на 8 Марта',
+      desc: 'Утренник для младшей и средней группы. Песни, стихи, игры, конкурсы.',
+      price: 399,
+      priceOld: null
+    },
+    {
+      id: 'materials-speech',
+      category: 'materials',
+      emoji: '🗣️',
+      cover: 'blue',
+      badge: 'новинка',
+      format: 'PDF',
+      title: 'Разговори молчуна — методичка',
+      desc: '21 день нейрозаданий для развития речи. Для родителей и логопедов.',
+      price: 690,
+      priceOld: null
+    },
+    {
+      id: 'bundle-kindergarten',
+      category: 'bundles',
+      emoji: '🎁',
+      cover: 'orange',
+      badge: 'выгодно',
+      format: 'Всё включено',
+      title: 'Комплект воспитателя на год',
+      desc: '4 сценария утренников + 30 песен + 150 материалов. Экономия 2400 ₽.',
+      price: 2490,
+      priceOld: 4890
+    },
+    {
+      id: 'songs-lullabies',
+      category: 'songs',
+      emoji: '🌙',
+      cover: 'blue',
+      format: 'MP3',
+      title: 'Колыбельные Мишки Макса',
+      desc: '10 авторских колыбельных. Успокаивают, помогают заснуть. Общее время — 38 минут.',
+      price: 299,
+      priceOld: null
+    }
+  ];
+
+  let cart = JSON.parse(localStorage.getItem('mishkaCart') || '[]');
+  let activeCategory = 'all';
+
+  function renderCatalog() {
+    const catalog = document.getElementById('catalog');
+    const filtered = activeCategory === 'all'
+      ? PRODUCTS
+      : PRODUCTS.filter(p => p.category === activeCategory);
+    catalog.innerHTML = filtered.map(p => `
+      <div class="card" onclick="addToCart('${p.id}')">
+        <div class="card-cover ${p.cover}">
+          ${p.badge ? `<div class="card-badge">${p.badge}</div>` : ''}
+          <span>${p.emoji}</span>
+        </div>
+        <div class="card-body">
+          <div class="card-format">${p.format}</div>
+          <h3 class="card-title">${p.title}</h3>
+          <p class="card-desc">${p.desc}</p>
+          <div class="card-footer">
+            <div>
+              <span class="card-price">${p.price} ₽</span>
+              ${p.priceOld ? `<span class="card-price-old">${p.priceOld} ₽</span>` : ''}
+            </div>
+            <button class="buy-btn">В корзину</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function addToCart(id) {
+    if (!cart.includes(id)) {
+      cart.push(id);
+      saveCart();
+    }
+    openCart();
+  }
+
+  function removeFromCart(id) {
+    cart = cart.filter(x => x !== id);
+    saveCart();
+    renderCart();
+  }
+
+  function saveCart() {
+    localStorage.setItem('mishkaCart', JSON.stringify(cart));
+    document.getElementById('cartCount').textContent = cart.length;
+  }
+
+  function renderCart() {
+    const body = document.getElementById('drawerBody');
+    const footer = document.getElementById('drawerFooter');
+    if (cart.length === 0) {
+      body.innerHTML = `
+        <div class="cart-empty">
+          <div class="cart-empty-icon">🧸</div>
+          <p>Корзина пуста</p>
+          <p style="margin-top:8px;font-size:14px">Выберите материалы из каталога</p>
+        </div>`;
+      footer.style.display = 'none';
+      return;
+    }
+    const items = cart.map(id => PRODUCTS.find(p => p.id === id)).filter(Boolean);
+    body.innerHTML = items.map(p => `
+      <div class="cart-item">
+        <div class="cart-item-cover">${p.emoji}</div>
+        <div class="cart-item-body">
+          <div class="cart-item-title">${p.title}</div>
+          <div class="cart-item-price">${p.price} ₽</div>
+          <button class="remove-btn" onclick="removeFromCart('${p.id}')">удалить</button>
+        </div>
+      </div>
+    `).join('');
+    const total = items.reduce((s, p) => s + p.price, 0);
+    document.getElementById('totalPrice').textContent = total + ' ₽';
+    footer.style.display = 'block';
+  }
+
+  function openCart() {
+    renderCart();
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('overlay').classList.add('open');
+  }
+  function closeCart() {
+    document.getElementById('drawer').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  async function checkout() {
+    const email = document.getElementById('emailInput').value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert('Укажите корректный email — на него придут купленные файлы');
+      return;
+    }
+    const btn = document.getElementById('checkoutBtn');
+    btn.disabled = true;
+    btn.textContent = 'Создаём платёж...';
+
+    try {
+      // Запрос к своему бэкенду — он создаёт платёж в YooKassa
+      const res = await fetch('/api/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: cart, email })
+      });
+      const { confirmation_token, order_id } = await res.json();
+
+      // Открываем виджет YooKassa — не уводя пользователя с сайта
+      const checkout = new window.YooMoneyCheckoutWidget({
+        confirmation_token,
+        return_url: `https://mishka-max.ru/thank-you?order=${order_id}`,
+        error_callback: (err) => console.error(err)
+      });
+      checkout.render('yookassa-container');
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'Перейти к оплате';
+      alert('Не удалось создать платёж. Попробуйте ещё раз или напишите info@mishka-max.ru');
+    }
+  }
+
+  // Filters
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeCategory = btn.dataset.cat;
+      renderCatalog();
+    });
+  });
+
+  // Init
+  renderCatalog();
+  saveCart();
+</script>
+
+<!-- Сюда отрендерится виджет YooKassa -->
+<div id="yookassa-container"></div>
+
+</body>
+</html>
