@@ -18,6 +18,7 @@ export interface DownloadItem {
   title: string;
   format: string | null;
   downloadUrl: string;
+  fileName?: string;
 }
 
 export interface SendOrderEmailParams {
@@ -39,6 +40,7 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
     <tr>
       <td style="padding: 16px 0; border-bottom: 1px solid #F0E4D6;">
         <div style="font-weight: 700; font-size: 15px; color: #1F1B16; margin-bottom: 4px;">${item.title}</div>
+        ${item.fileName ? `<div style="font-size: 13px; color: #5A4F45; margin-bottom: 2px;">${item.fileName}</div>` : ''}
         ${item.format ? `<div style="font-size: 13px; color: #5A4F45;">${item.format}</div>` : ''}
         <a href="${item.downloadUrl}" style="display: inline-block; margin-top: 10px; background: #FF7A3D; color: #fff; padding: 10px 20px; border-radius: 100px; font-weight: 700; font-size: 14px; text-decoration: none;">
           Скачать

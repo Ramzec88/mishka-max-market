@@ -56,33 +56,36 @@ export async function POST(request: NextRequest) {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
       for (const product of productList) {
-        // Для продуктов с несколькими файлами — один токен = вся папка (будем отдавать zip)
-        const filePath =
+        const filePaths =
           product.storage_paths.length > 0
-            ? product.storage_paths[0]
-            : `products/${product.id}/`;
+            ? product.storage_paths
+            : [`products/${product.id}/placeholder`];
 
-        const token = generateToken();
-        const expiresAt = getTokenExpiry();
+        for (const filePath of filePaths) {
+          const token = generateToken();
+          const expiresAt = getTokenExpiry();
 
-        const { error: tokenError } = await supabaseAdmin.from('download_tokens').insert({
-          token,
-          order_id: order.id,
-          product_id: product.id,
-          file_path: filePath,
-          expires_at: expiresAt.toISOString(),
-          downloads_count: 0,
-          max_downloads: 5,
-        });
-        if (tokenError) {
-          console.error('download_tokens insert error:', tokenError);
+          const { error: tokenError } = await supabaseAdmin.from('download_tokens').insert({
+            token,
+            order_id: order.id,
+            product_id: product.id,
+            file_path: filePath,
+            expires_at: expiresAt.toISOString(),
+            downloads_count: 0,
+            max_downloads: 5,
+          });
+          if (tokenError) {
+            console.error('download_tokens insert error:', tokenError);
+          }
+
+          const fileName = filePath.split('/').pop() || filePath;
+          downloadItems.push({
+            title: product.title,
+            format: product.format,
+            fileName,
+            downloadUrl: `${siteUrl}/api/download/${token}`,
+          });
         }
-
-        downloadItems.push({
-          title: product.title,
-          format: product.format,
-          downloadUrl: `${siteUrl}/api/download/${token}`,
-        });
       }
 
       // Отправляем email с ссылками

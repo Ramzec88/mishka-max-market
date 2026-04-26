@@ -10,7 +10,7 @@ interface DownloadLink {
   token: string;
   product_id: string;
   product_title?: string;
-  file_path: string;
+  file_name: string;
   expires_at: string;
   downloads_remaining: number;
 }
@@ -191,32 +191,47 @@ export default function ThankYouContent() {
                   Обновить ссылки
                 </button>
               </div>
-            ) : links.map((link) => (
-              <div key={link.token}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  gap: 12, padding: '14px 0', borderBottom: '1px solid var(--border)',
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>
-                    {link.product_title || link.product_id}
+            ) : (() => {
+              // группируем по product_id
+              const groups = new Map<string, { title: string; files: DownloadLink[] }>();
+              for (const link of links) {
+                const key = link.product_id;
+                if (!groups.has(key)) {
+                  groups.set(key, { title: link.product_title || link.product_id, files: [] });
+                }
+                groups.get(key)!.files.push(link);
+              }
+              return Array.from(groups.entries()).map(([productId, group]) => (
+                <div key={productId} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 10 }}>
+                    {group.title}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
-                    осталось скачиваний: {link.downloads_remaining}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {group.files.map((link) => (
+                      <div key={link.token} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                        <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+                          {link.file_name}
+                          <span style={{ marginLeft: 8, fontSize: 11 }}>
+                            ({link.downloads_remaining} скач.)
+                          </span>
+                        </div>
+                        <a
+                          href={`${siteUrl}/api/download/${link.token}`}
+                          style={{
+                            background: 'var(--orange)', color: '#fff',
+                            padding: '8px 16px', borderRadius: 100,
+                            fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
+                            textDecoration: 'none',
+                          }}
+                        >
+                          Скачать
+                        </a>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <a href={`${siteUrl}/api/download/${link.token}`}
-                  style={{
-                    background: 'var(--orange)', color: '#fff',
-                    padding: '10px 18px', borderRadius: 100,
-                    fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', flexShrink: 0,
-                  }}
-                >
-                  Скачать
-                </a>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
 
           <div style={{ marginTop: 24, textAlign: 'center' }}>
