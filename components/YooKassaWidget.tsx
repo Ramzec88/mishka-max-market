@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Script from 'next/script';
 
 declare global {
   interface Window {
@@ -25,8 +26,10 @@ export default function YooKassaWidget({ confirmationToken, orderId }: YooKassaW
   const widgetRef = useRef<WidgetInstance | null>(null);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
-  useEffect(() => {
-    if (!window.YooMoneyCheckoutWidget) return;
+  function initWidget() {
+    if (!window.YooMoneyCheckoutWidget || !confirmationToken) return;
+
+    widgetRef.current?.destroy();
 
     widgetRef.current = new window.YooMoneyCheckoutWidget({
       confirmation_token: confirmationToken,
@@ -34,16 +37,27 @@ export default function YooKassaWidget({ confirmationToken, orderId }: YooKassaW
       error_callback: (err) => console.error('YooKassa widget error:', err),
     });
     widgetRef.current.render('yookassa-widget-container');
+  }
 
+  useEffect(() => {
+    // Если скрипт уже загружен (например повторный рендер) — сразу инициализируем
+    if (window.YooMoneyCheckoutWidget) {
+      initWidget();
+    }
     return () => {
       widgetRef.current?.destroy();
     };
-  }, [confirmationToken, orderId, siteUrl]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmationToken, orderId]);
 
   return (
     <>
-      <script src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js" async />
-      <div id="yookassa-widget-container" style={{ marginTop: 16 }} />
+      <Script
+        src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js"
+        strategy="afterInteractive"
+        onLoad={initWidget}
+      />
+      <div id="yookassa-widget-container" style={{ minHeight: 200, marginTop: 8 }} />
     </>
   );
 }
