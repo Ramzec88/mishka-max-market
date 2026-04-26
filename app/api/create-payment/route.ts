@@ -44,7 +44,11 @@ export async function POST(request: NextRequest) {
 
     if (orderError || !order) {
       console.error('Order creation error:', orderError);
-      return NextResponse.json({ error: 'Ошибка создания заказа' }, { status: 500 });
+      return NextResponse.json({
+        error: 'Ошибка создания заказа',
+        detail: orderError?.message,
+        code: orderError?.code,
+      }, { status: 500 });
     }
 
     // Создаём платёж в YooKassa
