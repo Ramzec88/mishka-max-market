@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { OrderStatus } from '@/types/order';
+import { clearCart } from '@/lib/cart';
 
 interface DownloadLink {
   token: string;
@@ -26,8 +27,13 @@ export default function ThankYouContent() {
   const [status, setStatus] = useState<OrderStatus | null>(null);
   const [links, setLinks] = useState<DownloadLink[]>([]);
   const [polling, setPolling] = useState(true);
+  const [retryKey, setRetryKey] = useState(0);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+
+  useEffect(() => {
+    clearCart();
+  }, []);
 
   useEffect(() => {
     if (!orderId) {
@@ -35,42 +41,55 @@ export default function ThankYouContent() {
       return;
     }
 
+    setPolling(true);
     let count = 0;
-    const MAX_ATTEMPTS = 5;
+    const MAX_ATTEMPTS = 20;
     let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
 
     async function poll() {
+      if (cancelled) return;
       try {
         const res = await fetch(`/api/order-status/${orderId}`);
         if (res.ok) {
           const data: OrderStatusResponse = await res.json();
-          setStatus(data.status);
+          if (!cancelled) setStatus(data.status);
 
           if (data.status === 'paid') {
-            setLinks(data.download_links || []);
-            setPolling(false);
-            return;
+            const downloadLinks = data.download_links || [];
+            if (!cancelled) setLinks(downloadLinks);
+            if (downloadLinks.length > 0) {
+              if (!cancelled) setPolling(false);
+              return;
+            }
           }
           if (data.status === 'canceled' || data.status === 'failed') {
-            setPolling(false);
+            if (!cancelled) setPolling(false);
             return;
           }
         }
       } catch {
-        // продолжаем polling
+        // continue polling
       }
 
       count++;
-      if (count < MAX_ATTEMPTS) {
+      if (!cancelled && count < MAX_ATTEMPTS) {
         timer = setTimeout(poll, 3000);
-      } else {
+      } else if (!cancelled) {
         setPolling(false);
       }
     }
 
     poll();
-    return () => clearTimeout(timer);
-  }, [orderId]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [orderId, retryKey]);
+
+  const handleRetry = useCallback(() => {
+    setRetryKey((k) => k + 1);
+  }, []);
 
   if (!orderId) {
     return (
@@ -107,11 +126,21 @@ export default function ThankYouContent() {
         <div style={{ textAlign: 'center', padding: '40px 20px' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>📬</div>
           <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 12 }}>Обработка занимает чуть больше времени</h1>
-          <p style={{ color: 'var(--ink-soft)', marginBottom: 16, lineHeight: 1.6 }}>
+          <p style={{ color: 'var(--ink-soft)', marginBottom: 24, lineHeight: 1.6 }}>
             Проверьте email через пару минут — ссылки для скачивания придут туда.
             Если письма нет — напишите:{' '}
             <a href="mailto:info@mishka-max.ru" style={{ color: 'var(--orange)' }}>info@mishka-max.ru</a>
           </p>
+          <button
+            onClick={handleRetry}
+            style={{
+              background: 'var(--orange)', color: '#fff',
+              padding: '12px 24px', borderRadius: 100,
+              fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer',
+            }}
+          >
+            Проверить снова
+          </button>
         </div>
       )}
 
@@ -147,9 +176,21 @@ export default function ThankYouContent() {
           <div style={{ background: '#fff', borderRadius: 'var(--radius-lg)', padding: 24, boxShadow: 'var(--shadow-sm)' }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Ваши файлы</h2>
             {links.length === 0 ? (
-              <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>
-                Ссылки появятся здесь через несколько секунд. Если нет — проверьте email.
-              </p>
+              <div>
+                <p style={{ color: 'var(--ink-soft)', fontSize: 14, marginBottom: 16 }}>
+                  Ссылки ещё не появились. Проверьте email или нажмите кнопку ниже.
+                </p>
+                <button
+                  onClick={handleRetry}
+                  style={{
+                    background: 'var(--orange)', color: '#fff',
+                    padding: '10px 20px', borderRadius: 100,
+                    fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer',
+                  }}
+                >
+                  Обновить ссылки
+                </button>
+              </div>
             ) : links.map((link) => (
               <div key={link.token}
                 style={{

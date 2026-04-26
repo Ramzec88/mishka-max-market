@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         const token = generateToken();
         const expiresAt = getTokenExpiry();
 
-        await supabaseAdmin.from('download_tokens').insert({
+        const { error: tokenError } = await supabaseAdmin.from('download_tokens').insert({
           token,
           order_id: order.id,
           product_id: product.id,
@@ -74,6 +74,9 @@ export async function POST(request: NextRequest) {
           downloads_count: 0,
           max_downloads: 5,
         });
+        if (tokenError) {
+          console.error('download_tokens insert error:', tokenError);
+        }
 
         downloadItems.push({
           title: product.title,
