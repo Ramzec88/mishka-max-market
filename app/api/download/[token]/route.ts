@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { createPresignedDownloadUrl } from '@/lib/storage';
 
 export async function GET(
   _request: NextRequest,
@@ -41,18 +42,12 @@ export async function GET(
     })
     .eq('token', token);
 
-  // Генерируем signed URL (TTL 60 секунд — только для редиректа)
-  const { data: signedData, error: signedError } = await supabaseAdmin.storage
-    .from('products')
-    .createSignedUrl(
-      downloadToken.file_path.replace(/^products\//, ''),
-      60
-    );
-
-  if (signedError || !signedData?.signedUrl) {
-    console.error('Signed URL error:', signedError);
+  // Генерируем presigned URL Beget S3 (TTL 60 секунд — только для редиректа)
+  try {
+    const presignedUrl = await createPresignedDownloadUrl(downloadToken.file_path, 60);
+    return NextResponse.redirect(presignedUrl);
+  } catch (err) {
+    console.error('S3 presigned URL error:', err);
     return new NextResponse('File not available', { status: 503 });
   }
-
-  return NextResponse.redirect(signedData.signedUrl);
 }
