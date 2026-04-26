@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ваши материалы от Мишки Макса</title>
+</head>
+<body style="margin: 0; padding: 0; background: #FFFAF4; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #FFFAF4; padding: 32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: #fff; border-radius: 24px 24px 0 0; padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #F0E4D6;">
+              <div style="display: inline-flex; align-items: center; gap: 10px;">
+                <div style="width: 44px; height: 44px; background: #FF7A3D; border-radius: 50%; display: inline-block; line-height: 44px; text-align: center; color: #fff; font-weight: 900; font-size: 22px; vertical-align: middle;">М</div>
+                <span style="font-size: 20px; font-weight: 900; color: #1F1B16; vertical-align: middle; margin-left: 10px;">Мишка Макс</span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Title -->
+          <tr>
+            <td style="background: #fff; padding: 24px 32px 8px; text-align: center;">
+              <h1 style="margin: 0 0 8px; font-size: 24px; font-weight: 900; color: #1F1B16; letter-spacing: -0.02em;">
+                Спасибо за покупку! 🧸
+              </h1>
+              <p style="margin: 0; font-size: 16px; color: #5A4F45; line-height: 1.5;">
+                Ваши материалы готовы к скачиванию.<br>
+                Ссылки действуют <strong>7 дней</strong>, каждая — до 5 скачиваний.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Downloads -->
+          <tr>
+            <td style="background: #fff; padding: 16px 32px 24px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                {{ITEMS}}
+              </table>
+            </td>
+          </tr>
+
+          <!-- Backup link -->
+          <tr>
+            <td style="background: #FFF1E8; padding: 20px 32px; border-top: 1px solid #F0E4D6; border-bottom: 1px solid #F0E4D6;">
+              <p style="margin: 0; font-size: 14px; color: #5A4F45; line-height: 1.5; text-align: center;">
+                Потеряли письмо? Все ваши ссылки также доступны на странице заказа:
+                <br>
+                <a href="{{THANK_YOU_URL}}" style="color: #FF7A3D; font-weight: 700;">открыть страницу заказа</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background: #fff; border-radius: 0 0 24px 24px; padding: 24px 32px; text-align: center;">
+              <p style="margin: 0 0 8px; font-size: 13px; color: #5A4F45; line-height: 1.5;">
+                Вопросы? Пишите: <a href="mailto:info@mishka-max.ru" style="color: #FF7A3D;">info@mishka-max.ru</a>
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #5A4F45;">
+                © 2026 ИП Роман ·
+                <a href="{{SITE_URL}}/offer" style="color: #5A4F45;">Оферта</a> ·
+                <a href="{{SITE_URL}}/privacy" style="color: #5A4F45;">Конфиденциальность</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
