@@ -1,9 +1,8 @@
 import { YooCheckout, ICreatePayment } from '@a2seven/yoo-checkout';
 
-const shopId = process.env.YOOKASSA_SHOP_ID!;
-const secretKey = process.env.YOOKASSA_SECRET_KEY!;
-
 export function getYooCheckout() {
+  const shopId = process.env.YOOKASSA_SHOP_ID!;
+  const secretKey = process.env.YOOKASSA_SECRET_KEY!;
   return new YooCheckout({ shopId, secretKey });
 }
 
@@ -35,7 +34,13 @@ export async function createPayment(params: CreatePaymentParams) {
     metadata: {
       order_id: params.orderId,
     },
-    receipt: {
+    capture: true,
+  };
+
+  // Чек передаём только если явно включена онлайн-касса (54-ФЗ).
+  // Для тестового магазина без кассы — не передаём, иначе YooKassa вернёт ошибку.
+  if (process.env.YOOKASSA_RECEIPT_ENABLED === 'true') {
+    payload.receipt = {
       customer: { email: params.email },
       items: params.receiptItems.map((item) => ({
         description: item.description,
@@ -48,9 +53,8 @@ export async function createPayment(params: CreatePaymentParams) {
         payment_mode: 'full_payment' as const,
         payment_subject: 'service' as const,
       })),
-    },
-    capture: true,
-  };
+    };
+  }
 
   const idempotenceKey = `${params.orderId}-create`;
   return client.createPayment(payload, idempotenceKey);

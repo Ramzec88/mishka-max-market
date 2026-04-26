@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true);
 
     if (productsError || !products || products.length === 0) {
-      return NextResponse.json({ error: 'Товары не найдены' }, { status: 400 });
+      console.error('Products fetch error:', productsError);
+      return NextResponse.json({ error: 'Товары не найдены в базе данных' }, { status: 400 });
     }
 
     const foundProducts = products as Pick<Product, 'id' | 'title' | 'price' | 'format'>[];
@@ -74,8 +75,11 @@ export async function POST(request: NextRequest) {
       confirmation_token: confirmationToken,
       order_id: order.id,
     });
-  } catch (err) {
+  } catch (err: unknown) {
+    // Логируем полную ошибку и возвращаем её текст клиенту для диагностики
     console.error('create-payment error:', err);
-    return NextResponse.json({ error: 'Внутренняя ошибка сервера' }, { status: 500 });
+    const message =
+      err instanceof Error ? err.message : JSON.stringify(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
