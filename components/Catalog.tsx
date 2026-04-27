@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ProductDisplay, Category } from '@/types/product';
 import { getCart, addToCart } from '@/lib/cart';
 import ProductCard from './ProductCard';
+import ProductRow from './ProductRow';
 import CartButton from './CartButton';
 import CartDrawer from './CartDrawer';
 
@@ -47,14 +48,19 @@ export default function Catalog({ products }: CatalogProps) {
     setDrawerOpen(true);
   }
 
+  // Showcase: products with a badge or bundles (up to 5, always visible regardless of filter)
+  const showcaseProducts = products
+    .filter((p) => p.badge !== null || p.category === 'bundles')
+    .slice(0, 5);
+
+  // Catalog list: all products, filtered by category + search
   const q = search.trim().toLowerCase();
-  const filtered = products
+  const catalogProducts = products
     .filter((p) => activeCategory === 'all' || p.category === activeCategory)
     .filter((p) => !q || p.title.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q));
 
   return (
     <>
-      {/* CartButton wired to open drawer */}
       <div style={{ position: 'fixed', top: 16, right: 24, zIndex: 49, display: 'none' }}>
         <CartButton onClick={() => setDrawerOpen(true)} />
       </div>
@@ -73,6 +79,7 @@ export default function Catalog({ products }: CatalogProps) {
             fontSize: 'clamp(28px, 4vw, 44px)',
             fontWeight: 900,
             letterSpacing: '-0.02em',
+            color: '#1A1A2E',
             marginBottom: 12,
           }}
         >
@@ -84,12 +91,58 @@ export default function Catalog({ products }: CatalogProps) {
         </p>
       </section>
 
-      {/* Filters */}
+      {/* ── Showcase (tiles) ── */}
+      {showcaseProducts.length > 0 && (
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 44px' }}>
+          <h2
+            style={{
+              fontSize: 17,
+              fontWeight: 800,
+              color: '#1A1A2E',
+              marginBottom: 16,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            Популярное
+          </h2>
+          {/* Horizontal scroll on mobile; fills the row on wide screens */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 16,
+              overflowX: 'auto',
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              paddingBottom: 4,
+              scrollbarWidth: 'none',
+            }}
+          >
+            {showcaseProducts.map((product) => (
+              <div
+                key={product.id}
+                style={{
+                  scrollSnapAlign: 'start',
+                  flexShrink: 0,
+                  width: 'clamp(220px, 22vw, 260px)',
+                }}
+              >
+                <ProductCard
+                  product={product}
+                  inCart={cartIds.includes(product.id)}
+                  onAdd={handleAdd}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Filters ── */}
       <div
         style={{
           maxWidth: 1200,
           margin: '0 auto',
-          padding: '0 24px 24px',
+          padding: '0 24px 14px',
           display: 'flex',
           gap: 10,
           flexWrap: 'wrap',
@@ -118,8 +171,8 @@ export default function Catalog({ products }: CatalogProps) {
         ))}
       </div>
 
-      {/* Search */}
-      <div style={{ maxWidth: 480, margin: '0 auto 28px', padding: '0 24px' }}>
+      {/* ── Search ── */}
+      <div style={{ maxWidth: 480, margin: '0 auto 20px', padding: '0 24px' }}>
         <input
           type="search"
           value={search}
@@ -139,40 +192,40 @@ export default function Catalog({ products }: CatalogProps) {
         />
       </div>
 
-      {/* Product grid */}
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          padding: '0 24px 80px',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: 24,
-        }}
-      >
-        {filtered.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            inCart={cartIds.includes(product.id)}
-            onAdd={handleAdd}
-          />
-        ))}
-        {filtered.length === 0 && (
-          <div
-            style={{
-              gridColumn: '1 / -1',
-              textAlign: 'center',
-              padding: '60px 20px',
-              color: 'var(--ink-soft)',
-            }}
-          >
-            В этой категории пока нет товаров
-          </div>
-        )}
+      {/* ── Catalog list ── */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 80px' }}>
+        <div
+          style={{
+            background: '#fff',
+            borderRadius: 16,
+            border: '1.5px solid var(--border)',
+            overflow: 'hidden',
+          }}
+        >
+          {catalogProducts.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--ink-soft)' }}>
+              В этой категории пока нет товаров
+            </div>
+          ) : (
+            catalogProducts.map((product, idx) => (
+              <div
+                key={product.id}
+                style={{
+                  borderBottom:
+                    idx < catalogProducts.length - 1 ? '1px solid var(--border)' : 'none',
+                }}
+              >
+                <ProductRow
+                  product={product}
+                  inCart={cartIds.includes(product.id)}
+                  onAdd={handleAdd}
+                />
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Cart Drawer */}
       <CartDrawer
         products={products}
         isOpen={drawerOpen}

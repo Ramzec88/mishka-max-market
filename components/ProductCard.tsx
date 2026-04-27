@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { ProductDisplay } from '@/types/product';
 
@@ -17,30 +18,28 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, inCart, onAdd }: ProductCardProps) {
+  const [cardHovered, setCardHovered] = useState(false);
+  const [btnHovered, setBtnHovered] = useState(false);
+
   const priceRubles = Math.round(product.price / 100);
   const priceOldRubles = product.price_old ? Math.round(product.price_old / 100) : null;
 
   return (
     <div
-      className="card"
-      onClick={() => onAdd(product.id)}
+      onMouseEnter={() => setCardHovered(true)}
+      onMouseLeave={() => { setCardHovered(false); setBtnHovered(false); }}
       style={{
         background: '#fff',
-        borderRadius: 'var(--radius-lg)',
+        borderRadius: 16,
+        border: '1.5px solid var(--border)',
         overflow: 'hidden',
-        boxShadow: 'var(--shadow-sm)',
-        transition: 'all 0.25s',
         display: 'flex',
         flexDirection: 'column',
-        cursor: 'pointer',
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-md)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = '';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-sm)';
+        transform: cardHovered ? 'translateY(-5px)' : 'none',
+        boxShadow: cardHovered
+          ? '0 12px 36px rgba(0,0,0,0.11)'
+          : '0 2px 8px rgba(0,0,0,0.04)',
+        transition: 'transform 0.22s, box-shadow 0.22s',
       }}
     >
       {/* Cover — 1:1 */}
@@ -51,7 +50,7 @@ export default function ProductCard({ product, inCart, onAdd }: ProductCardProps
             alt={product.title}
             fill
             style={{ objectFit: 'cover' }}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
+            sizes="(max-width: 640px) 50vw, 260px"
             unoptimized
           />
         ) : (
@@ -62,91 +61,94 @@ export default function ProductCard({ product, inCart, onAdd }: ProductCardProps
               background: coverBg[product.cover_variant] || coverBg.orange,
               display: 'grid',
               placeItems: 'center',
-              fontSize: 72,
+              fontSize: 64,
             }}
           >
-            <span>{product.cover_emoji}</span>
+            <span>{product.cover_emoji || '📦'}</span>
           </div>
         )}
 
+        {/* Badge */}
         {product.badge && (
           <div
             style={{
               position: 'absolute',
-              top: 12,
-              left: 12,
+              top: 10,
+              left: 10,
               background: 'var(--orange)',
               color: '#fff',
-              padding: '5px 11px',
+              padding: '4px 10px',
               borderRadius: 100,
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 800,
               textTransform: 'uppercase',
-              letterSpacing: '0.05em',
+              letterSpacing: '0.06em',
             }}
           >
             {product.badge}
           </div>
         )}
+
+        {/* Cart button — expands on hover */}
+        <button
+          onMouseEnter={() => setBtnHovered(true)}
+          onMouseLeave={() => setBtnHovered(false)}
+          onClick={() => onAdd(product.id)}
+          style={{
+            position: 'absolute',
+            bottom: 10,
+            right: 10,
+            background: inCart ? 'var(--orange)' : '#fff',
+            color: inCart ? '#fff' : 'var(--ink)',
+            border: 'none',
+            borderRadius: 100,
+            padding: btnHovered && !inCart ? '7px 13px' : '7px 9px',
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            transition: 'all 0.18s',
+            fontFamily: 'inherit',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.14)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ fontSize: 15 }}>{inCart ? '✓' : '+'}</span>
+          {inCart
+            ? <span>В корзине</span>
+            : btnHovered && <span>В корзину</span>
+          }
+        </button>
       </div>
 
       {/* Body */}
-      <div style={{ padding: 18, display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <div style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
         {product.format && (
           <div
             style={{
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 700,
               color: 'var(--orange)',
               textTransform: 'uppercase',
               letterSpacing: '0.07em',
-              marginBottom: 6,
+              marginBottom: 5,
             }}
           >
             {product.format}
           </div>
         )}
-        <h3 style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.3, marginBottom: 6 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.35, color: '#1A1A2E', marginBottom: 0 }}>
           {product.title}
         </h3>
-        <p style={{ color: 'var(--ink-soft)', fontSize: 13, lineHeight: 1.5, marginBottom: 14, flex: 1 }}>
-          {product.description}
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <div>
-            <span style={{ fontSize: 20, fontWeight: 900 }}>{priceRubles} ₽</span>
-            {priceOldRubles && (
-              <span
-                style={{
-                  textDecoration: 'line-through',
-                  color: 'var(--ink-soft)',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  marginLeft: 6,
-                }}
-              >
-                {priceOldRubles} ₽
-              </span>
-            )}
-          </div>
-          <button
-            style={{
-              background: inCart ? 'var(--orange)' : 'var(--ink)',
-              color: '#fff',
-              padding: '9px 15px',
-              borderRadius: 100,
-              fontWeight: 700,
-              fontSize: 13,
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'all 0.2s',
-              whiteSpace: 'nowrap',
-            }}
-            onClick={(e) => { e.stopPropagation(); onAdd(product.id); }}
-          >
-            {inCart ? '✓ В корзине' : 'В корзину'}
-          </button>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginTop: 'auto', paddingTop: 10 }}>
+          <span style={{ fontSize: 17, fontWeight: 900, color: '#1A1A2E' }}>{priceRubles} ₽</span>
+          {priceOldRubles && (
+            <span style={{ textDecoration: 'line-through', color: 'var(--ink-soft)', fontSize: 12, fontWeight: 600 }}>
+              {priceOldRubles} ₽
+            </span>
+          )}
         </div>
       </div>
     </div>
