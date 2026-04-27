@@ -15,7 +15,7 @@
     "@supabase/supabase-js": "^2.43.4",
     "archiver": "^7.0.1",
     "nanoid": "^5.0.7",
-    "next": "14.2.5",
+    "next": "^14.2.35",
     "nodemailer": "^6.9.14",
     "react": "^18",
     "react-dom": "^18"
