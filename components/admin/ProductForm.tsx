@@ -19,19 +19,47 @@ const CARD: React.CSSProperties = {
   marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
 };
 
-// Transliterate + sanitize filename for safe S3 key
+const FORMAT_OPTIONS = [
+  'MP3',
+  'MP3 + минус',
+  'MP3 + тексты',
+  'MP3 + минус + тексты',
+  'PDF',
+  'PDF + изображения',
+  'Сценарий PDF',
+  'Всё включено',
+];
+
+const COVER_GRADIENTS: Record<string, string> = {
+  orange: 'linear-gradient(135deg, #FFE4D1, #FFCBA8)',
+  lavender: 'linear-gradient(135deg, #E8E0F5, #D4C7ED)',
+  green: 'linear-gradient(135deg, #E0F2E4, #C7E8CF)',
+  blue: 'linear-gradient(135deg, #E0EBF5, #C7DAED)',
+};
+
+const CYRILLIC: Record<string, string> = {
+  а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'yo',ж:'zh',з:'z',и:'i',й:'y',
+  к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',
+  х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
+};
+
+function titleToSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .split('')
+    .map(c => CYRILLIC[c] ?? c)
+    .join('')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 function sanitizeFileName(name: string): string {
-  const map: Record<string, string> = {
-    а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'yo',ж:'zh',з:'z',и:'i',й:'y',
-    к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',
-    х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
-  };
   const ext = name.includes('.') ? '.' + name.split('.').pop() : '';
   const base = name.slice(0, name.lastIndexOf('.') === -1 ? name.length : name.lastIndexOf('.'));
   const transliterated = base
     .toLowerCase()
     .split('')
-    .map(c => map[c] ?? c)
+    .map(c => CYRILLIC[c] ?? c)
     .join('')
     .replace(/[^a-z0-9._-]/g, '-')
     .replace(/-+/g, '-')
@@ -53,12 +81,8 @@ async function uploadFileXHR(
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
     };
     xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        onProgress(100);
-        resolve();
-      } else {
-        reject(new Error(`S3 ответил ${xhr.status}: ${xhr.responseText.slice(0, 200)}`));
-      }
+      if (xhr.status >= 200 && xhr.status < 300) { onProgress(100); resolve(); }
+      else reject(new Error(`S3 ответил ${xhr.status}: ${xhr.responseText.slice(0, 200)}`));
     };
     xhr.onerror = () => reject(new Error('Сетевая ошибка при загрузке файла'));
     xhr.send(file);
@@ -82,6 +106,7 @@ export default function ProductForm({ product }: Props) {
   const isEdit = Boolean(product);
 
   const [id, setId] = useState(product?.id ?? '');
+  const [slugEdited, setSlugEdited] = useState(isEdit); // prevent auto-overwrite on edit
   const [title, setTitle] = useState(product?.title ?? '');
   const [description, setDescription] = useState(product?.description ?? '');
   const [price, setPrice] = useState(product ? String(product.price / 100) : '');
@@ -90,7 +115,12 @@ export default function ProductForm({ product }: Props) {
   const [coverEmoji, setCoverEmoji] = useState(product?.cover_emoji ?? '');
   const [coverVariant, setCoverVariant] = useState<CoverVariant>(product?.cover_variant ?? 'orange');
   const [badge, setBadge] = useState(product?.badge ?? '');
-  const [format, setFormat] = useState(product?.format ?? '');
+
+  // Format: predefined select + optional free text
+  const initialFormat = product?.format ?? '';
+  const [format, setFormat] = useState(FORMAT_OPTIONS.includes(initialFormat) ? initialFormat : (initialFormat ? '__other__' : ''));
+  const [formatOther, setFormatOther] = useState(FORMAT_OPTIONS.includes(initialFormat) ? '' : initialFormat);
+
   const [sortOrder, setSortOrder] = useState(product ? String(product.sort_order) : '0');
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
   const [storagePaths, setStoragePaths] = useState<string[]>(product?.storage_paths ?? []);
@@ -98,18 +128,25 @@ export default function ProductForm({ product }: Props) {
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
-
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
-  // Upload state (only active during submit)
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+
+  function handleTitleChange(value: string) {
+    setTitle(value);
+    if (!slugEdited) setId(titleToSlug(value));
+  }
+
+  function handleIdChange(value: string) {
+    setId(value);
+    setSlugEdited(true);
+  }
 
   function handleCoverChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -120,7 +157,7 @@ export default function ProductForm({ product }: Props) {
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     if (!e.target.files || e.target.files.length === 0) return;
-    const newFiles = Array.from(e.target.files); // capture before input reset
+    const newFiles = Array.from(e.target.files);
     setSelectedFiles(prev => [...prev, ...newFiles]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
@@ -128,6 +165,8 @@ export default function ProductForm({ product }: Props) {
   function removeNewFile(idx: number) {
     setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
   }
+
+  const resolvedFormat = format === '__other__' ? formatOther : format;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -140,7 +179,6 @@ export default function ProductForm({ product }: Props) {
       const productId = isEdit ? product!.id : id.trim();
       if (!productId) throw new Error('ID товара обязателен');
 
-      // --- Upload cover ---
       let newCoverKey = coverImageKey;
       if (coverFile) {
         setUploadStatus('Загрузка обложки...');
@@ -152,7 +190,6 @@ export default function ProductForm({ product }: Props) {
         newCoverKey = key;
       }
 
-      // --- Upload product files ---
       const newFileKeys: string[] = [];
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
@@ -165,7 +202,6 @@ export default function ProductForm({ product }: Props) {
         newFileKeys.push(key);
       }
 
-      // --- Save to DB ---
       setUploadStatus('Сохранение товара...');
       setUploadProgress(100);
 
@@ -178,7 +214,7 @@ export default function ProductForm({ product }: Props) {
         cover_emoji: coverEmoji || null,
         cover_variant: coverVariant,
         badge: badge || null,
-        format: format || null,
+        format: resolvedFormat || null,
         storage_paths: [...storagePaths, ...newFileKeys],
         is_active: isActive,
         sort_order: Number(sortOrder) || 0,
@@ -209,16 +245,32 @@ export default function ProductForm({ product }: Props) {
         <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 20, color: '#1a1a1a' }}>Основное</h2>
 
         <div style={{ marginBottom: 18 }}>
-          <label style={LABEL}>ID (slug)</label>
-          <input type="text" value={id} onChange={e => setId(e.target.value)}
-            disabled={isEdit} required placeholder="songs-graduation"
-            style={{ ...INPUT, background: isEdit ? '#f9fafb' : '#fff', color: isEdit ? '#888' : '#1a1a1a' }} />
-          {!isEdit && <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>Только латиница и дефисы. Нельзя изменить после создания.</div>}
+          <label style={LABEL}>Название</label>
+          <input
+            type="text"
+            value={title}
+            onChange={e => handleTitleChange(e.target.value)}
+            required
+            style={INPUT}
+          />
         </div>
 
         <div style={{ marginBottom: 18 }}>
-          <label style={LABEL}>Название</label>
-          <input type="text" value={title} onChange={e => setTitle(e.target.value)} required style={INPUT} />
+          <label style={LABEL}>ID (slug)</label>
+          <input
+            type="text"
+            value={id}
+            onChange={e => handleIdChange(e.target.value)}
+            disabled={isEdit}
+            required
+            placeholder="songs-graduation"
+            style={{ ...INPUT, background: isEdit ? '#f9fafb' : '#fff', color: isEdit ? '#888' : '#1a1a1a' }}
+          />
+          {!isEdit && (
+            <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
+              Заполняется автоматически из названия. Только латиница и дефисы. Нельзя изменить после создания.
+            </div>
+          )}
         </div>
 
         <div style={{ marginBottom: 18 }}>
@@ -249,7 +301,21 @@ export default function ProductForm({ product }: Props) {
           </div>
           <div style={{ flex: 1 }}>
             <label style={LABEL}>Формат</label>
-            <input type="text" value={format} onChange={e => setFormat(e.target.value)} placeholder="MP3 + тексты" style={INPUT} />
+            <select value={format} onChange={e => setFormat(e.target.value)} style={INPUT}>
+              <option value="">— не указан —</option>
+              {FORMAT_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+              <option value="__other__">Другой…</option>
+            </select>
+            {format === '__other__' && (
+              <input
+                type="text"
+                value={formatOther}
+                onChange={e => setFormatOther(e.target.value)}
+                placeholder="Введите формат"
+                style={{ ...INPUT, marginTop: 8 }}
+                autoFocus
+              />
+            )}
           </div>
         </div>
       </div>
@@ -258,15 +324,27 @@ export default function ProductForm({ product }: Props) {
       <div style={CARD}>
         <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, color: '#1a1a1a' }}>Обложка (1:1)</h2>
         <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-          <div style={{ width: 120, height: 120, borderRadius: 12, overflow: 'hidden', flexShrink: 0, border: '1px solid #e5e7eb', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {coverPreview
+
+          {/* Live preview */}
+          <div style={{
+            width: 120, height: 120, borderRadius: 12, overflow: 'hidden', flexShrink: 0,
+            background: coverPreview ? '#000' : (COVER_GRADIENTS[coverVariant] || COVER_GRADIENTS.orange),
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid #e5e7eb', position: 'relative',
+          }}>
+            {coverPreview ? (
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={coverPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : coverImageKey
-                ? <span style={{ fontSize: 11, color: '#888', textAlign: 'center', padding: 8 }}>Загружено ✓</span>
-                : <span style={{ fontSize: 32 }}>🖼️</span>
-            }
+              <img src={coverPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : coverImageKey ? (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 36 }}>{coverEmoji || '🖼️'}</div>
+                <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.5)', marginTop: 4 }}>загружено ✓</div>
+              </div>
+            ) : (
+              <span style={{ fontSize: 48 }}>{coverEmoji || '🖼️'}</span>
+            )}
           </div>
+
           <div style={{ flex: 1 }}>
             <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverChange} style={{ display: 'none' }} />
             <button type="button" onClick={() => coverInputRef.current?.click()}
@@ -335,9 +413,7 @@ export default function ProductForm({ product }: Props) {
                 <span style={{ fontSize: 13 }}>✅</span>
                 <span style={{ fontSize: 13, color: '#333', flex: 1, wordBreak: 'break-all' }}>{path.split('/').pop() || path}</span>
                 <button type="button" onClick={() => setStoragePaths(p => p.filter(x => x !== path))}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 18, lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>
-                  ×
-                </button>
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 18, lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>×</button>
               </div>
             ))}
           </div>
@@ -356,9 +432,7 @@ export default function ProductForm({ product }: Props) {
                   <div style={{ fontSize: 11, color: '#aaa' }}>{(f.size / 1024 / 1024).toFixed(1)} МБ → {sanitizeFileName(f.name)}</div>
                 </div>
                 <button type="button" onClick={() => removeNewFile(idx)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 18, lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>
-                  ×
-                </button>
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 18, lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>×</button>
               </div>
             ))}
           </div>
@@ -374,7 +448,6 @@ export default function ProductForm({ product }: Props) {
         </div>
       </div>
 
-      {/* Upload progress (visible only during save) */}
       {uploadStatus && (
         <div style={{ background: '#fff', borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #fed7aa' }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: '#333', marginBottom: 10 }}>{uploadStatus}</div>
