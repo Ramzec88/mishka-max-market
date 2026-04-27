@@ -3,6 +3,8 @@ import Catalog from '@/components/Catalog';
 import { Product, ProductDisplay } from '@/types/product';
 import { createPresignedDownloadUrl } from '@/lib/storage';
 
+export const dynamic = 'force-dynamic';
+
 const FALLBACK_PRODUCTS: Product[] = [
   {
     id: 'songs-graduation',
