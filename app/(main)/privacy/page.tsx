@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       <section style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>1. Оператор данных</h2>
         <p style={{ color: 'var(--ink-soft)', lineHeight: 1.7 }}>
-          Оператором персональных данных является ИП [Фамилия Имя Отчество], ИНН [номер].
+          Оператором персональных данных является ИП Васюков Алексей Игоревич, ИНН 320203526914.
           Контактный email:{' '}
           <a href="mailto:info@mishka-max.ru" style={{ color: 'var(--orange)' }}>
             info@mishka-max.ru
