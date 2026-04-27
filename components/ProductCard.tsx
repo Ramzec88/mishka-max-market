@@ -15,9 +15,10 @@ interface ProductCardProps {
   product: ProductDisplay;
   inCart: boolean;
   onAdd: (id: string) => void;
+  onSelect: (product: ProductDisplay) => void;
 }
 
-export default function ProductCard({ product, inCart, onAdd }: ProductCardProps) {
+export default function ProductCard({ product, inCart, onAdd, onSelect }: ProductCardProps) {
   const [cardHovered, setCardHovered] = useState(false);
   const [btnHovered, setBtnHovered] = useState(false);
 
@@ -26,9 +27,11 @@ export default function ProductCard({ product, inCart, onAdd }: ProductCardProps
 
   return (
     <div
+      onClick={() => onSelect(product)}
       onMouseEnter={() => setCardHovered(true)}
       onMouseLeave={() => { setCardHovered(false); setBtnHovered(false); }}
       style={{
+        cursor: 'pointer',
         background: '#fff',
         borderRadius: 16,
         border: '1.5px solid var(--border)',
@@ -122,7 +125,7 @@ export default function ProductCard({ product, inCart, onAdd }: ProductCardProps
           <button
             onMouseEnter={() => setBtnHovered(true)}
             onMouseLeave={() => setBtnHovered(false)}
-            onClick={() => onAdd(product.id)}
+            onClick={(e) => { e.stopPropagation(); onAdd(product.id); }}
             style={{
               background: inCart ? 'var(--orange)' : 'transparent',
               color: inCart ? '#fff' : 'var(--orange)',

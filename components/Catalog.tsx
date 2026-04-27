@@ -132,6 +132,7 @@ export default function Catalog({ products }: CatalogProps) {
                   product={product}
                   inCart={cartIds.includes(product.id)}
                   onAdd={handleAdd}
+                  onSelect={setSheetProduct}
                 />
               </div>
             ))}
