@@ -40,7 +40,6 @@ export default function YooKassaWidget({ confirmationToken, orderId }: YooKassaW
   }
 
   useEffect(() => {
-    // Если скрипт уже загружен (например повторный рендер) — сразу инициализируем
     if (window.YooMoneyCheckoutWidget) {
       initWidget();
     }

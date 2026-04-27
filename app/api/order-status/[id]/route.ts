@@ -45,7 +45,7 @@ export async function GET(
         token: t.token,
         product_id: t.product_id,
         product_title: productMap.get(t.product_id) || t.product_id,
-        file_path: t.file_path,
+        file_name: t.file_path.split('/').pop() || t.file_path,
         expires_at: t.expires_at,
         downloads_remaining: t.max_downloads - t.downloads_count,
       }));

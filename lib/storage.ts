@@ -18,9 +18,11 @@ export async function createPresignedDownloadUrl(
   expiresIn = 60
 ): Promise<string> {
   const client = getS3Client();
+  const fileName = filePath.split('/').pop() || 'file';
   const command = new GetObjectCommand({
     Bucket: process.env.S3_BUCKET,
     Key: filePath,
+    ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
   });
   return getSignedUrl(client, command, { expiresIn });
 }

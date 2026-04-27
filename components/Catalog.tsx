@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Product, Category } from '@/types/product';
+import { ProductDisplay, Category } from '@/types/product';
 import { getCart, addToCart } from '@/lib/cart';
 import ProductCard from './ProductCard';
 import CartButton from './CartButton';
@@ -18,11 +18,12 @@ const FILTERS: { value: FilterCategory; label: string }[] = [
 ];
 
 interface CatalogProps {
-  products: Product[];
+  products: ProductDisplay[];
 }
 
 export default function Catalog({ products }: CatalogProps) {
   const [activeCategory, setActiveCategory] = useState<FilterCategory>('all');
+  const [search, setSearch] = useState('');
   const [cartIds, setCartIds] = useState<string[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -46,8 +47,10 @@ export default function Catalog({ products }: CatalogProps) {
     setDrawerOpen(true);
   }
 
-  const filtered =
-    activeCategory === 'all' ? products : products.filter((p) => p.category === activeCategory);
+  const q = search.trim().toLowerCase();
+  const filtered = products
+    .filter((p) => activeCategory === 'all' || p.category === activeCategory)
+    .filter((p) => !q || p.title.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q));
 
   return (
     <>
@@ -113,6 +116,27 @@ export default function Catalog({ products }: CatalogProps) {
             {f.label}
           </button>
         ))}
+      </div>
+
+      {/* Search */}
+      <div style={{ maxWidth: 480, margin: '0 auto 28px', padding: '0 24px' }}>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Поиск по названию или описанию..."
+          style={{
+            width: '100%',
+            border: '1.5px solid var(--border)',
+            borderRadius: 100,
+            padding: '12px 20px',
+            fontSize: 15,
+            outline: 'none',
+            fontFamily: 'inherit',
+            boxSizing: 'border-box',
+            background: '#fff',
+          }}
+        />
       </div>
 
       {/* Product grid */}
