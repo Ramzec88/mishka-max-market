@@ -307,10 +307,14 @@ export default function ProductForm({ product }: Props) {
               <option value="новинка">новинка</option>
               <option value="выгодно">выгодно</option>
             </select>
+            <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
+              ⭐ Товар с бейджем (или категория «Комплекты») попадает в секцию <strong>«Популярное»</strong> на главной.
+            </div>
           </div>
           <div style={{ flex: 1 }}>
             <label style={LABEL}>Порядок</label>
             <input type="number" value={sortOrder} onChange={e => setSortOrder(e.target.value)} min={0} style={INPUT} />
+            <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>Меньше = выше в списке.</div>
           </div>
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
