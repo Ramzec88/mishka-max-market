@@ -191,7 +191,7 @@ export default function ProductSheet({ product, inCart, onAdd, onClose }: Props)
             <button
               onClick={() => { onAdd(product.id); onClose(); }}
               style={{
-                flex: 1,
+                flexShrink: 0,
                 background: inCart ? '#E8F5E9' : 'var(--orange)',
                 color: inCart ? '#2E7D32' : '#fff',
                 border: 'none',
