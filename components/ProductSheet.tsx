@@ -20,7 +20,15 @@ interface Props {
 
 export default function ProductSheet({ product, inCart, onAdd, onClose }: Props) {
   const [visible, setVisible] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const startY = useRef(0);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     if (product) {
@@ -33,12 +41,50 @@ export default function ProductSheet({ product, inCart, onAdd, onClose }: Props)
     return () => { document.body.style.overflow = ''; };
   }, [product]);
 
-  // Keep rendered during close animation
+  useEffect(() => {
+    if (!product) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [product, onClose]);
+
   if (!product && !visible) return null;
   if (!product) return null;
 
   const priceRubles = Math.round(product.price / 100);
   const priceOldRubles = product.price_old ? Math.round(product.price_old / 100) : null;
+
+  const panelStyle = isDesktop
+    ? {
+        position: 'fixed' as const,
+        top: '50%',
+        left: '50%',
+        transform: visible
+          ? 'translate(-50%, -50%) scale(1)'
+          : 'translate(-50%, -50%) scale(0.95)',
+        opacity: visible ? 1 : 0,
+        zIndex: 201,
+        background: '#fff',
+        borderRadius: 20,
+        width: 'min(520px, 90vw)',
+        maxHeight: '85vh',
+        overflowY: 'auto' as const,
+        transition: 'transform 0.22s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.22s',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+      }
+    : {
+        position: 'fixed' as const,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 201,
+        background: '#fff',
+        borderRadius: '20px 20px 0 0',
+        maxHeight: '82vh',
+        overflowY: 'auto' as const,
+        transform: visible ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
+      };
 
   return (
     <>
@@ -55,31 +101,36 @@ export default function ProductSheet({ product, inCart, onAdd, onClose }: Props)
         }}
       />
 
-      {/* Sheet */}
       <div
-        onTouchStart={(e) => { startY.current = e.touches[0].clientY; }}
-        onTouchEnd={(e) => { if (e.changedTouches[0].clientY - startY.current > 60) onClose(); }}
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 201,
-          background: '#fff',
-          borderRadius: '20px 20px 0 0',
-          maxHeight: '82vh',
-          overflowY: 'auto',
-          transform: visible ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
-        }}
+        style={panelStyle}
+        onTouchStart={(e) => { if (!isDesktop) startY.current = e.touches[0].clientY; }}
+        onTouchEnd={(e) => { if (!isDesktop && e.changedTouches[0].clientY - startY.current > 60) onClose(); }}
       >
-        {/* Drag handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '14px 0 8px' }}>
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: '#E0D8D0' }} />
-        </div>
+        {/* Mobile drag handle / Desktop close button */}
+        {isDesktop ? (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 16px 0' }}>
+            <button
+              onClick={onClose}
+              style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: 'var(--border)',
+                border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 16, color: 'var(--ink-soft)',
+                fontFamily: 'inherit',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '14px 0 8px' }}>
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: '#E0D8D0' }} />
+          </div>
+        )}
 
         {/* Cover */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, marginTop: isDesktop ? 8 : 0 }}>
           <div
             style={{
               width: 160,
@@ -103,14 +154,12 @@ export default function ProductSheet({ product, inCart, onAdd, onClose }: Props)
               <div
                 style={{
                   position: 'absolute',
-                  top: 10,
-                  left: 10,
+                  top: 10, left: 10,
                   background: 'var(--orange)',
                   color: '#fff',
                   borderRadius: 100,
                   padding: '3px 9px',
-                  fontSize: 10,
-                  fontWeight: 800,
+                  fontSize: 10, fontWeight: 800,
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
                 }}
@@ -126,8 +175,7 @@ export default function ProductSheet({ product, inCart, onAdd, onClose }: Props)
           {product.format && (
             <div
               style={{
-                fontSize: 11,
-                fontWeight: 700,
+                fontSize: 11, fontWeight: 700,
                 color: 'var(--orange)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.07em',
@@ -141,8 +189,7 @@ export default function ProductSheet({ product, inCart, onAdd, onClose }: Props)
 
           <h2
             style={{
-              fontSize: 20,
-              fontWeight: 900,
+              fontSize: 20, fontWeight: 900,
               color: '#1A1A2E',
               lineHeight: 1.3,
               marginBottom: 12,
