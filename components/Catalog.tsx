@@ -5,6 +5,7 @@ import { ProductDisplay, Category } from '@/types/product';
 import { getCart, addToCart } from '@/lib/cart';
 import ProductCard from './ProductCard';
 import ProductRow from './ProductRow';
+import ProductSheet from './ProductSheet';
 import CartButton from './CartButton';
 import CartDrawer from './CartDrawer';
 
@@ -27,6 +28,7 @@ export default function Catalog({ products }: CatalogProps) {
   const [search, setSearch] = useState('');
   const [cartIds, setCartIds] = useState<string[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sheetProduct, setSheetProduct] = useState<ProductDisplay | null>(null);
 
   useEffect(() => {
     const sync = () => setCartIds(getCart());
@@ -219,6 +221,7 @@ export default function Catalog({ products }: CatalogProps) {
                   product={product}
                   inCart={cartIds.includes(product.id)}
                   onAdd={handleAdd}
+                  onSelect={setSheetProduct}
                 />
               </div>
             ))
@@ -230,6 +233,13 @@ export default function Catalog({ products }: CatalogProps) {
         products={products}
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+      />
+
+      <ProductSheet
+        product={sheetProduct}
+        inCart={sheetProduct ? cartIds.includes(sheetProduct.id) : false}
+        onAdd={handleAdd}
+        onClose={() => setSheetProduct(null)}
       />
     </>
   );

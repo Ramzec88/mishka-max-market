@@ -15,9 +15,10 @@ interface ProductRowProps {
   product: ProductDisplay;
   inCart: boolean;
   onAdd: (id: string) => void;
+  onSelect: (product: ProductDisplay) => void;
 }
 
-export default function ProductRow({ product, inCart, onAdd }: ProductRowProps) {
+export default function ProductRow({ product, inCart, onAdd, onSelect }: ProductRowProps) {
   const [hovered, setHovered] = useState(false);
 
   const priceRubles = Math.round(product.price / 100);
@@ -25,6 +26,7 @@ export default function ProductRow({ product, inCart, onAdd }: ProductRowProps) 
 
   return (
     <div
+      onClick={() => onSelect(product)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -34,6 +36,7 @@ export default function ProductRow({ product, inCart, onAdd }: ProductRowProps) 
         padding: '12px 20px',
         background: hovered ? 'rgba(255, 122, 61, 0.04)' : 'transparent',
         transition: 'background 0.15s',
+        cursor: 'pointer',
       }}
     >
       {/* Thumbnail 48×48 */}
@@ -73,9 +76,10 @@ export default function ProductRow({ product, inCart, onAdd }: ProductRowProps) 
             fontWeight: 700,
             fontSize: 15,
             color: '#1A1A2E',
-            whiteSpace: 'nowrap',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
           }}
         >
           {product.title}
@@ -117,9 +121,9 @@ export default function ProductRow({ product, inCart, onAdd }: ProductRowProps) 
         )}
       </div>
 
-      {/* Add to cart */}
+      {/* Add to cart — stopPropagation so row click doesn't also open sheet */}
       <button
-        onClick={() => onAdd(product.id)}
+        onClick={(e) => { e.stopPropagation(); onAdd(product.id); }}
         style={{
           width: 36,
           height: 36,
