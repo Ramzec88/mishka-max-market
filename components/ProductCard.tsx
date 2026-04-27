@@ -124,25 +124,28 @@ export default function ProductCard({ product, inCart, onAdd }: ProductCardProps
             onMouseLeave={() => setBtnHovered(false)}
             onClick={() => onAdd(product.id)}
             style={{
-              background: inCart ? 'var(--orange)' : (btnHovered ? 'var(--ink)' : 'var(--orange-light)'),
-              color: inCart || btnHovered ? '#fff' : 'var(--orange)',
-              border: 'none',
+              background: inCart ? 'var(--orange)' : 'transparent',
+              color: inCart ? '#fff' : 'var(--orange)',
+              border: `2px solid ${inCart ? 'var(--orange)' : 'var(--orange)'}`,
               borderRadius: 100,
-              padding: '6px 12px',
-              fontWeight: 700,
+              padding: '5px 10px',
+              fontWeight: 800,
               fontSize: 13,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: btnHovered && !inCart ? 5 : 0,
               transition: 'all 0.18s',
               fontFamily: 'inherit',
               whiteSpace: 'nowrap',
               flexShrink: 0,
+              overflow: 'hidden',
+              maxWidth: btnHovered && !inCart ? 120 : 32,
             }}
           >
             <span>{inCart ? '✓' : '+'}</span>
-            <span>{inCart ? 'В корзине' : 'В корзину'}</span>
+            {(btnHovered && !inCart) && <span>В корзину</span>}
+            {inCart && <span>В корзине</span>}
           </button>
         </div>
       </div>
