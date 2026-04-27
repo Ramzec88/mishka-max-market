@@ -36,6 +36,7 @@ export async function PUT(
       price_old: body.price_old ? Math.round(Number(body.price_old) * 100) : null,
       category: body.category,
       cover_emoji: body.cover_emoji || null,
+      cover_image: body.cover_image || null,
       cover_variant: body.cover_variant || 'orange',
       badge: body.badge && body.badge !== '' ? body.badge : null,
       format: body.format || null,

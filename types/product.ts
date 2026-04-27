@@ -9,6 +9,7 @@ export interface Product {
   price_old: number | null;
   category: Category;
   cover_emoji: string | null;
+  cover_image: string | null; // S3 key for cover photo
   cover_variant: CoverVariant;
   badge: string | null;
   format: string | null;
@@ -17,5 +18,8 @@ export interface Product {
   sort_order: number;
   created_at: string;
 }
+
+// Product enriched with a presigned cover URL (computed server-side, not in DB)
+export type ProductDisplay = Product & { cover_url?: string };
 
 export type ProductInsert = Omit<Product, 'created_at'>;
