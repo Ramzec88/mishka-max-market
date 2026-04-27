@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, ChangeEvent, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import { Product, Category, CoverVariant } from '@/types/product';
 
 interface Props {
@@ -80,7 +79,6 @@ async function getUploadUrl(productId: string, fileName: string, contentType: st
 }
 
 export default function ProductForm({ product }: Props) {
-  const router = useRouter();
   const isEdit = Boolean(product);
 
   const [id, setId] = useState(product?.id ?? '');
@@ -121,8 +119,9 @@ export default function ProductForm({ product }: Props) {
   }
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    if (!e.target.files) return;
-    setSelectedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+    if (!e.target.files || e.target.files.length === 0) return;
+    const newFiles = Array.from(e.target.files); // capture before input reset
+    setSelectedFiles(prev => [...prev, ...newFiles]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
@@ -194,8 +193,7 @@ export default function ProductForm({ product }: Props) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `Ошибка сохранения (${res.status})`);
 
-      router.push('/admin/products');
-      router.refresh();
+      window.location.href = '/admin/products';
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setUploadStatus(null);
@@ -394,7 +392,7 @@ export default function ProductForm({ product }: Props) {
       )}
 
       <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-        <button type="button" onClick={() => router.push('/admin/products')} disabled={loading}
+        <button type="button" onClick={() => { window.location.href = '/admin/products'; }} disabled={loading}
           style={{ background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 8, padding: '11px 24px', fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', color: '#666' }}>
           Отмена
         </button>
