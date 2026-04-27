@@ -217,6 +217,7 @@ export default function ProductSheet({ product, inCart, onAdd, onClose }: Props)
             style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               gap: 16,
               background: 'var(--cream)',
               border: '1.5px solid var(--border)',
