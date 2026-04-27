@@ -12,7 +12,7 @@ export default function Footer() {
         fontSize: 14,
       }}
     >
-      <p>© 2026 ИП Роман · ИНН [номер]</p>
+      <p>© 2026 ИП Васюков А.И. · ИНН 320203526914</p>
       <p style={{ marginTop: 8 }}>
         <Link href="/offer" style={{ color: 'var(--orange)', textDecoration: 'underline' }}>
           Оферта
