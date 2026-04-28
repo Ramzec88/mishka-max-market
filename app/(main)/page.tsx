@@ -86,8 +86,8 @@ async function getProducts(): Promise<Product[]> {
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
-    if (error || !data || data.length === 0) return FALLBACK_PRODUCTS;
-    return data as Product[];
+    if (error) return FALLBACK_PRODUCTS;
+    return (data ?? []) as Product[];
   } catch {
     return FALLBACK_PRODUCTS;
   }
