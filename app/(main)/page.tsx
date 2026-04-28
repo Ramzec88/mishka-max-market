@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import Catalog from '@/components/Catalog';
 import { Product, ProductDisplay } from '@/types/product';
@@ -73,13 +74,16 @@ const FALLBACK_PRODUCTS: Product[] = [
 ];
 
 async function getProducts(): Promise<Product[]> {
+  noStore();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) return FALLBACK_PRODUCTS;
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' }) },
+    });
     const { data, error } = await supabase
       .from('products')
       .select('*')
