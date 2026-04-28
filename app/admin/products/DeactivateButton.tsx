@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface Props {
@@ -8,7 +7,6 @@ interface Props {
 }
 
 export default function DeactivateButton({ productId }: Props) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   async function handleDeactivate() {
@@ -17,14 +15,14 @@ export default function DeactivateButton({ productId }: Props) {
     try {
       const res = await fetch(`/api/admin/products/${productId}`, { method: 'DELETE' });
       if (res.ok) {
-        router.refresh();
+        window.location.reload();
       } else {
         const data = await res.json();
         alert(data.error || 'Ошибка при деактивации');
+        setLoading(false);
       }
     } catch {
       alert('Ошибка сети');
-    } finally {
       setLoading(false);
     }
   }
