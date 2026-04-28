@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Product } from '@/types/product';
+import { getPublicUrl } from '@/lib/storage';
 import ProductForm from '@/components/admin/ProductForm';
 
 interface Props {
@@ -29,5 +30,7 @@ export default async function EditProductPage({ params }: Props) {
     notFound();
   }
 
-  return <ProductForm product={product} />;
+  const initialCoverUrl = product.cover_image ? getPublicUrl(product.cover_image) : null;
+
+  return <ProductForm product={product} initialCoverUrl={initialCoverUrl} />;
 }

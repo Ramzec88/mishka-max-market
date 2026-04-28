@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Product } from '@/types/product';
+import { getPublicUrl } from '@/lib/storage';
 import DeactivateButton from './DeactivateButton';
 
 async function getProducts(): Promise<Product[]> {
@@ -86,7 +87,12 @@ export default async function AdminProductsPage() {
                       background: COVER_BG[product.cover_variant] || COVER_BG.orange,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
                     }}>
-                      {product.cover_emoji || '📦'}
+                      {product.cover_image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={getPublicUrl(product.cover_image)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        product.cover_emoji || '📦'
+                      )}
                     </div>
                   </td>
 

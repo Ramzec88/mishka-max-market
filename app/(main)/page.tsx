@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import Catalog from '@/components/Catalog';
 import { Product, ProductDisplay } from '@/types/product';
+import { getPublicUrl } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,12 +94,9 @@ async function getProducts(): Promise<Product[]> {
 }
 
 function attachCoverUrls(products: Product[]): ProductDisplay[] {
-  const endpoint = process.env.BEGET_S3_ENDPOINT || process.env.S3_ENDPOINT || '';
-  const bucket = process.env.BEGET_S3_BUCKET || process.env.S3_BUCKET || '';
   return products.map((p) => {
     if (!p.cover_image) return p;
-    const cover_url = `${endpoint}/${bucket}/${p.cover_image}`;
-    return { ...p, cover_url };
+    return { ...p, cover_url: getPublicUrl(p.cover_image) };
   });
 }
 

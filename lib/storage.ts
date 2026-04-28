@@ -1,16 +1,28 @@
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+function getEndpoint(): string {
+  return process.env.BEGET_S3_ENDPOINT || process.env.S3_ENDPOINT || '';
+}
+
+function getBucket(): string {
+  return process.env.BEGET_S3_BUCKET || process.env.S3_BUCKET || '';
+}
 
 function getS3Client(): S3Client {
   return new S3Client({
-    endpoint: process.env.S3_ENDPOINT,
+    endpoint: getEndpoint(),
     region: process.env.S3_REGION || 'ru-1',
     credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY!,
-      secretAccessKey: process.env.S3_SECRET_KEY!,
+      accessKeyId: (process.env.BEGET_S3_ACCESS_KEY || process.env.S3_ACCESS_KEY)!,
+      secretAccessKey: (process.env.BEGET_S3_SECRET_KEY || process.env.S3_SECRET_KEY)!,
     },
-    forcePathStyle: true, // Beget использует path-style: endpoint/bucket/key
+    forcePathStyle: true,
   });
+}
+
+export function getPublicUrl(key: string): string {
+  return `${getEndpoint()}/${getBucket()}/${key}`;
 }
 
 export async function createPresignedDownloadUrl(
@@ -20,9 +32,22 @@ export async function createPresignedDownloadUrl(
   const client = getS3Client();
   const fileName = filePath.split('/').pop() || 'file';
   const command = new GetObjectCommand({
-    Bucket: process.env.S3_BUCKET,
+    Bucket: getBucket(),
     Key: filePath,
     ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
   });
   return getSignedUrl(client, command, { expiresIn });
+}
+
+export async function deleteS3Objects(keys: string[]): Promise<void> {
+  if (keys.length === 0) return;
+  const client = getS3Client();
+  if (keys.length === 1) {
+    await client.send(new DeleteObjectCommand({ Bucket: getBucket(), Key: keys[0] }));
+    return;
+  }
+  await client.send(new DeleteObjectsCommand({
+    Bucket: getBucket(),
+    Delete: { Objects: keys.map(k => ({ Key: k })) },
+  }));
 }

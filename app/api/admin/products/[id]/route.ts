@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { deleteS3Objects } from '@/lib/storage';
 
 export async function GET(
   _request: NextRequest,
@@ -28,6 +29,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
+    const deleteKeys: string[] = Array.isArray(body._deleteKeys) ? body._deleteKeys : [];
 
     const updates: Record<string, unknown> = {
       title: body.title,
@@ -54,6 +56,10 @@ export async function PUT(
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (deleteKeys.length > 0) {
+      try { await deleteS3Objects(deleteKeys); } catch { /* non-critical */ }
     }
 
     return NextResponse.json(data);

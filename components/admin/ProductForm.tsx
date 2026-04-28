@@ -5,6 +5,7 @@ import { Product, Category, CoverVariant } from '@/types/product';
 
 interface Props {
   product?: Product;
+  initialCoverUrl?: string | null;
 }
 
 const LABEL: React.CSSProperties = {
@@ -102,11 +103,14 @@ async function getUploadUrl(productId: string, fileName: string, contentType: st
   return res.json() as Promise<{ url: string; key: string }>;
 }
 
-export default function ProductForm({ product }: Props) {
+export default function ProductForm({ product, initialCoverUrl }: Props) {
   const isEdit = Boolean(product);
 
+  const originalCoverImage = product?.cover_image ?? null;
+  const originalStoragePaths = product?.storage_paths ?? [];
+
   const [id, setId] = useState(product?.id ?? '');
-  const [slugEdited, setSlugEdited] = useState(isEdit); // prevent auto-overwrite on edit
+  const [slugEdited, setSlugEdited] = useState(isEdit);
   const [title, setTitle] = useState(product?.title ?? '');
   const [description, setDescription] = useState(product?.description ?? '');
   const [price, setPrice] = useState(product ? String(product.price / 100) : '');
@@ -116,15 +120,15 @@ export default function ProductForm({ product }: Props) {
   const [coverVariant, setCoverVariant] = useState<CoverVariant>(product?.cover_variant ?? 'orange');
   const [badge, setBadge] = useState(product?.badge ?? '');
 
-  // Format: predefined select + optional free text
   const initialFormat = product?.format ?? '';
   const [format, setFormat] = useState(FORMAT_OPTIONS.includes(initialFormat) ? initialFormat : (initialFormat ? '__other__' : ''));
   const [formatOther, setFormatOther] = useState(FORMAT_OPTIONS.includes(initialFormat) ? '' : initialFormat);
 
   const [sortOrder, setSortOrder] = useState(product ? String(product.sort_order) : '0');
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
-  const [storagePaths, setStoragePaths] = useState<string[]>(product?.storage_paths ?? []);
-  const [coverImageKey, setCoverImageKey] = useState<string | null>(product?.cover_image ?? null);
+  const [storagePaths, setStoragePaths] = useState<string[]>(originalStoragePaths);
+  const [coverImageKey, setCoverImageKey] = useState<string | null>(originalCoverImage);
+  const [savedCoverUrl, setSavedCoverUrl] = useState<string | null>(initialCoverUrl ?? null);
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -153,6 +157,14 @@ export default function ProductForm({ product }: Props) {
     if (!file) return;
     setCoverFile(file);
     setCoverPreview(URL.createObjectURL(file));
+  }
+
+  function handleRemoveCover() {
+    setCoverFile(null);
+    setCoverPreview(null);
+    setCoverImageKey(null);
+    setSavedCoverUrl(null);
+    if (coverInputRef.current) coverInputRef.current.value = '';
   }
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
@@ -205,6 +217,16 @@ export default function ProductForm({ product }: Props) {
       setUploadStatus('Сохранение товара...');
       setUploadProgress(100);
 
+      // Compute deletion list: original keys that are no longer in new state
+      const finalStoragePaths = [...storagePaths, ...newFileKeys];
+      const deleteKeys: string[] = [];
+      for (const orig of originalStoragePaths) {
+        if (!finalStoragePaths.includes(orig)) deleteKeys.push(orig);
+      }
+      if (originalCoverImage && originalCoverImage !== newCoverKey) {
+        deleteKeys.push(originalCoverImage);
+      }
+
       const body: Record<string, unknown> = {
         id: productId, title,
         description: description || null,
@@ -215,11 +237,12 @@ export default function ProductForm({ product }: Props) {
         cover_variant: coverVariant,
         badge: badge || null,
         format: resolvedFormat || null,
-        storage_paths: [...storagePaths, ...newFileKeys],
+        storage_paths: finalStoragePaths,
         is_active: isActive,
         sort_order: Number(sortOrder) || 0,
+        cover_image: newCoverKey,
+        _deleteKeys: deleteKeys,
       };
-      if (newCoverKey) body.cover_image = newCoverKey;
 
       const res = await fetch(
         isEdit ? `/api/admin/products/${productId}` : '/api/admin/products',
@@ -328,18 +351,16 @@ export default function ProductForm({ product }: Props) {
           {/* Live preview */}
           <div style={{
             width: 120, height: 120, borderRadius: 12, overflow: 'hidden', flexShrink: 0,
-            background: coverPreview ? '#000' : (COVER_GRADIENTS[coverVariant] || COVER_GRADIENTS.orange),
+            background: (coverPreview || (coverImageKey && savedCoverUrl)) ? '#f3f4f6' : (COVER_GRADIENTS[coverVariant] || COVER_GRADIENTS.orange),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: '1px solid #e5e7eb', position: 'relative',
           }}>
             {coverPreview ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={coverPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : coverImageKey ? (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 36 }}>{coverEmoji || '🖼️'}</div>
-                <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.5)', marginTop: 4 }}>загружено ✓</div>
-              </div>
+            ) : coverImageKey && savedCoverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={savedCoverUrl} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               <span style={{ fontSize: 48 }}>{coverEmoji || '🖼️'}</span>
             )}
@@ -347,10 +368,18 @@ export default function ProductForm({ product }: Props) {
 
           <div style={{ flex: 1 }}>
             <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverChange} style={{ display: 'none' }} />
-            <button type="button" onClick={() => coverInputRef.current?.click()}
-              style={{ border: '1px dashed #d1d5db', background: 'none', borderRadius: 8, padding: '10px 18px', fontSize: 13, fontWeight: 600, color: '#666', cursor: 'pointer', marginBottom: 8 }}>
-              {coverImageKey || coverFile ? 'Заменить обложку' : '+ Выбрать обложку'}
-            </button>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <button type="button" onClick={() => coverInputRef.current?.click()}
+                style={{ border: '1px dashed #d1d5db', background: 'none', borderRadius: 8, padding: '10px 18px', fontSize: 13, fontWeight: 600, color: '#666', cursor: 'pointer' }}>
+                {coverImageKey || coverFile ? 'Заменить обложку' : '+ Выбрать обложку'}
+              </button>
+              {(coverImageKey || coverFile) && (
+                <button type="button" onClick={handleRemoveCover}
+                  style={{ border: '1px solid #fecaca', background: '#fef2f2', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, color: '#dc2626', cursor: 'pointer' }}>
+                  Удалить
+                </button>
+              )}
+            </div>
             {coverFile && <div style={{ fontSize: 12, color: '#555', marginBottom: 6 }}>✓ {coverFile.name} ({(coverFile.size / 1024).toFixed(0)} КБ)</div>}
             <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
               <div style={{ flex: 1 }}>
