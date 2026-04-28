@@ -54,10 +54,12 @@ export default function Catalog({ products }: CatalogProps) {
   const showcaseProducts = products
     .filter((p) => p.badge !== null || p.category === 'bundles')
     .slice(0, 5);
+  const showcaseIds = new Set(showcaseProducts.map((p) => p.id));
 
-  // Catalog list: all products, filtered by category + search
+  // Catalog list: remaining products (not in showcase), filtered by category + search
   const q = search.trim().toLowerCase();
   const catalogProducts = products
+    .filter((p) => !showcaseIds.has(p.id))
     .filter((p) => activeCategory === 'all' || p.category === activeCategory)
     .filter((p) => !q || p.title.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q));
 
