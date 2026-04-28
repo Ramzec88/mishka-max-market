@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import { unstable_noStore as noStore } from 'next/cache';
 import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Product } from '@/types/product';
@@ -7,6 +8,7 @@ import { getPublicUrl } from '@/lib/storage';
 import DeactivateButton from './DeactivateButton';
 
 async function getProducts(): Promise<Product[]> {
+  noStore();
   try {
     const { data, error } = await supabaseAdmin
       .from('products')

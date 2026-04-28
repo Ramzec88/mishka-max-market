@@ -18,6 +18,7 @@ export function getSupabaseAdmin(): SupabaseClient {
       autoRefreshToken: false,
       persistSession: false,
     },
+    global: { fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' }) },
   });
 
   return _client;
