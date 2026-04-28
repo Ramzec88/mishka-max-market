@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import Catalog from '@/components/Catalog';
 import { Product, ProductDisplay } from '@/types/product';
-import { createPresignedDownloadUrl } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,22 +92,18 @@ async function getProducts(): Promise<Product[]> {
   }
 }
 
-async function attachCoverUrls(products: Product[]): Promise<ProductDisplay[]> {
-  return Promise.all(
-    products.map(async (p) => {
-      if (!p.cover_image) return p;
-      try {
-        const cover_url = await createPresignedDownloadUrl(p.cover_image, 3600);
-        return { ...p, cover_url };
-      } catch {
-        return p;
-      }
-    })
-  );
+function attachCoverUrls(products: Product[]): ProductDisplay[] {
+  const endpoint = process.env.BEGET_S3_ENDPOINT || process.env.S3_ENDPOINT || '';
+  const bucket = process.env.BEGET_S3_BUCKET || process.env.S3_BUCKET || '';
+  return products.map((p) => {
+    if (!p.cover_image) return p;
+    const cover_url = `${endpoint}/${bucket}/${p.cover_image}`;
+    return { ...p, cover_url };
+  });
 }
 
 export default async function HomePage() {
   const products = await getProducts();
-  const productsWithCovers = await attachCoverUrls(products);
+  const productsWithCovers = attachCoverUrls(products);
   return <Catalog products={productsWithCovers} />;
 }
