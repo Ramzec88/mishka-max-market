@@ -80,10 +80,8 @@ export async function POST(request: NextRequest) {
       order_id: order.id,
     });
   } catch (err: unknown) {
-    // Логируем полную ошибку и возвращаем её текст клиенту для диагностики
-    console.error('create-payment error:', err);
-    const message =
-      err instanceof Error ? err.message : JSON.stringify(err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('create-payment error:', message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

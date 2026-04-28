@@ -57,5 +57,19 @@ export async function createPayment(params: CreatePaymentParams) {
   }
 
   const idempotenceKey = `${params.orderId}-create`;
-  return client.createPayment(payload, idempotenceKey);
+  try {
+    return await client.createPayment(payload, idempotenceKey);
+  } catch (err: unknown) {
+    // Extract actual YooKassa API error from axios error object
+    if (err && typeof err === 'object') {
+      const axiosErr = err as Record<string, unknown>;
+      const response = axiosErr['response'] as { status?: number; data?: unknown } | undefined;
+      if (response) {
+        throw new Error(`YooKassa ${response.status}: ${JSON.stringify(response.data)}`);
+      }
+      const msg = axiosErr['message'];
+      if (typeof msg === 'string') throw new Error(`YooKassa: ${msg}`);
+    }
+    throw new Error(`YooKassa: неизвестная ошибка`);
+  }
 }
