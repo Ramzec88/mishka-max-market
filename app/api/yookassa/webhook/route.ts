@@ -33,16 +33,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (event === 'payment.succeeded') {
-      // Обновляем статус заказа
-      await supabaseAdmin
-        .from('orders')
-        .update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          webhook_processed_at: new Date().toISOString(),
-        })
-        .eq('id', order.id);
-
       // Загружаем продукты
       const itemIds: string[] = order.items;
       const { data: products } = await supabaseAdmin
@@ -52,7 +42,7 @@ export async function POST(request: NextRequest) {
 
       const productList = (products || []) as Pick<Product, 'id' | 'title' | 'format' | 'storage_paths'>[];
 
-      // Создаём токены скачивания (один токен на продукт/файл)
+      // Создаём токены скачивания (один токен на файл)
       const downloadItems: DownloadItem[] = [];
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
@@ -91,6 +81,16 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Все токены созданы — теперь помечаем заказ как оплаченный
+      await supabaseAdmin
+        .from('orders')
+        .update({
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+          webhook_processed_at: new Date().toISOString(),
+        })
+        .eq('id', order.id);
+
       // Отправляем email с ссылками
       try {
         await sendOrderEmail({
@@ -106,7 +106,6 @@ export async function POST(request: NextRequest) {
           .eq('id', order.id);
       } catch (emailErr) {
         console.error('Email send error:', emailErr);
-        // Не фейлим webhook из-за ошибки email — файлы доступны через thank-you страницу
       }
     } else if (event === 'payment.canceled') {
       await supabaseAdmin
