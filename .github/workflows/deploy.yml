@@ -20,4 +20,7 @@ jobs:
             git pull origin main
             npm install --production=false
             npm run build
-            pm2 restart mishka-market
+            pm2 stop mishka-market || true
+            fuser -k 3000/tcp 2>/dev/null || true
+            sleep 1
+            pm2 start mishka-market
