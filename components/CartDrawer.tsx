@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Product } from '@/types/product';
+import { ProductDisplay } from '@/types/product';
 import { getCart, removeFromCart } from '@/lib/cart';
 import CheckoutForm from './CheckoutForm';
 import YooKassaWidget from './YooKassaWidget';
 
 interface CartDrawerProps {
-  products: Product[];
+  products: ProductDisplay[];
   isOpen: boolean;
   onClose: () => void;
 }
@@ -57,7 +57,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
     setError(null);
   }
 
-  const cartItems = cartIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as Product[];
+  const cartItems = cartIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as ProductDisplay[];
   const total = cartItems.reduce((sum, p) => sum + Math.round(p.price / 100), 0);
 
   return (
@@ -155,14 +155,20 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
                     width: 64,
                     height: 64,
                     borderRadius: 12,
+                    flexShrink: 0,
+                    overflow: 'hidden',
                     background: 'var(--orange-light)',
                     display: 'grid',
                     placeItems: 'center',
                     fontSize: 28,
-                    flexShrink: 0,
                   }}
                 >
-                  {product.cover_emoji}
+                  {product.cover_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={product.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    product.cover_emoji || '📦'
+                  )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{product.title}</div>
