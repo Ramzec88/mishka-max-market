@@ -33,6 +33,7 @@ export default function ThankYouContent() {
 
   useEffect(() => {
     clearCart();
+    window.dispatchEvent(new Event('cart-updated'));
   }, []);
 
   useEffect(() => {
