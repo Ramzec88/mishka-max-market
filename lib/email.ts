@@ -19,6 +19,7 @@ export interface DownloadItem {
   format: string | null;
   downloadUrl: string;
   fileName?: string;
+  fileSizeBytes?: number;
 }
 
 export interface SendOrderEmailParams {
@@ -34,21 +35,26 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
   const templatePath = join(process.cwd(), 'emails', 'order-delivery.html');
   let html = readFileSync(templatePath, 'utf-8');
 
+  const LARGE_FILE_BYTES = 50 * 1024 * 1024;
+
   const itemsHtml = items
-    .map(
-      (item) => `
+    .map((item) => {
+      const isLarge = item.fileSizeBytes != null && item.fileSizeBytes > LARGE_FILE_BYTES;
+      const sizeMb = item.fileSizeBytes != null ? (item.fileSizeBytes / 1024 / 1024).toFixed(0) : null;
+      return `
     <tr>
       <td style="padding: 16px 0; border-bottom: 1px solid #F0E4D6;">
         <div style="font-weight: 700; font-size: 15px; color: #1F1B16; margin-bottom: 4px;">${item.title}</div>
-        ${item.fileName ? `<div style="font-size: 13px; color: #5A4F45; margin-bottom: 2px;">${item.fileName}</div>` : ''}
+        ${item.fileName ? `<div style="font-size: 13px; color: #5A4F45; margin-bottom: 2px;">${item.fileName}${sizeMb ? ` · ${sizeMb} МБ` : ''}</div>` : ''}
         ${item.format ? `<div style="font-size: 13px; color: #5A4F45;">${item.format}</div>` : ''}
+        ${isLarge ? `<div style="margin-top: 8px; background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #92400E;">⏳ Файл крупный (${sizeMb} МБ) — скачивание может занять несколько минут. Дождитесь полной загрузки, не закрывайте страницу.</div>` : ''}
         <a href="${item.downloadUrl}" style="display: inline-block; margin-top: 10px; background: #FF7A3D; color: #fff; padding: 10px 20px; border-radius: 100px; font-weight: 700; font-size: 14px; text-decoration: none;">
           Скачать
         </a>
       </td>
     </tr>
-  `
-    )
+  `;
+    })
     .join('');
 
   html = html

@@ -1,4 +1,4 @@
-import { S3Client, GetObjectCommand, DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 function getEndpoint(): string {
@@ -37,6 +37,16 @@ export async function createPresignedDownloadUrl(
     ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
   });
   return getSignedUrl(client, command, { expiresIn });
+}
+
+export async function getFileSizeBytes(key: string): Promise<number | null> {
+  try {
+    const client = getS3Client();
+    const res = await client.send(new HeadObjectCommand({ Bucket: getBucket(), Key: key }));
+    return res.ContentLength ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function deleteS3Objects(keys: string[]): Promise<void> {

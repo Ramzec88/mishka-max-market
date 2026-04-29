@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { generateToken, getTokenExpiry } from '@/lib/tokens';
 import { sendOrderEmail, DownloadItem } from '@/lib/email';
+import { getFileSizeBytes } from '@/lib/storage';
 import { YooKassaWebhookPayload } from '@/types/yookassa';
 import { Product } from '@/types/product';
 
@@ -79,11 +80,13 @@ export async function POST(request: NextRequest) {
           }
 
           const fileName = filePath.split('/').pop() || filePath;
+          const fileSizeBytes = await getFileSizeBytes(filePath) ?? undefined;
           downloadItems.push({
             title: product.title,
             format: product.format,
             fileName,
             downloadUrl: `${siteUrl}/api/download/${token}`,
+            fileSizeBytes,
           });
         }
       }

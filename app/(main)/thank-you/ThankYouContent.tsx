@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { OrderStatus } from '@/types/order';
 import { clearCart } from '@/lib/cart';
 
+const LARGE_FILE_BYTES = 50 * 1024 * 1024;
+
 interface DownloadLink {
   token: string;
   product_id: string;
@@ -13,6 +15,7 @@ interface DownloadLink {
   file_name: string;
   expires_at: string;
   downloads_remaining: number;
+  file_size_bytes?: number | null;
 }
 
 interface OrderStatusResponse {
@@ -209,24 +212,40 @@ export default function ThankYouContent() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {group.files.map((link) => (
-                      <div key={link.token} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                        <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-                          {link.file_name}
-                          <span style={{ marginLeft: 8, fontSize: 11 }}>
-                            ({link.downloads_remaining} скач.)
-                          </span>
+                      <div key={link.token}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                          <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+                            {link.file_name}
+                            {link.file_size_bytes != null && (
+                              <span style={{ marginLeft: 6, fontSize: 11 }}>
+                                · {(link.file_size_bytes / 1024 / 1024).toFixed(0)} МБ
+                              </span>
+                            )}
+                            <span style={{ marginLeft: 6, fontSize: 11 }}>
+                              ({link.downloads_remaining} скач.)
+                            </span>
+                          </div>
+                          <a
+                            href={`${siteUrl}/api/download/${link.token}`}
+                            style={{
+                              background: 'var(--orange)', color: '#fff',
+                              padding: '8px 16px', borderRadius: 100,
+                              fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
+                              textDecoration: 'none',
+                            }}
+                          >
+                            Скачать
+                          </a>
                         </div>
-                        <a
-                          href={`${siteUrl}/api/download/${link.token}`}
-                          style={{
-                            background: 'var(--orange)', color: '#fff',
-                            padding: '8px 16px', borderRadius: 100,
-                            fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
-                            textDecoration: 'none',
-                          }}
-                        >
-                          Скачать
-                        </a>
+                        {link.file_size_bytes != null && link.file_size_bytes > LARGE_FILE_BYTES && (
+                          <div style={{
+                            marginTop: 6, padding: '8px 12px',
+                            background: '#FFF7ED', border: '1px solid #FED7AA',
+                            borderRadius: 8, fontSize: 13, color: '#92400E', lineHeight: 1.4,
+                          }}>
+                            ⏳ Файл крупный ({(link.file_size_bytes / 1024 / 1024).toFixed(0)} МБ) — скачивание может занять несколько минут. Не закрывайте страницу и дождитесь полной загрузки.
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

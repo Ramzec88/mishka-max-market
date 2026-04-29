@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getFileSizeBytes } from '@/lib/storage';
 
 export async function GET(
   _request: NextRequest,
@@ -41,14 +42,15 @@ export async function GET(
 
       const productMap = new Map((products || []).map((p) => [p.id, p.title]));
 
-      response.download_links = tokens.map((t) => ({
+      response.download_links = await Promise.all(tokens.map(async (t) => ({
         token: t.token,
         product_id: t.product_id,
         product_title: productMap.get(t.product_id) || t.product_id,
         file_name: t.file_path.split('/').pop() || t.file_path,
         expires_at: t.expires_at,
         downloads_remaining: t.max_downloads - t.downloads_count,
-      }));
+        file_size_bytes: await getFileSizeBytes(t.file_path),
+      })));
     }
   }
 
