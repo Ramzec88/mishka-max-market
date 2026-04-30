@@ -17,6 +17,22 @@ export const metadata: Metadata = {
     description: 'Готовые материалы для утренников и детских праздников',
     locale: 'ru_RU',
     type: 'website',
+    url: 'https://market.mishka-max.ru',
+    siteName: 'Маркет Мишки Макса',
+    images: [
+      {
+        url: 'https://market.mishka-max.ru/og.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Маркет Мишки Макса — материалы для детских праздников',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Маркет Мишки Макса',
+    description: 'Готовые материалы для утренников и детских праздников',
+    images: ['https://market.mishka-max.ru/og.jpg'],
   },
 };
 
