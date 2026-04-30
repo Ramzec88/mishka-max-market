@@ -33,6 +33,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           Товары
         </Link>
+        <Link
+          href="/admin/orders"
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+        >
+          Заказы
+        </Link>
         <div style={{ marginLeft: 'auto' }}>
           <button
             onClick={handleLogout}
