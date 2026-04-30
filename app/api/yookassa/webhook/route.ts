@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
         .update({
           status: 'canceled',
           webhook_processed_at: new Date().toISOString(),
+          cancellation_reason: payment.cancellation_details?.reason ?? null,
         })
         .eq('id', order.id);
     }

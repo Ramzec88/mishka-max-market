@@ -9,6 +9,11 @@ export interface YooKassaAmount {
   currency: 'RUB';
 }
 
+export interface YooKassaCancellationDetails {
+  party: 'yoo_money' | 'payment_network' | 'merchant';
+  reason: string;
+}
+
 export interface YooKassaPaymentObject {
   id: string;
   status: 'pending' | 'waiting_for_capture' | 'succeeded' | 'canceled';
@@ -19,6 +24,7 @@ export interface YooKassaPaymentObject {
   captured_at?: string;
   paid: boolean;
   refundable: boolean;
+  cancellation_details?: YooKassaCancellationDetails;
 }
 
 export interface YooKassaWebhookPayload {

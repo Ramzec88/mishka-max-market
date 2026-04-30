@@ -48,6 +48,23 @@ export default async function OrderDetailPage({ params }: Props) {
   };
   const s = STATUS_LABEL[order.status] || { label: order.status, bg: '#f3f4f6', color: '#888' };
 
+  const CANCEL_REASON: Record<string, string> = {
+    payment_canceled:        'Отменён покупателем',
+    expired_on_confirmation: 'Не завершил оплату',
+    insufficient_funds:      'Недостаточно средств',
+    card_expired:            'Карта просрочена',
+    fraud_suspected:         'Подозрение на мошенничество',
+    general_decline:         'Отказ банка',
+    wrong_amount:            'Неверная сумма',
+    identification_required: 'Требуется идентификация',
+    permission_revoked:      'Доступ отозван',
+    unsupported_mobile_operator: 'Оператор не поддерживается',
+    rejected_by_payee:       'Отклонён получателем',
+    three_d_secure_failed:   'Ошибка 3-D Secure',
+    call_issuer:             'Обратитесь в банк',
+    cancel_by_merchant:      'Отменён магазином',
+  };
+
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
@@ -73,6 +90,7 @@ export default async function OrderDetailPage({ params }: Props) {
             ['Оплачен', fmt(order.paid_at)],
             ['Письмо отправлено', fmt(order.email_sent_at)],
             ['YooKassa ID', order.yookassa_payment_id || '—'],
+            ...(order.cancellation_reason ? [['Причина отмены', CANCEL_REASON[order.cancellation_reason] ?? order.cancellation_reason]] : []),
           ].map(([label, value]) => (
             <div key={label}>
               <div style={{ fontSize: 11, color: '#aaa', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
