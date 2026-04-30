@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     siteName: 'Маркет Мишки Макса',
     images: [
       {
-        url: 'https://market.mishka-max.ru/og.jpg',
+        url: 'https://market.mishka-max.ru/og.png',
         width: 1200,
         height: 630,
         alt: 'Маркет Мишки Макса — материалы для детских праздников',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Маркет Мишки Макса',
     description: 'Готовые материалы для утренников и детских праздников',
-    images: ['https://market.mishka-max.ru/og.jpg'],
+    images: ['https://market.mishka-max.ru/og.png'],
   },
 };
 
