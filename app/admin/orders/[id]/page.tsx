@@ -30,7 +30,7 @@ export default async function OrderDetailPage({ params }: Props) {
     .eq('order_id', params.id)
     .order('created_at');
 
-  const productIds = [...new Set((tokens || []).map((t) => t.product_id))];
+  const productIds = Array.from(new Set((tokens || []).map((t) => t.product_id)));
   const { data: products } = await supabaseAdmin
     .from('products')
     .select('id, title')

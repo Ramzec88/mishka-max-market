@@ -30,7 +30,7 @@ export async function POST(
       return NextResponse.json({ error: 'Токены не найдены' }, { status: 404 });
     }
 
-    const productIds = [...new Set(tokens.map((t) => t.product_id))];
+    const productIds = Array.from(new Set(tokens.map((t) => t.product_id)));
     const { data: products } = await supabaseAdmin
       .from('products')
       .select('id, title, format')
