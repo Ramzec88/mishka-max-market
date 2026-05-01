@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       badge: body.badge && body.badge !== '' ? body.badge : null,
       format: body.format || null,
       storage_paths: body.storage_paths || [],
+      demo_url: body.demo_url || null,
       is_active: Boolean(body.is_active),
       sort_order: Number(body.sort_order) || 0,
     };

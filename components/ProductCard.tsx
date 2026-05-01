@@ -16,9 +16,10 @@ interface ProductCardProps {
   inCart: boolean;
   onAdd: (id: string) => void;
   onSelect: (product: ProductDisplay) => void;
+  onPlay: (product: ProductDisplay) => void;
 }
 
-export default function ProductCard({ product, inCart, onAdd, onSelect }: ProductCardProps) {
+export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }: ProductCardProps) {
   const [cardHovered, setCardHovered] = useState(false);
   const [btnHovered, setBtnHovered] = useState(false);
 
@@ -90,6 +91,30 @@ export default function ProductCard({ product, inCart, onAdd, onSelect }: Produc
           >
             {product.badge}
           </div>
+        )}
+
+        {/* Play overlay */}
+        {product.demo_url && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onPlay(product); }}
+            style={{
+              position: 'absolute', inset: 0,
+              background: 'rgba(0,0,0,0.32)',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              opacity: cardHovered ? 1 : 0,
+              transition: 'opacity 0.2s',
+            }}
+          >
+            <div style={{
+              width: 52, height: 52, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.92)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 20, paddingLeft: 3,
+            }}>
+              ▶
+            </div>
+          </button>
         )}
 
       </div>

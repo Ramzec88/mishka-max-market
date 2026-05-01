@@ -16,9 +16,10 @@ interface ProductRowProps {
   inCart: boolean;
   onAdd: (id: string) => void;
   onSelect: (product: ProductDisplay) => void;
+  onPlay: (product: ProductDisplay) => void;
 }
 
-export default function ProductRow({ product, inCart, onAdd, onSelect }: ProductRowProps) {
+export default function ProductRow({ product, inCart, onAdd, onSelect, onPlay }: ProductRowProps) {
   const [hovered, setHovered] = useState(false);
 
   const priceRubles = Math.round(product.price / 100);
@@ -66,6 +67,26 @@ export default function ProductRow({ product, inCart, onAdd, onSelect }: Product
           />
         ) : (
           product.cover_emoji || '📦'
+        )}
+        {/* Play overlay */}
+        {product.demo_url && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onPlay(product); }}
+            style={{
+              position: 'absolute', inset: 0,
+              background: 'rgba(0,0,0,0.4)',
+              border: 'none', borderRadius: 10,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 14,
+              opacity: hovered ? 1 : 0,
+              transition: 'opacity 0.15s',
+              fontFamily: 'inherit',
+              paddingLeft: 2,
+            }}
+          >
+            ▶
+          </button>
         )}
       </div>
 

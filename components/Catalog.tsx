@@ -8,6 +8,7 @@ import ProductRow from './ProductRow';
 import ProductSheet from './ProductSheet';
 import CartButton from './CartButton';
 import CartDrawer from './CartDrawer';
+import StickyPlayer from './StickyPlayer';
 
 type FilterCategory = 'all' | Category;
 
@@ -29,6 +30,7 @@ export default function Catalog({ products }: CatalogProps) {
   const [cartIds, setCartIds] = useState<string[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sheetProduct, setSheetProduct] = useState<ProductDisplay | null>(null);
+  const [playingProduct, setPlayingProduct] = useState<ProductDisplay | null>(null);
 
   useEffect(() => {
     const sync = () => setCartIds(getCart());
@@ -135,6 +137,7 @@ export default function Catalog({ products }: CatalogProps) {
                   inCart={cartIds.includes(product.id)}
                   onAdd={handleAdd}
                   onSelect={setSheetProduct}
+                  onPlay={setPlayingProduct}
                 />
               </div>
             ))}
@@ -225,6 +228,7 @@ export default function Catalog({ products }: CatalogProps) {
                   inCart={cartIds.includes(product.id)}
                   onAdd={handleAdd}
                   onSelect={setSheetProduct}
+                  onPlay={setPlayingProduct}
                 />
               </div>
             ))
@@ -243,6 +247,14 @@ export default function Catalog({ products }: CatalogProps) {
         inCart={sheetProduct ? cartIds.includes(sheetProduct.id) : false}
         onAdd={handleAdd}
         onClose={() => setSheetProduct(null)}
+        onPlay={setPlayingProduct}
+      />
+
+      <StickyPlayer
+        product={playingProduct}
+        inCart={playingProduct ? cartIds.includes(playingProduct.id) : false}
+        onClose={() => setPlayingProduct(null)}
+        onAdd={handleAdd}
       />
     </>
   );

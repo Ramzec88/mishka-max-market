@@ -126,6 +126,7 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
 
   const [sortOrder, setSortOrder] = useState(product ? String(product.sort_order) : '0');
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
+  const [demoUrl, setDemoUrl] = useState(product?.demo_url ?? '');
   const [storagePaths, setStoragePaths] = useState<string[]>(originalStoragePaths);
   const [coverImageKey, setCoverImageKey] = useState<string | null>(originalCoverImage);
   const [savedCoverUrl, setSavedCoverUrl] = useState<string | null>(initialCoverUrl ?? null);
@@ -238,6 +239,7 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
         badge: badge || null,
         format: resolvedFormat || null,
         storage_paths: finalStoragePaths,
+        demo_url: demoUrl.trim() || null,
         is_active: isActive,
         sort_order: Number(sortOrder) || 0,
         cover_image: newCoverKey,
@@ -426,6 +428,27 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
           <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} style={{ width: 18, height: 18 }} />
           <span style={{ fontSize: 14, fontWeight: 600, color: '#555' }}>Активен (показывается в каталоге)</span>
         </label>
+      </div>
+
+      {/* Демо-аудио */}
+      <div style={CARD}>
+        <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 8, color: '#1a1a1a' }}>Демо-аудио</h2>
+        <div style={{ fontSize: 12, color: '#aaa', marginBottom: 12 }}>
+          Публичная ссылка на MP3-файл. Слушатель сможет прослушать демо прямо на витрине, не скачивая.
+          Файл должен быть доступен без авторизации (например, Supabase Storage public bucket или CDN).
+        </div>
+        <input
+          type="url"
+          value={demoUrl}
+          onChange={e => setDemoUrl(e.target.value)}
+          placeholder="https://example.com/demo.mp3"
+          style={INPUT}
+        />
+        {demoUrl && (
+          <div style={{ marginTop: 10 }}>
+            <audio controls src={demoUrl} style={{ width: '100%', height: 36 }} />
+          </div>
+        )}
       </div>
 
       {/* Файлы для скачивания */}

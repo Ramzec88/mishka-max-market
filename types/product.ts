@@ -14,6 +14,7 @@ export interface Product {
   badge: string | null;
   format: string | null;
   storage_paths: string[];
+  demo_url: string | null;
   is_active: boolean;
   sort_order: number;
   created_at: string;

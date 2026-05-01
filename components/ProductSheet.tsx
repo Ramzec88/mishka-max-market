@@ -16,9 +16,10 @@ interface Props {
   inCart: boolean;
   onAdd: (id: string) => void;
   onClose: () => void;
+  onPlay: (product: ProductDisplay) => void;
 }
 
-export default function ProductSheet({ product, inCart, onAdd, onClose }: Props) {
+export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }: Props) {
   const [visible, setVisible] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const startY = useRef(0);
@@ -169,6 +170,26 @@ export default function ProductSheet({ product, inCart, onAdd, onClose }: Props)
             )}
           </div>
         </div>
+
+        {/* Demo listen button */}
+        {product.demo_url && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+            <button
+              onClick={() => { onPlay(product); onClose(); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'var(--orange-light)',
+                border: '1.5px solid var(--orange)',
+                color: 'var(--orange)',
+                borderRadius: 100, padding: '10px 24px',
+                fontWeight: 700, fontSize: 15,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              ▶ Слушать демо
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         <div style={{ padding: '0 24px 40px' }}>
