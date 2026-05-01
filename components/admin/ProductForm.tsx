@@ -127,6 +127,9 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
   const [sortOrder, setSortOrder] = useState(product ? String(product.sort_order) : '0');
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
   const [demoUrl, setDemoUrl] = useState(product?.demo_url ?? '');
+  const [demoUploading, setDemoUploading] = useState(false);
+  const [demoUploadProgress, setDemoUploadProgress] = useState(0);
+  const [demoUploadError, setDemoUploadError] = useState('');
   const [storagePaths, setStoragePaths] = useState<string[]>(originalStoragePaths);
   const [coverImageKey, setCoverImageKey] = useState<string | null>(originalCoverImage);
   const [savedCoverUrl, setSavedCoverUrl] = useState<string | null>(initialCoverUrl ?? null);
@@ -142,6 +145,7 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const demoInputRef = useRef<HTMLInputElement>(null);
 
   function handleTitleChange(value: string) {
     setTitle(value);
@@ -166,6 +170,43 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
     setCoverImageKey(null);
     setSavedCoverUrl(null);
     if (coverInputRef.current) coverInputRef.current.value = '';
+  }
+
+  async function handleDemoUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDemoUploading(true);
+    setDemoUploadProgress(0);
+    setDemoUploadError('');
+
+    try {
+      const form = new FormData();
+      form.append('file', file);
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/admin/upload-demo');
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) setDemoUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.publicUrl) { setDemoUrl(data.publicUrl); resolve(); }
+            else reject(new Error(data.error || 'Нет publicUrl'));
+          } else {
+            reject(new Error(`Ошибка сервера: ${xhr.status}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Сетевая ошибка'));
+        xhr.send(form);
+      });
+    } catch (err) {
+      setDemoUploadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDemoUploading(false);
+      if (demoInputRef.current) demoInputRef.current.value = '';
+    }
   }
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
@@ -433,20 +474,75 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
       {/* Демо-аудио */}
       <div style={CARD}>
         <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 8, color: '#1a1a1a' }}>Демо-аудио</h2>
-        <div style={{ fontSize: 12, color: '#aaa', marginBottom: 12 }}>
-          Публичная ссылка на MP3-файл. Слушатель сможет прослушать демо прямо на витрине, не скачивая.
-          Файл должен быть доступен без авторизации (например, Supabase Storage public bucket или CDN).
+        <div style={{ fontSize: 12, color: '#aaa', marginBottom: 14 }}>
+          Короткий фрагмент (30–60 сек), который покупатель слышит прямо на витрине до покупки.
         </div>
+
+        {/* Кнопка загрузки */}
+        <input
+          ref={demoInputRef}
+          type="file"
+          accept="audio/*"
+          onChange={handleDemoUpload}
+          style={{ display: 'none' }}
+        />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+          <button
+            type="button"
+            onClick={() => demoInputRef.current?.click()}
+            disabled={demoUploading}
+            style={{
+              border: '1px dashed #d1d5db', background: 'none', borderRadius: 8,
+              padding: '10px 18px', fontSize: 13, fontWeight: 600,
+              color: demoUploading ? '#aaa' : '#666',
+              cursor: demoUploading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {demoUploading ? `Загружаем… ${demoUploadProgress}%` : (demoUrl ? '🔄 Заменить файл' : '+ Загрузить MP3')}
+          </button>
+          {demoUrl && !demoUploading && (
+            <button
+              type="button"
+              onClick={() => setDemoUrl('')}
+              style={{ border: '1px solid #fecaca', background: '#fef2f2', borderRadius: 8, padding: '10px 14px', fontSize: 13, fontWeight: 600, color: '#dc2626', cursor: 'pointer' }}
+            >
+              Удалить
+            </button>
+          )}
+        </div>
+
+        {/* Прогресс-бар */}
+        {demoUploading && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ width: '100%', height: 6, background: '#f0f0f0', borderRadius: 100, overflow: 'hidden' }}>
+              <div style={{ width: `${demoUploadProgress}%`, height: '100%', background: '#FF7A3D', transition: 'width 0.3s', borderRadius: 100 }} />
+            </div>
+          </div>
+        )}
+
+        {/* Ошибка */}
+        {demoUploadError && (
+          <div style={{ fontSize: 13, color: '#dc2626', marginBottom: 10 }}>⚠ {demoUploadError}</div>
+        )}
+
+        {/* Разделитель */}
+        <div style={{ fontSize: 12, color: '#bbb', marginBottom: 10, textAlign: 'center' }}>или вставьте ссылку вручную</div>
+
+        {/* Ручной ввод URL */}
         <input
           type="url"
           value={demoUrl}
           onChange={e => setDemoUrl(e.target.value)}
-          placeholder="https://example.com/demo.mp3"
+          placeholder="https://…/demo.mp3"
           style={INPUT}
         />
-        {demoUrl && (
-          <div style={{ marginTop: 10 }}>
-            <audio controls src={demoUrl} style={{ width: '100%', height: 36 }} />
+
+        {/* Плеер предпросмотра */}
+        {demoUrl && !demoUploading && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 11, color: '#aaa', marginBottom: 4 }}>Предпросмотр:</div>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <audio controls src={demoUrl} style={{ width: '100%' }} />
           </div>
         )}
       </div>
