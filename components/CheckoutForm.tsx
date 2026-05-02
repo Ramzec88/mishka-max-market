@@ -12,8 +12,9 @@ interface CheckoutFormProps {
 
 interface PromoData {
   code: string;
-  description: string | null;
   discount_percent: number;
+  discount_amount: number; // kopecks
+  applicable_to_all: boolean;
 }
 
 export default function CheckoutForm({ total, items, onSuccess, onError }: CheckoutFormProps) {
@@ -25,7 +26,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
   const [promoData, setPromoData] = useState<PromoData | null>(null);
   const [promoError, setPromoError] = useState('');
 
-  const discountAmount = promoData ? Math.round(total * promoData.discount_percent / 100) : 0;
+  const discountAmount = promoData ? Math.round(promoData.discount_amount / 100) : 0;
   const finalTotal = total - discountAmount;
 
   async function handleApplyPromo() {
@@ -37,7 +38,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
       const res = await fetch('/api/validate-promo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoInput.trim() }),
+        body: JSON.stringify({ code: promoInput.trim(), items }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -162,8 +163,8 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
                 — скидка {promoData.discount_percent}%
               </span>
             )}
-            {promoData.description && (
-              <div style={{ fontSize: 11, color: '#15803d', marginTop: 2 }}>{promoData.description}</div>
+            {!promoData.applicable_to_all && (
+              <div style={{ fontSize: 11, color: '#15803d', marginTop: 2 }}>Скидка на выбранные товары</div>
             )}
           </div>
           <button

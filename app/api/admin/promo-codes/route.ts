@@ -25,6 +25,9 @@ export async function POST(request: NextRequest) {
         discount_percent: Number(body.discount_percent) || 0,
         max_uses: body.max_uses ? Number(body.max_uses) : null,
         expires_at: body.expires_at || null,
+        applicable_product_ids: Array.isArray(body.applicable_product_ids) && body.applicable_product_ids.length > 0
+          ? body.applicable_product_ids
+          : null,
         is_active: true,
       })
       .select()

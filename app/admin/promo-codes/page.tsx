@@ -7,17 +7,19 @@ interface PromoCode {
   code: string;
   description: string | null;
   discount_percent: number;
+  applicable_product_ids: string[] | null;
   max_uses: number | null;
   uses_count: number;
   expires_at: string | null;
   is_active: boolean;
-  created_at: string;
 }
+
+interface Product { id: string; title: string; is_active: boolean; }
 
 const INPUT: React.CSSProperties = {
   border: '1px solid #e5e7eb', borderRadius: 8, padding: '9px 13px',
-  fontSize: 14, outline: 'none', background: '#fff', width: '100%', boxSizing: 'border-box',
-  fontFamily: 'inherit',
+  fontSize: 14, outline: 'none', background: '#fff', width: '100%',
+  boxSizing: 'border-box', fontFamily: 'inherit',
 };
 
 function fmtDate(iso: string | null) {
@@ -27,6 +29,7 @@ function fmtDate(iso: string | null) {
 
 export default function PromoCodesPage() {
   const [codes, setCodes] = useState<PromoCode[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,19 +40,37 @@ export default function PromoCodesPage() {
   const [discountPercent, setDiscountPercent] = useState('0');
   const [maxUses, setMaxUses] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/promo-codes');
-      const data = await res.json();
-      setCodes(Array.isArray(data) ? data : []);
+      const [codesRes, productsRes] = await Promise.all([
+        fetch('/api/admin/promo-codes'),
+        fetch('/api/admin/products'),
+      ]);
+      const codesData = await codesRes.json();
+      const productsData = await productsRes.json();
+      setCodes(Array.isArray(codesData) ? codesData : []);
+      setProducts(Array.isArray(productsData) ? productsData.filter((p: Product) => p.is_active) : []);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => { load(); }, []);
+
+  function toggleProduct(id: string) {
+    setSelectedProductIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  }
+
+  function resetForm() {
+    setCode(''); setDescription(''); setDiscountPercent('0');
+    setMaxUses(''); setExpiresAt(''); setSelectedProductIds([]);
+    setFormError('');
+  }
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -65,12 +86,13 @@ export default function PromoCodesPage() {
           discount_percent: Number(discountPercent),
           max_uses: maxUses ? Number(maxUses) : null,
           expires_at: expiresAt || null,
+          applicable_product_ids: selectedProductIds.length > 0 ? selectedProductIds : null,
         }),
       });
       const data = await res.json();
       if (!res.ok) { setFormError(data.error || 'Ошибка'); return; }
       setShowForm(false);
-      setCode(''); setDescription(''); setDiscountPercent('0'); setMaxUses(''); setExpiresAt('');
+      resetForm();
       load();
     } finally {
       setSaving(false);
@@ -96,7 +118,7 @@ export default function PromoCodesPage() {
           </div>
         </div>
         <button
-          onClick={() => { setShowForm(v => !v); setFormError(''); }}
+          onClick={() => { setShowForm(v => !v); if (showForm) resetForm(); }}
           style={{ background: '#FF7A3D', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
         >
           {showForm ? 'Отмена' : '+ Создать промокод'}
@@ -107,6 +129,7 @@ export default function PromoCodesPage() {
       {showForm && (
         <form onSubmit={handleCreate} style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 16 }}>
           <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, color: '#1a1a1a' }}>Новый промокод</h2>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 5 }}>Код *</label>
@@ -122,9 +145,10 @@ export default function PromoCodesPage() {
               <input type="number" value={maxUses} onChange={e => setMaxUses(e.target.value)} min={1} placeholder="Без ограничений" style={INPUT} />
             </div>
           </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 5 }}>Описание (для себя)</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 5 }}>Описание (только для вас)</label>
               <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Реклама ВКонтакте" style={INPUT} />
             </div>
             <div>
@@ -132,6 +156,37 @@ export default function PromoCodesPage() {
               <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} style={INPUT} />
             </div>
           </div>
+
+          {/* Ограничение по товарам */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 8 }}>
+              Применимые товары
+              <span style={{ fontWeight: 400, color: '#aaa', marginLeft: 6 }}>
+                {selectedProductIds.length === 0 ? '— все товары' : `выбрано ${selectedProductIds.length}`}
+              </span>
+            </label>
+            <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, maxHeight: 200, overflowY: 'auto', background: '#fafafa' }}>
+              {products.length === 0 ? (
+                <div style={{ padding: 12, fontSize: 13, color: '#aaa' }}>Нет активных товаров</div>
+              ) : (
+                products.map(p => (
+                  <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedProductIds.includes(p.id)}
+                      onChange={() => toggleProduct(p.id)}
+                      style={{ width: 16, height: 16, flexShrink: 0 }}
+                    />
+                    <span style={{ fontSize: 13, color: '#333' }}>{p.title}</span>
+                  </label>
+                ))
+              )}
+            </div>
+            {selectedProductIds.length === 0 && (
+              <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>Не выбрано — промокод действует на все товары в корзине</div>
+            )}
+          </div>
+
           {formError && <div style={{ fontSize: 13, color: '#dc2626', marginBottom: 12 }}>⚠ {formError}</div>}
           <button type="submit" disabled={saving} style={{ background: saving ? '#ffb899' : '#FF7A3D', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 700, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
             {saving ? 'Создаём...' : 'Создать'}
@@ -144,52 +199,62 @@ export default function PromoCodesPage() {
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#aaa' }}>Загрузка...</div>
         ) : codes.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#aaa' }}>
-            Промокодов пока нет. Создайте первый!
-          </div>
+          <div style={{ padding: 40, textAlign: 'center', color: '#aaa' }}>Промокодов пока нет. Создайте первый!</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                {['Код', 'Описание', 'Скидка', 'Использований', 'До', 'Статус', ''].map(h => (
+                {['Код', 'Описание / Товары', 'Скидка', 'Использований', 'До', 'Статус', ''].map(h => (
                   <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {codes.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid #f0f0f0', opacity: c.is_active ? 1 : 0.5 }}>
-                  <td style={{ padding: '12px 14px' }}>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: '#1a1a1a', letterSpacing: '0.05em' }}>{c.code}</span>
-                  </td>
-                  <td style={{ padding: '12px 14px', fontSize: 13, color: '#555' }}>{c.description || '—'}</td>
-                  <td style={{ padding: '12px 14px', fontWeight: 700, color: c.discount_percent > 0 ? '#16a34a' : '#888' }}>
-                    {c.discount_percent > 0 ? `${c.discount_percent}%` : 'Без скидки'}
-                  </td>
-                  <td style={{ padding: '12px 14px', fontSize: 13 }}>
-                    <span style={{ fontWeight: 700, color: c.max_uses !== null && c.uses_count >= c.max_uses ? '#dc2626' : '#1a1a1a' }}>
-                      {c.uses_count}
-                    </span>
-                    {c.max_uses !== null && <span style={{ color: '#aaa' }}> / {c.max_uses}</span>}
-                  </td>
-                  <td style={{ padding: '12px 14px', fontSize: 13, color: c.expires_at && new Date(c.expires_at) < new Date() ? '#dc2626' : '#555', whiteSpace: 'nowrap' }}>
-                    {fmtDate(c.expires_at)}
-                  </td>
-                  <td style={{ padding: '12px 14px' }}>
-                    <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 100, fontSize: 12, fontWeight: 700, background: c.is_active ? '#dcfce7' : '#f3f4f6', color: c.is_active ? '#16a34a' : '#888' }}>
-                      {c.is_active ? 'Активен' : 'Отключён'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px 14px' }}>
-                    <button
-                      onClick={() => toggleActive(c.id, c.is_active)}
-                      style={{ fontSize: 13, fontWeight: 600, color: c.is_active ? '#dc2626' : '#16a34a', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
-                    >
-                      {c.is_active ? 'Отключить' : 'Включить'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {codes.map(c => {
+                const applicableCount = c.applicable_product_ids?.length ?? 0;
+                return (
+                  <tr key={c.id} style={{ borderBottom: '1px solid #f0f0f0', opacity: c.is_active ? 1 : 0.5 }}>
+                    <td style={{ padding: '12px 14px' }}>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: '#1a1a1a', letterSpacing: '0.05em' }}>{c.code}</span>
+                    </td>
+                    <td style={{ padding: '12px 14px', fontSize: 13 }}>
+                      {c.description && <div style={{ color: '#555' }}>{c.description}</div>}
+                      {applicableCount > 0 ? (
+                        <div style={{ fontSize: 11, color: '#FF7A3D', marginTop: c.description ? 2 : 0 }}>
+                          {applicableCount} {applicableCount === 1 ? 'товар' : applicableCount < 5 ? 'товара' : 'товаров'}
+                        </div>
+                      ) : (
+                        !c.description && <span style={{ color: '#ccc' }}>—</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px 14px', fontWeight: 700, color: c.discount_percent > 0 ? '#16a34a' : '#888' }}>
+                      {c.discount_percent > 0 ? `${c.discount_percent}%` : 'Без скидки'}
+                    </td>
+                    <td style={{ padding: '12px 14px', fontSize: 13 }}>
+                      <span style={{ fontWeight: 700, color: c.max_uses !== null && c.uses_count >= c.max_uses ? '#dc2626' : '#1a1a1a' }}>
+                        {c.uses_count}
+                      </span>
+                      {c.max_uses !== null && <span style={{ color: '#aaa' }}> / {c.max_uses}</span>}
+                    </td>
+                    <td style={{ padding: '12px 14px', fontSize: 13, color: c.expires_at && new Date(c.expires_at) < new Date() ? '#dc2626' : '#555', whiteSpace: 'nowrap' }}>
+                      {fmtDate(c.expires_at)}
+                    </td>
+                    <td style={{ padding: '12px 14px' }}>
+                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 100, fontSize: 12, fontWeight: 700, background: c.is_active ? '#dcfce7' : '#f3f4f6', color: c.is_active ? '#16a34a' : '#888' }}>
+                        {c.is_active ? 'Активен' : 'Отключён'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 14px' }}>
+                      <button
+                        onClick={() => toggleActive(c.id, c.is_active)}
+                        style={{ fontSize: 13, fontWeight: 600, color: c.is_active ? '#dc2626' : '#16a34a', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
+                      >
+                        {c.is_active ? 'Отключить' : 'Включить'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -54,11 +54,12 @@ export async function POST(request: NextRequest) {
     // Валидируем промокод на сервере
     let discountPercent = 0;
     let validatedPromoCode: string | null = null;
+    let applicableProductIds: string[] | null = null;
 
     if (promoCode?.trim()) {
       const { data: promo } = await supabaseAdmin
         .from('promo_codes')
-        .select('code, discount_percent, max_uses, uses_count, expires_at, is_active')
+        .select('code, discount_percent, applicable_product_ids, max_uses, uses_count, expires_at, is_active')
         .eq('code', promoCode.trim().toUpperCase())
         .single();
 
@@ -71,10 +72,18 @@ export async function POST(request: NextRequest) {
       if (isValid) {
         discountPercent = promo.discount_percent;
         validatedPromoCode = promo.code;
+        applicableProductIds = promo.applicable_product_ids?.length > 0
+          ? promo.applicable_product_ids as string[]
+          : null;
       }
     }
 
-    const discountAmount = Math.round(fullAmount * discountPercent / 100);
+    // Скидка применяется только к применимым товарам
+    const applicableProducts = applicableProductIds
+      ? foundProducts.filter((p) => applicableProductIds!.includes(p.id))
+      : foundProducts;
+    const applicableAmount = applicableProducts.reduce((s, p) => s + p.price, 0);
+    const discountAmount = Math.round(applicableAmount * discountPercent / 100);
     const finalAmount = Math.max(fullAmount - discountAmount, 100); // минимум 1 рубль
 
     // Создаём заказ
@@ -95,13 +104,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ошибка создания заказа', detail: orderError?.message }, { status: 500 });
     }
 
-    // Строим позиции чека с учётом скидки
-    const receiptItemsRaw = foundProducts.map((p) => ({
-      description: p.title,
-      amount: p.price,
-      quantity: 1,
-    }));
-    const receiptItems = applyDiscount(receiptItemsRaw, discountAmount);
+    // Строим позиции чека: скидка только на применимые товары
+    const applicableSet = new Set(applicableProducts.map((p) => p.id));
+    const nonApplicableTotal = foundProducts
+      .filter((p) => !applicableSet.has(p.id))
+      .reduce((s, p) => s + p.price, 0);
+
+    const applicableItemsRaw = foundProducts
+      .filter((p) => applicableSet.has(p.id))
+      .map((p) => ({ description: p.title, amount: p.price, quantity: 1 }));
+    const discountedApplicable = applyDiscount(applicableItemsRaw, discountAmount);
+
+    const nonApplicableItems = foundProducts
+      .filter((p) => !applicableSet.has(p.id))
+      .map((p) => ({ description: p.title, amount: p.price, quantity: 1 }));
+
+    const receiptItems = [...discountedApplicable, ...nonApplicableItems];
+    void nonApplicableTotal;
 
     // Создаём платёж в YooKassa
     const payment = await createPayment({
