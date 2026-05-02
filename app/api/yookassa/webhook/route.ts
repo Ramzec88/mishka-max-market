@@ -91,6 +91,11 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', order.id);
 
+      // Инкрементируем счётчик промокода
+      if (order.promo_code) {
+        await supabaseAdmin.rpc('increment_promo_uses', { promo_code_val: order.promo_code });
+      }
+
       // Отправляем email с ссылками
       try {
         await sendOrderEmail({

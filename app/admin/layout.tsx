@@ -39,6 +39,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           Заказы
         </Link>
+        <Link
+          href="/admin/promo-codes"
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+        >
+          Промокоды
+        </Link>
         <div style={{ marginLeft: 'auto' }}>
           <button
             onClick={handleLogout}

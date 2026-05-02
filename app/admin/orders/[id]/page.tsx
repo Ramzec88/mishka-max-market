@@ -90,6 +90,8 @@ export default async function OrderDetailPage({ params }: Props) {
             ['Оплачен', fmt(order.paid_at)],
             ['Письмо отправлено', fmt(order.email_sent_at)],
             ['YooKassa ID', order.yookassa_payment_id || '—'],
+            ...(order.promo_code ? [['Промокод', order.promo_code]] : []),
+            ...(order.discount_amount > 0 ? [['Скидка', `−${(order.discount_amount / 100).toLocaleString('ru-RU')} ₽`]] : []),
             ...(order.cancellation_reason ? [['Причина отмены', CANCEL_REASON[order.cancellation_reason] ?? order.cancellation_reason]] : []),
           ].map(([label, value]) => (
             <div key={label}>

@@ -31,13 +31,15 @@ interface Order {
   email_sent_at: string | null;
   created_at: string;
   cancellation_reason: string | null;
+  promo_code: string | null;
+  discount_amount: number;
 }
 
 async function getOrders(email?: string): Promise<Order[]> {
   noStore();
   let query = supabaseAdmin
     .from('orders')
-    .select('id, email, status, amount, items, paid_at, email_sent_at, created_at, cancellation_reason')
+    .select('id, email, status, amount, items, paid_at, email_sent_at, created_at, cancellation_reason, promo_code, discount_amount')
     .order('created_at', { ascending: false })
     .limit(100);
 
@@ -105,7 +107,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                {['Email', 'Сумма', 'Товары', 'Статус', 'Оплачен', 'Письмо', ''].map(h => (
+                {['Email', 'Сумма', 'Промокод', 'Статус', 'Оплачен', 'Письмо', ''].map(h => (
                   <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                     {h}
                   </th>
@@ -121,8 +123,17 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                     <td style={{ padding: '12px 14px', fontWeight: 700, whiteSpace: 'nowrap' }}>
                       {(order.amount / 100).toLocaleString('ru-RU')} ₽
                     </td>
-                    <td style={{ padding: '12px 14px', fontSize: 13, color: '#555' }}>
-                      {order.items?.length || 0} шт.
+                    <td style={{ padding: '12px 14px', fontSize: 13 }}>
+                      {order.promo_code ? (
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#16a34a', fontSize: 13 }}>
+                          {order.promo_code}
+                          {order.discount_amount > 0 && (
+                            <span style={{ fontWeight: 400, color: '#888', fontFamily: 'inherit' }}>
+                              {' '}−{(order.discount_amount / 100).toLocaleString('ru-RU')} ₽
+                            </span>
+                          )}
+                        </span>
+                      ) : <span style={{ color: '#ccc' }}>—</span>}
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 100, fontSize: 12, fontWeight: 700, background: s.bg, color: s.color }}>
