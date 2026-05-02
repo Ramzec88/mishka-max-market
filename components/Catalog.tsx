@@ -95,6 +95,10 @@ export default function Catalog({ products }: CatalogProps) {
           Готовые материалы для утренников, развивающих занятий и домашних праздников.
           Мгновенная доставка на email сразу после оплаты.
         </p>
+        <div style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 7, background: 'var(--orange-light)', border: '1.5px solid #FFD4B8', borderRadius: 100, padding: '7px 16px' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--orange)"><path d="M8 5v14l11-7z"/></svg>
+          <span style={{ fontSize: 14, color: 'var(--orange)', fontWeight: 700 }}>Некоторые песни можно прослушать прямо на сайте — нажмите на карточку</span>
+        </div>
       </section>
 
       {/* ── Showcase (tiles) ── */}

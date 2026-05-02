@@ -78,14 +78,11 @@ export default function ProductRow({ product, inCart, onAdd, onSelect, onPlay }:
               border: 'none', borderRadius: 10,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: 14,
               opacity: hovered ? 1 : 0,
               transition: 'opacity 0.15s',
-              fontFamily: 'inherit',
-              paddingLeft: 2,
             }}
           >
-            ▶
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>
           </button>
         )}
       </div>

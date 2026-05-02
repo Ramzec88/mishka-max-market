@@ -186,7 +186,8 @@ export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }
                 cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
-              ▶ Слушать демо
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--orange)"><path d="M8 5v14l11-7z"/></svg>
+              Слушать демо
             </button>
           </div>
         )}

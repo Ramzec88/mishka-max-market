@@ -110,9 +110,8 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
               width: 52, height: 52, borderRadius: '50%',
               background: 'rgba(255,255,255,0.92)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20, paddingLeft: 3,
             }}>
-              ▶
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#FF7A3D" style={{ marginLeft: 3 }}><path d="M8 5v14l11-7z"/></svg>
             </div>
           </button>
         )}
