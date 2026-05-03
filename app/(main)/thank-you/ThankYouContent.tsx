@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { OrderStatus } from '@/types/order';
@@ -18,8 +18,18 @@ interface DownloadLink {
   file_size_bytes?: number | null;
 }
 
+interface EcommerceProduct {
+  id: string;
+  name: string;
+  price: number;
+}
+
 interface OrderStatusResponse {
   status: OrderStatus;
+  amount?: number;
+  promo_code?: string | null;
+  discount_amount?: number;
+  ecommerce_products?: EcommerceProduct[];
   download_links?: DownloadLink[];
 }
 
@@ -31,6 +41,7 @@ export default function ThankYouContent() {
   const [links, setLinks] = useState<DownloadLink[]>([]);
   const [polling, setPolling] = useState(true);
   const [retryKey, setRetryKey] = useState(0);
+  const ymFired = useRef(false);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
@@ -62,6 +73,33 @@ export default function ThankYouContent() {
           if (data.status === 'paid') {
             const downloadLinks = data.download_links || [];
             if (!cancelled) setLinks(downloadLinks);
+
+            // Отправляем ecommerce-событие в Яндекс Метрику ровно один раз
+            if (!ymFired.current && data.amount != null && data.ecommerce_products?.length) {
+              ymFired.current = true;
+              const dl = (window as unknown as { dataLayer?: unknown[] }).dataLayer;
+              if (dl) {
+                const actionField: Record<string, unknown> = {
+                  id: orderId,
+                  revenue: Math.round(data.amount / 100),
+                };
+                if (data.promo_code) actionField.coupon = data.promo_code;
+                dl.push({
+                  ecommerce: {
+                    purchase: {
+                      actionField,
+                      products: data.ecommerce_products.map((p) => ({
+                        id: p.id,
+                        name: p.name,
+                        price: p.price,
+                        quantity: 1,
+                      })),
+                    },
+                  },
+                });
+              }
+            }
+
             if (downloadLinks.length > 0) {
               if (!cancelled) setPolling(false);
               return;

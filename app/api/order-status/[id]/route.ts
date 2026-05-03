@@ -14,7 +14,7 @@ export async function GET(
 
   const { data: order, error } = await supabaseAdmin
     .from('orders')
-    .select('id, status, email')
+    .select('id, status, email, amount, items, promo_code, discount_amount')
     .eq('id', id)
     .single();
 
@@ -22,12 +22,36 @@ export async function GET(
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
-  const response: { status: string; download_links?: unknown[] } = {
+  const response: {
+    status: string;
+    amount?: number;
+    promo_code?: string | null;
+    discount_amount?: number;
+    ecommerce_products?: { id: string; name: string; price: number }[];
+    download_links?: unknown[];
+  } = {
     status: order.status,
   };
 
-  // Если заказ оплачен, возвращаем ссылки для скачивания
+  // Если заказ оплачен, возвращаем ссылки для скачивания и данные для ecommerce
   if (order.status === 'paid') {
+    response.amount = order.amount;
+    response.promo_code = order.promo_code;
+    response.discount_amount = order.discount_amount;
+
+    const itemIds: string[] = Array.isArray(order.items) ? order.items : [];
+    if (itemIds.length > 0) {
+      const { data: products } = await supabaseAdmin
+        .from('products')
+        .select('id, title, price')
+        .in('id', itemIds);
+      response.ecommerce_products = (products || []).map((p) => ({
+        id: p.id,
+        name: p.title,
+        price: Math.round(p.price / 100),
+      }));
+    }
+
     const { data: tokens } = await supabaseAdmin
       .from('download_tokens')
       .select('token, product_id, file_path, expires_at, downloads_count, max_downloads')
