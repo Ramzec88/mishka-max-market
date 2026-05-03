@@ -77,27 +77,26 @@ export default function ThankYouContent() {
             // Отправляем ecommerce-событие в Яндекс Метрику ровно один раз
             if (!ymFired.current && data.amount != null && data.ecommerce_products?.length) {
               ymFired.current = true;
-              const dl = (window as unknown as { dataLayer?: unknown[] }).dataLayer;
-              if (dl) {
-                const actionField: Record<string, unknown> = {
-                  id: orderId,
-                  revenue: Math.round(data.amount / 100),
-                };
-                if (data.promo_code) actionField.coupon = data.promo_code;
-                dl.push({
-                  ecommerce: {
-                    purchase: {
-                      actionField,
-                      products: data.ecommerce_products.map((p) => ({
-                        id: p.id,
-                        name: p.name,
-                        price: p.price,
-                        quantity: 1,
-                      })),
-                    },
+              window.dataLayer = window.dataLayer || [];
+              const actionField: Record<string, unknown> = {
+                id: orderId,
+                revenue: Math.round(data.amount / 100),
+              };
+              if (data.promo_code) actionField.coupon = data.promo_code;
+              window.dataLayer.push({
+                ecommerce: {
+                  currencyCode: 'RUB',
+                  purchase: {
+                    actionField,
+                    products: data.ecommerce_products.map((p) => ({
+                      id: p.id,
+                      name: p.name,
+                      price: p.price,
+                      quantity: 1,
+                    })),
                   },
-                });
-              }
+                },
+              });
             }
 
             if (downloadLinks.length > 0) {
