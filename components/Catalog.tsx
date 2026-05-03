@@ -50,6 +50,25 @@ export default function Catalog({ products }: CatalogProps) {
     setCartIds(updated);
     window.dispatchEvent(new Event('cart-updated'));
     setDrawerOpen(true);
+
+    const product = products.find((p) => p.id === id);
+    if (product) {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        ecommerce: {
+          currencyCode: 'RUB',
+          add: {
+            products: [{
+              id: product.id,
+              name: product.title,
+              price: product.price / 100,
+              category: product.category ?? undefined,
+              quantity: 1,
+            }],
+          },
+        },
+      });
+    }
   }
 
   // Showcase: products with a badge or bundles (up to 5, always visible regardless of filter)
