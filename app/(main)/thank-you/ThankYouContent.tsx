@@ -291,7 +291,70 @@ export default function ThankYouContent() {
             })()}
           </div>
 
-          <div style={{ marginTop: 24, textAlign: 'center' }}>
+          {/* Кросс-сейл блок */}
+          <div style={{
+            marginTop: 20,
+            background: 'linear-gradient(135deg, #FFF8F3 0%, #FFF1E8 100%)',
+            border: '1.5px solid #FFD4B8',
+            borderRadius: 16,
+            padding: 24,
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              position: 'absolute', top: -20, right: -20,
+              width: 100, height: 100, borderRadius: '50%',
+              background: 'rgba(255,122,61,0.08)',
+            }} />
+            <div style={{ fontSize: 28, marginBottom: 10 }}>🎓</div>
+            <h3 style={{ fontSize: 17, fontWeight: 900, color: '#1a1a1a', marginBottom: 8, lineHeight: 1.3 }}>
+              Тысячи материалов — уже в нашем канале
+            </h3>
+            <p style={{ fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.6, marginBottom: 16 }}>
+              Пока файлы летят вам на почту — загляните в <strong style={{ color: '#1a1a1a' }}>Кладовую педагога</strong>.
+              Там мы каждую неделю делимся бесплатными песнями, сценариями и идеями для занятий.
+              Подпишитесь сейчас, чтобы не пропустить следующие обновления и специальные предложения только для участников канала.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <a
+                href="https://t.me/mishka_max/245"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  background: '#2CA5E0', color: '#fff',
+                  padding: '12px 20px', borderRadius: 100,
+                  fontWeight: 700, fontSize: 14, textDecoration: 'none',
+                  justifyContent: 'center',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/>
+                </svg>
+                Подписаться в Telegram
+              </a>
+              <a
+                href="https://max.ru/id320203526914_4_bot"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  background: '#fff', color: '#FF7A3D',
+                  border: '1.5px solid #FFD4B8',
+                  padding: '12px 20px', borderRadius: 100,
+                  fontWeight: 700, fontSize: 14, textDecoration: 'none',
+                  justifyContent: 'center',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21 2H3C1.9 2 1 2.9 1 4v16l4-4h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H5v-2h14v2zm0-3H5V9h14v2zm0-3H5V6h14v2z"/>
+                </svg>
+                Подписаться в Max
+              </a>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 20, textAlign: 'center' }}>
             <Link href="/" style={{ color: 'var(--orange)', fontWeight: 700, fontSize: 15, textDecoration: 'underline' }}>
               Вернуться в каталог
             </Link>
