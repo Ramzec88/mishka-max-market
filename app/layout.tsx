@@ -43,7 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={nunito.className}>
         {children}
         <Script id="ym-init" strategy="afterInteractive">{`
-          window.dataLayer = window.dataLayer || [];
           (function(m,e,t,r,i,k,a){
             m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
             m[i].l=1*new Date();
@@ -53,10 +52,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           ym(109020798,'init',{
             webvisor: true,
             clickmap: true,
-            ecommerce: "dataLayer",
+            ecommerce: true,
             accurateTrackBounce: true,
             trackLinks: true
           });
+          window.dataLayer = window.dataLayer || [];
         `}</Script>
         <noscript>
           <img src="https://mc.yandex.ru/watch/109020798" style={{position:'absolute',left:-9999}} alt="" />
