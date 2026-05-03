@@ -136,7 +136,11 @@ export default function Catalog({ products }: CatalogProps) {
                 <span style={{ fontSize: 12, color: '#3B4A7A', fontWeight: 700 }}>Boosty</span>
               </span>{' '}или{' '}
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, verticalAlign: 'middle' }}>
-                <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#7B61FF', color: '#fff', fontSize: 9, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🔥</span>
+                <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#7B61FF', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13.5 0.67C13.5 0.67 14.24 3.32 14.24 5.47C14.24 7.53 12.89 9.2 10.83 9.2C8.76 9.2 7.2 7.53 7.2 5.47L7.23 5.1C5.21 7.51 4 10.61 4 14C4 18.42 7.58 22 12 22C16.42 22 20 18.42 20 14C20 8.61 17.41 3.8 13.5 0.67ZM11.71 19C9.93 19 8.49 17.6 8.49 15.86C8.49 14.24 9.53 13.1 11.3 12.74C13.07 12.38 14.9 11.53 15.86 10.1C16.2 11.1 16.39 12.18 16.39 13.3C16.39 16.44 14.34 19 11.71 19Z"/>
+                  </svg>
+                </span>
                 <span style={{ fontSize: 12, color: '#3B4A7A', fontWeight: 700 }}>Lava Top</span>
               </span>{' '}
               — и оплачивайте напрямую через них.
