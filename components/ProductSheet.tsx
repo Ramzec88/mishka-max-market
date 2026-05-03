@@ -277,6 +277,69 @@ export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }
               {inCart ? '✓ В корзине' : 'В корзину'}
             </button>
           </div>
+
+          {/* Альтернативная оплата */}
+          {(product.boosty_url || product.lava_url) && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>
+                  Visa / Mastercard не из России
+                </span>
+                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {product.boosty_url && (
+                  <a
+                    href={product.boosty_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                      background: '#FFF2F0', border: '1.5px solid #F7422A',
+                      color: '#C4280E', borderRadius: 100,
+                      padding: '12px 20px', fontWeight: 700, fontSize: 15,
+                      textDecoration: 'none', fontFamily: 'inherit',
+                    }}
+                  >
+                    <span style={{
+                      width: 24, height: 24, borderRadius: '50%',
+                      background: '#F7422A', color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 12, fontWeight: 900, flexShrink: 0,
+                    }}>B</span>
+                    Купить через Boosty
+                  </a>
+                )}
+                {product.lava_url && (
+                  <a
+                    href={product.lava_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                      background: '#F3F0FF', border: '1.5px solid #7B61FF',
+                      color: '#5B41DF', borderRadius: 100,
+                      padding: '12px 20px', fontWeight: 700, fontSize: 15,
+                      textDecoration: 'none', fontFamily: 'inherit',
+                    }}
+                  >
+                    <span style={{
+                      width: 24, height: 24, borderRadius: '50%',
+                      background: '#7B61FF', color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M13.5 0.67C13.5 0.67 14.24 3.32 14.24 5.47C14.24 7.53 12.89 9.2 10.83 9.2C8.76 9.2 7.2 7.53 7.2 5.47L7.23 5.1C5.21 7.51 4 10.61 4 14C4 18.42 7.58 22 12 22C16.42 22 20 18.42 20 14C20 8.61 17.41 3.8 13.5 0.67ZM11.71 19C9.93 19 8.49 17.6 8.49 15.86C8.49 14.24 9.53 13.1 11.3 12.74C13.07 12.38 14.9 11.53 15.86 10.1C16.2 11.1 16.39 12.18 16.39 13.3C16.39 16.44 14.34 19 11.71 19Z"/>
+                      </svg>
+                    </span>
+                    Купить через Lava Top
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
