@@ -146,34 +146,73 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
               </span>
             )}
           </div>
-          <button
-            onMouseEnter={() => setBtnHovered(true)}
-            onMouseLeave={() => setBtnHovered(false)}
-            onClick={(e) => { e.stopPropagation(); onAdd(product.id); }}
-            style={{
-              background: inCart ? 'var(--orange)' : 'transparent',
-              color: inCart ? '#fff' : 'var(--orange)',
-              border: `2px solid ${inCart ? 'var(--orange)' : 'var(--orange)'}`,
-              borderRadius: 100,
-              padding: '5px 10px',
-              fontWeight: 800,
-              fontSize: 13,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: btnHovered && !inCart ? 5 : 0,
-              transition: 'all 0.18s',
-              fontFamily: 'inherit',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-              overflow: 'hidden',
-              maxWidth: btnHovered && !inCart ? 120 : 32,
-            }}
-          >
-            <span>{inCart ? '✓' : '+'}</span>
-            {(btnHovered && !inCart) && <span>В корзину</span>}
-            {inCart && <span>В корзине</span>}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {product.boosty_url && (
+              <a
+                href={product.boosty_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Купить через Boosty (Visa/Mastercard)"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                  background: '#F7422A', color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  textDecoration: 'none', fontSize: 11, fontWeight: 900,
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                B
+              </a>
+            )}
+            {product.lava_url && (
+              <a
+                href={product.lava_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Купить через Lava Top (Visa/Mastercard)"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                  background: '#7B61FF', color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  textDecoration: 'none',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M13.5 0.67C13.5 0.67 14.24 3.32 14.24 5.47C14.24 7.53 12.89 9.2 10.83 9.2C8.76 9.2 7.2 7.53 7.2 5.47L7.23 5.1C5.21 7.51 4 10.61 4 14C4 18.42 7.58 22 12 22C16.42 22 20 18.42 20 14C20 8.61 17.41 3.8 13.5 0.67ZM11.71 19C9.93 19 8.49 17.6 8.49 15.86C8.49 14.24 9.53 13.1 11.3 12.74C13.07 12.38 14.9 11.53 15.86 10.1C16.2 11.1 16.39 12.18 16.39 13.3C16.39 16.44 14.34 19 11.71 19Z"/>
+                </svg>
+              </a>
+            )}
+            <button
+              onMouseEnter={() => setBtnHovered(true)}
+              onMouseLeave={() => setBtnHovered(false)}
+              onClick={(e) => { e.stopPropagation(); onAdd(product.id); }}
+              style={{
+                background: inCart ? 'var(--orange)' : 'transparent',
+                color: inCart ? '#fff' : 'var(--orange)',
+                border: `2px solid var(--orange)`,
+                borderRadius: 100,
+                padding: '5px 10px',
+                fontWeight: 800,
+                fontSize: 13,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: btnHovered && !inCart ? 5 : 0,
+                transition: 'all 0.18s',
+                fontFamily: 'inherit',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                overflow: 'hidden',
+                maxWidth: btnHovered && !inCart ? 120 : 32,
+              }}
+            >
+              <span>{inCart ? '✓' : '+'}</span>
+              {(btnHovered && !inCart) && <span>В корзину</span>}
+              {inCart && <span>В корзине</span>}
+            </button>
+          </div>
         </div>
       </div>
     </div>

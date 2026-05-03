@@ -139,29 +139,59 @@ export default function ProductRow({ product, inCart, onAdd, onSelect, onPlay }:
         )}
       </div>
 
-      {/* Add to cart — stopPropagation so row click doesn't also open sheet */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onAdd(product.id); }}
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
-          flexShrink: 0,
-          background: inCart ? 'var(--orange)' : (hovered ? 'var(--orange-light)' : '#fff'),
-          border: `1.5px solid ${inCart ? 'var(--orange)' : 'var(--border)'}`,
-          color: inCart ? '#fff' : 'var(--ink-soft)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          fontSize: 18,
-          fontWeight: 700,
-          fontFamily: 'inherit',
-          transition: 'all 0.18s',
-        }}
-      >
-        {inCart ? '✓' : '+'}
-      </button>
+      {/* External pay + cart buttons */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        {product.boosty_url && (
+          <a
+            href={product.boosty_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Купить через Boosty (Visa/Mastercard)"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 30, height: 30, borderRadius: '50%',
+              background: '#F7422A', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              textDecoration: 'none', fontSize: 11, fontWeight: 900,
+            }}
+          >
+            B
+          </a>
+        )}
+        {product.lava_url && (
+          <a
+            href={product.lava_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Купить через Lava Top (Visa/Mastercard)"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 30, height: 30, borderRadius: '50%',
+              background: '#7B61FF', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              textDecoration: 'none',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13.5 0.67C13.5 0.67 14.24 3.32 14.24 5.47C14.24 7.53 12.89 9.2 10.83 9.2C8.76 9.2 7.2 7.53 7.2 5.47L7.23 5.1C5.21 7.51 4 10.61 4 14C4 18.42 7.58 22 12 22C16.42 22 20 18.42 20 14C20 8.61 17.41 3.8 13.5 0.67ZM11.71 19C9.93 19 8.49 17.6 8.49 15.86C8.49 14.24 9.53 13.1 11.3 12.74C13.07 12.38 14.9 11.53 15.86 10.1C16.2 11.1 16.39 12.18 16.39 13.3C16.39 16.44 14.34 19 11.71 19Z"/>
+            </svg>
+          </a>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onAdd(product.id); }}
+          style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: inCart ? 'var(--orange)' : (hovered ? 'var(--orange-light)' : '#fff'),
+            border: `1.5px solid ${inCart ? 'var(--orange)' : 'var(--border)'}`,
+            color: inCart ? '#fff' : 'var(--ink-soft)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', fontSize: 18, fontWeight: 700,
+            fontFamily: 'inherit', transition: 'all 0.18s',
+          }}
+        >
+          {inCart ? '✓' : '+'}
+        </button>
+      </div>
     </div>
   );
 }

@@ -127,6 +127,8 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
   const [sortOrder, setSortOrder] = useState(product ? String(product.sort_order) : '0');
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
   const [demoUrl, setDemoUrl] = useState(product?.demo_url ?? '');
+  const [boostyUrl, setBoostyUrl] = useState(product?.boosty_url ?? '');
+  const [lavaUrl, setLavaUrl] = useState(product?.lava_url ?? '');
   const [demoUploading, setDemoUploading] = useState(false);
   const [demoUploadProgress, setDemoUploadProgress] = useState(0);
   const [demoUploadError, setDemoUploadError] = useState('');
@@ -281,6 +283,8 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
         format: resolvedFormat || null,
         storage_paths: finalStoragePaths,
         demo_url: demoUrl.trim() || null,
+        boosty_url: boostyUrl.trim() || null,
+        lava_url: lavaUrl.trim() || null,
         is_active: isActive,
         sort_order: Number(sortOrder) || 0,
         cover_image: newCoverKey,
@@ -545,6 +549,42 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
             <audio controls src={demoUrl} style={{ width: '100%' }} />
           </div>
         )}
+      </div>
+
+      {/* Ссылки для оплаты из-за рубежа */}
+      <div style={CARD}>
+        <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 4, color: '#1a1a1a' }}>Оплата из-за рубежа</h2>
+        <p style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>
+          Ссылки на страницу товара в Boosty и Lava Top. Если заполнены — на карточке появятся кнопки для покупателей с Visa/Mastercard не из России.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={LABEL}>
+              <span style={{ display: 'inline-block', width: 18, height: 18, borderRadius: '50%', background: '#F7422A', color: '#fff', fontSize: 10, fontWeight: 900, textAlign: 'center', lineHeight: '18px', marginRight: 6 }}>B</span>
+              Boosty — ссылка на товар
+            </label>
+            <input
+              type="url"
+              value={boostyUrl}
+              onChange={e => setBoostyUrl(e.target.value)}
+              placeholder="https://boosty.to/mishkamax/..."
+              style={INPUT}
+            />
+          </div>
+          <div>
+            <label style={LABEL}>
+              <span style={{ display: 'inline-block', width: 18, height: 18, borderRadius: '50%', background: '#7B61FF', color: '#fff', fontSize: 10, fontWeight: 900, textAlign: 'center', lineHeight: '18px', marginRight: 6 }}>L</span>
+              Lava Top — ссылка на товар
+            </label>
+            <input
+              type="url"
+              value={lavaUrl}
+              onChange={e => setLavaUrl(e.target.value)}
+              placeholder="https://lava.top/..."
+              style={INPUT}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Файлы для скачивания */}

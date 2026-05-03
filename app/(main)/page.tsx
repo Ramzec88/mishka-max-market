@@ -13,7 +13,7 @@ const FALLBACK_PRODUCTS: Product[] = [
     description: '12 авторских песен для выпускного утренника: mp3, минусовки, тексты в PDF.',
     price: 59900, price_old: 99900, category: 'songs',
     cover_emoji: '🎵', cover_image: null, cover_variant: 'orange', badge: 'хит', format: 'MP3 + тексты',
-    storage_paths: [], demo_url: null, is_active: true, sort_order: 10, created_at: '',
+    storage_paths: [], demo_url: null, boosty_url: null, lava_url: null, is_active: true, sort_order: 10, created_at: '',
   },
   {
     id: 'scenario-first-ticket',
@@ -21,7 +21,7 @@ const FALLBACK_PRODUCTS: Product[] = [
     description: 'Готовый сценарий выпускного утренника на 45 минут. С ролями, репликами и тайм-кодами.',
     price: 49900, price_old: null, category: 'scenarios',
     cover_emoji: '🎓', cover_image: null, cover_variant: 'lavender', badge: null, format: 'PDF сценарий',
-    storage_paths: [], demo_url: null, is_active: true, sort_order: 20, created_at: '',
+    storage_paths: [], demo_url: null, boosty_url: null, lava_url: null, is_active: true, sort_order: 20, created_at: '',
   },
   {
     id: 'materials-autumn',
@@ -29,7 +29,7 @@ const FALLBACK_PRODUCTS: Product[] = [
     description: 'Карточки, раскраски, задания для детей 3–5 лет по теме «Осень». 42 страницы.',
     price: 34900, price_old: null, category: 'materials',
     cover_emoji: '🍂', cover_image: null, cover_variant: 'orange', badge: null, format: 'PDF + изображения',
-    storage_paths: [], demo_url: null, is_active: true, sort_order: 30, created_at: '',
+    storage_paths: [], demo_url: null, boosty_url: null, lava_url: null, is_active: true, sort_order: 30, created_at: '',
   },
   {
     id: 'songs-new-year',
@@ -37,7 +37,7 @@ const FALLBACK_PRODUCTS: Product[] = [
     description: '8 песен про Деда Мороза, ёлку и зиму в исполнении Мишки Макса.',
     price: 44900, price_old: null, category: 'songs',
     cover_emoji: '🎄', cover_image: null, cover_variant: 'green', badge: null, format: 'MP3',
-    storage_paths: [], demo_url: null, is_active: true, sort_order: 40, created_at: '',
+    storage_paths: [], demo_url: null, boosty_url: null, lava_url: null, is_active: true, sort_order: 40, created_at: '',
   },
   {
     id: 'scenario-8march',
@@ -45,7 +45,7 @@ const FALLBACK_PRODUCTS: Product[] = [
     description: 'Утренник для младшей и средней группы. Песни, стихи, игры, конкурсы.',
     price: 39900, price_old: null, category: 'scenarios',
     cover_emoji: '🌷', cover_image: null, cover_variant: 'lavender', badge: null, format: 'PDF',
-    storage_paths: [], demo_url: null, is_active: true, sort_order: 50, created_at: '',
+    storage_paths: [], demo_url: null, boosty_url: null, lava_url: null, is_active: true, sort_order: 50, created_at: '',
   },
   {
     id: 'materials-speech',
@@ -53,7 +53,7 @@ const FALLBACK_PRODUCTS: Product[] = [
     description: '21 день нейрозаданий для развития речи. Для родителей и логопедов.',
     price: 69000, price_old: null, category: 'materials',
     cover_emoji: '🗣️', cover_image: null, cover_variant: 'blue', badge: 'новинка', format: 'PDF',
-    storage_paths: [], demo_url: null, is_active: true, sort_order: 60, created_at: '',
+    storage_paths: [], demo_url: null, boosty_url: null, lava_url: null, is_active: true, sort_order: 60, created_at: '',
   },
   {
     id: 'bundle-kindergarten',
@@ -61,7 +61,7 @@ const FALLBACK_PRODUCTS: Product[] = [
     description: '4 сценария утренников + 30 песен + 150 материалов. Экономия 2400 ₽.',
     price: 249000, price_old: 489000, category: 'bundles',
     cover_emoji: '🎁', cover_image: null, cover_variant: 'orange', badge: 'выгодно', format: 'Всё включено',
-    storage_paths: [], demo_url: null, is_active: true, sort_order: 70, created_at: '',
+    storage_paths: [], demo_url: null, boosty_url: null, lava_url: null, is_active: true, sort_order: 70, created_at: '',
   },
   {
     id: 'songs-lullabies',
@@ -69,7 +69,7 @@ const FALLBACK_PRODUCTS: Product[] = [
     description: '10 авторских колыбельных. Успокаивают, помогают заснуть. Общее время — 38 минут.',
     price: 29900, price_old: null, category: 'songs',
     cover_emoji: '🌙', cover_image: null, cover_variant: 'blue', badge: null, format: 'MP3',
-    storage_paths: [], demo_url: null, is_active: true, sort_order: 80, created_at: '',
+    storage_paths: [], demo_url: null, boosty_url: null, lava_url: null, is_active: true, sort_order: 80, created_at: '',
   },
 ];
 
