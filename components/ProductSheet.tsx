@@ -222,17 +222,23 @@ export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }
           </h2>
 
           {product.description && (
-            <p
+            <div
+              className="product-desc"
+              dangerouslySetInnerHTML={{ __html: product.description }}
               style={{
                 fontSize: 15,
                 color: 'var(--ink-soft)',
                 lineHeight: 1.65,
                 marginBottom: 28,
               }}
-            >
-              {product.description}
-            </p>
+            />
           )}
+          <style>{`
+            .product-desc ul { padding-left: 20px; margin: 4px 0; }
+            .product-desc ol { padding-left: 20px; margin: 4px 0; }
+            .product-desc li { margin: 2px 0; }
+            .product-desc p  { margin: 4px 0; }
+          `}</style>
 
           {/* Price + CTA */}
           <div

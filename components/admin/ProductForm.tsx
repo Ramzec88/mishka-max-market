@@ -2,6 +2,7 @@
 
 import { useState, useRef, ChangeEvent, FormEvent } from 'react';
 import { Product, Category, CoverVariant } from '@/types/product';
+import RichTextEditor from './RichTextEditor';
 
 interface Props {
   product?: Product;
@@ -345,7 +346,7 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
 
         <div style={{ marginBottom: 18 }}>
           <label style={LABEL}>Описание</label>
-          <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} style={{ ...INPUT, resize: 'vertical' }} />
+          <RichTextEditor value={description} onChange={setDescription} />
         </div>
 
         <div style={{ display: 'flex', gap: 16, marginBottom: 18 }}>
