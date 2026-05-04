@@ -193,24 +193,26 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
                 color: inCart ? '#fff' : 'var(--orange)',
                 border: `2px solid var(--orange)`,
                 borderRadius: 100,
-                padding: '5px 10px',
+                padding: (btnHovered && !inCart) || inCart ? '5px 12px 5px 8px' : '0',
+                width: (btnHovered && !inCart) || inCart ? 'auto' : 32,
+                height: 32,
                 fontWeight: 800,
                 fontSize: 13,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: (btnHovered && !inCart) || inCart ? 5 : 0,
+                justifyContent: 'center',
+                gap: 5,
                 transition: 'all 0.18s',
                 fontFamily: 'inherit',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
                 overflow: 'hidden',
-                maxWidth: (btnHovered && !inCart) || inCart ? 130 : 32,
               }}
             >
               {inCart ? (
                 <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
                   <span>В корзине</span>
                 </>
               ) : (
