@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ProductDisplay } from '@/types/product';
 
@@ -21,6 +21,14 @@ interface ProductRowProps {
 
 export default function ProductRow({ product, inCart, onAdd, onSelect, onPlay }: ProductRowProps) {
   const [hovered, setHovered] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const priceRubles = Math.round(product.price / 100);
   const priceOldRubles = product.price_old ? Math.round(product.price_old / 100) : null;
@@ -180,11 +188,15 @@ export default function ProductRow({ product, inCart, onAdd, onSelect, onPlay }:
         <button
           onClick={(e) => { e.stopPropagation(); onAdd(product.id); }}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: isDesktop ? 6 : 0,
             background: inCart ? 'var(--orange)' : (hovered ? 'var(--orange)' : '#fff'),
             border: `1.5px solid ${inCart || hovered ? 'var(--orange)' : 'var(--border)'}`,
             color: inCart || hovered ? '#fff' : 'var(--ink-soft)',
-            borderRadius: 100, padding: '7px 14px',
+            borderRadius: 100,
+            padding: isDesktop ? '7px 14px' : '0',
+            width: isDesktop ? 'auto' : 36,
+            height: 36,
             fontWeight: 700, fontSize: 13,
             cursor: 'pointer', fontFamily: 'inherit',
             transition: 'all 0.18s', whiteSpace: 'nowrap', flexShrink: 0,
@@ -192,13 +204,13 @@ export default function ProductRow({ product, inCart, onAdd, onSelect, onPlay }:
         >
           {inCart ? (
             <>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              В корзине
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
+              {isDesktop && <span>В корзине</span>}
             </>
           ) : (
             <>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-              В корзину
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              {isDesktop && <span>В корзину</span>}
             </>
           )}
         </button>
