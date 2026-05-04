@@ -199,18 +199,26 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: btnHovered && !inCart ? 5 : 0,
+                gap: (btnHovered && !inCart) || inCart ? 5 : 0,
                 transition: 'all 0.18s',
                 fontFamily: 'inherit',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
                 overflow: 'hidden',
-                maxWidth: btnHovered && !inCart ? 120 : 32,
+                maxWidth: (btnHovered && !inCart) || inCart ? 130 : 32,
               }}
             >
-              <span>{inCart ? '✓' : '+'}</span>
-              {(btnHovered && !inCart) && <span>В корзину</span>}
-              {inCart && <span>В корзине</span>}
+              {inCart ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>В корзине</span>
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                  {btnHovered && <span>В корзину</span>}
+                </>
+              )}
             </button>
           </div>
         </div>

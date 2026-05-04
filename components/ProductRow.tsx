@@ -180,16 +180,27 @@ export default function ProductRow({ product, inCart, onAdd, onSelect, onPlay }:
         <button
           onClick={(e) => { e.stopPropagation(); onAdd(product.id); }}
           style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: inCart ? 'var(--orange)' : (hovered ? 'var(--orange-light)' : '#fff'),
-            border: `1.5px solid ${inCart ? 'var(--orange)' : 'var(--border)'}`,
-            color: inCart ? '#fff' : 'var(--ink-soft)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', fontSize: 18, fontWeight: 700,
-            fontFamily: 'inherit', transition: 'all 0.18s',
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: inCart ? 'var(--orange)' : (hovered ? 'var(--orange)' : '#fff'),
+            border: `1.5px solid ${inCart || hovered ? 'var(--orange)' : 'var(--border)'}`,
+            color: inCart || hovered ? '#fff' : 'var(--ink-soft)',
+            borderRadius: 100, padding: '7px 14px',
+            fontWeight: 700, fontSize: 13,
+            cursor: 'pointer', fontFamily: 'inherit',
+            transition: 'all 0.18s', whiteSpace: 'nowrap', flexShrink: 0,
           }}
         >
-          {inCart ? '✓' : '+'}
+          {inCart ? (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              В корзине
+            </>
+          ) : (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              В корзину
+            </>
+          )}
         </button>
       </div>
     </div>
