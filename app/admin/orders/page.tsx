@@ -4,6 +4,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import CopyEmailButton from '@/components/admin/CopyEmailButton';
+import MarkContactedButton from '@/components/admin/MarkContactedButton';
 
 const CANCEL_REASON: Record<string, string> = {
   payment_canceled:        'Отменён покупателем',
@@ -311,45 +312,15 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                       </td>
                       {/* Contacted status */}
                       <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                        {contactedAt ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 5,
-                              background: '#dcfce7', color: '#16a34a',
-                              borderRadius: 100, padding: '4px 12px',
-                              fontSize: 12, fontWeight: 700,
-                            }}>
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                              Письмо отправлено {formatDate(contactedAt)}
-                            </span>
-                            <form method="POST" action="/api/admin/mark-contacted" style={{ display: 'inline' }}>
-                              <input type="hidden" name="email" value={row.email} />
-                              <input type="hidden" name="action" value="unmark" />
-                              <button type="submit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: 12, padding: 0 }} title="Снять отметку">✕</button>
-                            </form>
-                          </div>
-                        ) : (
-                          <span style={{ color: '#ccc', fontSize: 12 }}>—</span>
-                        )}
+                        <MarkContactedButton
+                          email={row.email}
+                          isMarked={!!contactedAt}
+                          contactedAt={contactedAt}
+                        />
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <CopyEmailButton email={row.email} />
-                          {!contactedAt && (
-                            <form method="POST" action="/api/admin/mark-contacted" style={{ display: 'inline' }}>
-                              <input type="hidden" name="email" value={row.email} />
-                              <input type="hidden" name="action" value="mark" />
-                              <button type="submit" style={{
-                                fontSize: 13, fontWeight: 700,
-                                background: '#dcfce7', color: '#16a34a',
-                                padding: '6px 14px', borderRadius: 8,
-                                border: '1px solid #86efac', cursor: 'pointer',
-                                whiteSpace: 'nowrap', fontFamily: 'inherit',
-                              }}>
-                                Отметить ✓
-                              </button>
-                            </form>
-                          )}
                           <a
                             href={`/admin/orders?view=all&email=${encodeURIComponent(row.email)}`}
                             style={{
