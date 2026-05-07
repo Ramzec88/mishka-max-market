@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { unstable_noStore as noStore } from 'next/cache';
 import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import CopyEmailButton from '@/components/admin/CopyEmailButton';
 
 const CANCEL_REASON: Record<string, string> = {
   payment_canceled:        'Отменён покупателем',
@@ -287,10 +288,6 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               <tbody>
                 {needHelpRows.map((row) => {
                   const contactedAt = contactedMap.get(row.email) || null;
-                  const subject = encodeURIComponent('Мишка Макс — помощь с покупкой');
-                  const mailBody = encodeURIComponent(
-                    `Здравствуйте!\n\nЗаметили, что у вас возникли трудности при оплате на сайте mishka-max.ru/market.\n\nМы готовы помочь — напишите нам, и мы подберём удобный способ оплаты.\n\nС уважением,\nМишка Макс`
-                  );
                   return (
                     <tr key={row.email} style={{ borderBottom: '1px solid #f0f0f0', background: contactedAt ? '#f0fdf4' : undefined }}>
                       <td style={{ padding: '12px 14px', fontSize: 14, color: '#1a1a1a', fontWeight: 600 }}>
@@ -337,17 +334,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <a
-                            href={`mailto:${row.email}?subject=${subject}&body=${mailBody}`}
-                            style={{
-                              fontSize: 13, fontWeight: 700,
-                              background: '#FF7A3D', color: '#fff',
-                              padding: '6px 14px', borderRadius: 8,
-                              textDecoration: 'none', whiteSpace: 'nowrap',
-                            }}
-                          >
-                            Написать
-                          </a>
+                          <CopyEmailButton email={row.email} />
                           {!contactedAt && (
                             <form method="POST" action="/api/admin/mark-contacted" style={{ display: 'inline' }}>
                               <input type="hidden" name="email" value={row.email} />
