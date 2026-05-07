@@ -49,6 +49,15 @@ async function getOrders(email?: string): Promise<Order[]> {
   return (data || []) as Order[];
 }
 
+async function getContactedEmails(): Promise<Map<string, string>> {
+  const { data } = await supabaseAdmin
+    .from('admin_outreach')
+    .select('email, contacted_at');
+  const map = new Map<string, string>();
+  for (const row of (data || [])) map.set(row.email, row.contacted_at);
+  return map;
+}
+
 interface NeedHelpRow {
   email: string;
   attempts: number;
@@ -115,7 +124,10 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const view = searchParams.view || 'all';
 
   // For "needs help" we need all orders (no email filter)
-  const allOrders = await getOrders(view === 'all' ? emailFilter : undefined);
+  const [allOrders, contactedMap] = await Promise.all([
+    getOrders(view === 'all' ? emailFilter : undefined),
+    getContactedEmails(),
+  ]);
   const needHelpRows = buildNeedHelp(allOrders);
 
   const displayedOrders = view === 'all' ? allOrders : [];
@@ -265,7 +277,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  {['Email', 'Попыток', 'Последняя попытка', 'Сумма попыток', ''].map(h => (
+                  {['Email', 'Попыток', 'Последняя попытка', 'Сумма попыток', 'Статус письма', ''].map(h => (
                     <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                       {h}
                     </th>
@@ -274,12 +286,13 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               </thead>
               <tbody>
                 {needHelpRows.map((row) => {
+                  const contactedAt = contactedMap.get(row.email) || null;
                   const subject = encodeURIComponent('Мишка Макс — помощь с покупкой');
-                  const body = encodeURIComponent(
+                  const mailBody = encodeURIComponent(
                     `Здравствуйте!\n\nЗаметили, что у вас возникли трудности при оплате на сайте mishka-max.ru/market.\n\nМы готовы помочь — напишите нам, и мы подберём удобный способ оплаты.\n\nС уважением,\nМишка Макс`
                   );
                   return (
-                    <tr key={row.email} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                    <tr key={row.email} style={{ borderBottom: '1px solid #f0f0f0', background: contactedAt ? '#f0fdf4' : undefined }}>
                       <td style={{ padding: '12px 14px', fontSize: 14, color: '#1a1a1a', fontWeight: 600 }}>
                         {row.email}
                       </td>
@@ -299,10 +312,33 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                       <td style={{ padding: '12px 14px', fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>
                         {(row.totalAmount / 100).toLocaleString('ru-RU')} ₽
                       </td>
+                      {/* Contacted status */}
+                      <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                        {contactedAt ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 5,
+                              background: '#dcfce7', color: '#16a34a',
+                              borderRadius: 100, padding: '4px 12px',
+                              fontSize: 12, fontWeight: 700,
+                            }}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                              Письмо отправлено {formatDate(contactedAt)}
+                            </span>
+                            <form method="POST" action="/api/admin/mark-contacted" style={{ display: 'inline' }}>
+                              <input type="hidden" name="email" value={row.email} />
+                              <input type="hidden" name="action" value="unmark" />
+                              <button type="submit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: 12, padding: 0 }} title="Снять отметку">✕</button>
+                            </form>
+                          </div>
+                        ) : (
+                          <span style={{ color: '#ccc', fontSize: 12 }}>—</span>
+                        )}
+                      </td>
                       <td style={{ padding: '12px 14px' }}>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <a
-                            href={`mailto:${row.email}?subject=${subject}&body=${body}`}
+                            href={`mailto:${row.email}?subject=${subject}&body=${mailBody}`}
                             style={{
                               fontSize: 13, fontWeight: 700,
                               background: '#FF7A3D', color: '#fff',
@@ -312,6 +348,21 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                           >
                             Написать
                           </a>
+                          {!contactedAt && (
+                            <form method="POST" action="/api/admin/mark-contacted" style={{ display: 'inline' }}>
+                              <input type="hidden" name="email" value={row.email} />
+                              <input type="hidden" name="action" value="mark" />
+                              <button type="submit" style={{
+                                fontSize: 13, fontWeight: 700,
+                                background: '#dcfce7', color: '#16a34a',
+                                padding: '6px 14px', borderRadius: 8,
+                                border: '1px solid #86efac', cursor: 'pointer',
+                                whiteSpace: 'nowrap', fontFamily: 'inherit',
+                              }}>
+                                Отметить ✓
+                              </button>
+                            </form>
+                          )}
                           <a
                             href={`/admin/orders?view=all&email=${encodeURIComponent(row.email)}`}
                             style={{
