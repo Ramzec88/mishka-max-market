@@ -308,7 +308,7 @@ export default function ThankYouContent() {
             }} />
             <div style={{ fontSize: 28, marginBottom: 10 }}>🎓</div>
             <h3 style={{ fontSize: 17, fontWeight: 900, color: '#1a1a1a', marginBottom: 8, lineHeight: 1.3 }}>
-              Тысячи материалов — уже в нашем канале
+              Материалы для занятий — уже в нашем канале
             </h3>
             <p style={{ fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.6, marginBottom: 16 }}>
               Пока файлы летят вам на почту — загляните в <strong style={{ color: '#1a1a1a' }}>Кладовую педагога</strong>.
