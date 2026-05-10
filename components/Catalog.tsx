@@ -103,7 +103,14 @@ export default function Catalog({ products }: CatalogProps) {
 
       {/* Hero */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 0' }}>
-        <div style={{
+        <style>{`
+          @media (max-width: 600px) {
+            .hero-inner { flex-direction: column !important; }
+            .hero-mascot { width: 100% !important; justify-content: center; margin-top: 24px; }
+            .hero-blob { width: 220px !important; height: 220px !important; }
+          }
+        `}</style>
+        <div className="hero-inner" style={{
           background: '#fff',
           borderRadius: 28,
           boxShadow: '0 4px 32px rgba(0,0,0,0.07)',
@@ -143,7 +150,7 @@ export default function Catalog({ products }: CatalogProps) {
               и подарят детям радость. Мгновенная доставка на email после оплаты.
             </p>
             <button
-              onClick={() => document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => document.getElementById('showcase-section')?.scrollIntoView({ behavior: 'smooth' })}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 background: '#0F0F1A', color: '#fff',
@@ -162,19 +169,19 @@ export default function Catalog({ products }: CatalogProps) {
           </div>
 
           {/* Right — mascot */}
-          <div style={{ flexShrink: 0, width: 'clamp(180px, 28vw, 320px)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{
-              width: 'clamp(160px, 24vw, 280px)',
-              height: 'clamp(160px, 24vw, 280px)',
+          <div className="hero-mascot" style={{ flexShrink: 0, width: 'clamp(220px, 34vw, 400px)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="hero-blob" style={{
+              width: 'clamp(200px, 30vw, 360px)',
+              height: 'clamp(200px, 30vw, 360px)',
               borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
               background: 'linear-gradient(135deg, #F5EFE6, #EDE0D4)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative',
               boxShadow: '0 8px 40px rgba(180,130,90,0.18)',
               overflow: 'hidden',
             }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/3d_maks.png" alt="3D Макс" style={{ width: '85%', height: '85%', objectFit: 'contain' }} />
+              <img src="/3d_maks.png" alt="3D Макс" style={{ width: '95%', height: '95%', objectFit: 'contain' }} />
             </div>
             <div style={{
               position: 'absolute', top: '4%', right: '0%',
@@ -198,7 +205,7 @@ export default function Catalog({ products }: CatalogProps) {
 
       {/* ── Showcase (tiles) ── */}
       {showcaseProducts.length > 0 && (
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 44px' }}>
+        <section id="showcase-section" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 44px' }}>
           <h2 style={{ fontSize: 17, fontWeight: 800, color: '#1A1A2E', marginBottom: 16, letterSpacing: '-0.01em' }}>
             Популярное
           </h2>
