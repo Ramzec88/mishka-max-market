@@ -104,38 +104,106 @@ export default function Catalog({ products }: CatalogProps) {
       </div>
 
       {/* Hero */}
-      <section
-        style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          padding: '48px 24px 32px',
-          textAlign: 'center',
-        }}
-      >
-        <h1
-          style={{
-            fontSize: 'clamp(28px, 4vw, 44px)',
-            fontWeight: 900,
-            letterSpacing: '-0.02em',
-            color: '#1A1A2E',
-            marginBottom: 12,
-          }}
-        >
-          Маркет <span style={{ color: 'var(--orange)' }}>Мишки Макса</span>
-        </h1>
-        <p style={{ color: 'var(--ink-soft)', fontSize: 17, maxWidth: 640, margin: '0 auto' }}>
-          Готовые материалы для утренников, развивающих занятий и домашних праздников.
-          Мгновенная доставка на email сразу после оплаты.
-        </p>
-        <div style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 7, background: 'var(--orange-light)', border: '1.5px solid #FFD4B8', borderRadius: 100, padding: '7px 16px' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--orange)"><path d="M8 5v14l11-7z"/></svg>
-          <span style={{ fontSize: 14, color: 'var(--orange)', fontWeight: 700 }}>Некоторые песни можно прослушать прямо на сайте — нажмите на карточку</span>
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 0' }}>
+        <div style={{
+          background: '#fff',
+          borderRadius: 28,
+          boxShadow: '0 4px 32px rgba(0,0,0,0.07)',
+          padding: 'clamp(28px, 5vw, 52px)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'clamp(24px, 4vw, 56px)',
+          overflow: 'hidden',
+          position: 'relative',
+        }}>
+          {/* Left */}
+          <div style={{ flex: '1 1 0', minWidth: 0 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: '#FFF7ED', border: '1.5px solid #FFD4B8',
+              borderRadius: 100, padding: '6px 14px', marginBottom: 20,
+            }}>
+              <span style={{ fontSize: 14 }}>✨</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#C2410C' }}>Сезон Выпускных 2026</span>
+            </div>
+            <h1 style={{
+              fontSize: 'clamp(28px, 4vw, 52px)',
+              fontWeight: 900,
+              lineHeight: 1.1,
+              letterSpacing: '-0.03em',
+              color: '#0F0F1A',
+              margin: '0 0 16px',
+            }}>
+              Материалы,<br />которые сделают<br />праздник{' '}
+              <span style={{ background: 'linear-gradient(90deg, #FF7A3D, #FF4D6D)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                незабываемым
+              </span>
+            </h1>
+            <p style={{ fontSize: 16, color: '#555', lineHeight: 1.6, margin: '0 0 28px', maxWidth: 420 }}>
+              Готовые сценарии, развивающие игры и песни для детей.
+              Мгновенная доставка на email сразу после оплаты.
+            </p>
+            <button
+              onClick={() => document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' })}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                background: '#0F0F1A', color: '#fff',
+                border: 'none', borderRadius: 100,
+                padding: '14px 28px', fontSize: 15, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+                boxShadow: '0 4px 16px rgba(15,15,26,0.25)',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(15,15,26,0.3)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(15,15,26,0.25)'; }}
+            >
+              Смотреть хиты
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+
+          {/* Right — mascot */}
+          <div style={{ flexShrink: 0, width: 'clamp(180px, 28vw, 320px)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {/* Blob */}
+            <div style={{
+              width: 'clamp(160px, 24vw, 280px)',
+              height: 'clamp(160px, 24vw, 280px)',
+              borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
+              background: 'linear-gradient(135deg, #F5EFE6, #EDE0D4)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              position: 'relative',
+              boxShadow: '0 8px 40px rgba(180,130,90,0.18)',
+            }}>
+              <span style={{ fontSize: 'clamp(52px, 8vw, 88px)', lineHeight: 1 }}>🐻</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#6B4C2A', marginTop: 6 }}>3D Макс</span>
+            </div>
+
+            {/* Floating music card */}
+            <div style={{
+              position: 'absolute', top: '4%', right: '0%',
+              background: '#fff', borderRadius: 14,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+              padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+
+            {/* Floating doc card */}
+            <div style={{
+              position: 'absolute', bottom: '6%', left: '0%',
+              background: '#fff', borderRadius: 14,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+              padding: '8px 12px',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF7A3D" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ── Showcase (tiles) ── */}
       {showcaseProducts.length > 0 && (
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 44px' }}>
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 44px' }}>
           <h2
             style={{
               fontSize: 17,
@@ -183,14 +251,14 @@ export default function Catalog({ products }: CatalogProps) {
 
       {/* ── Filters ── */}
       <div
+        id="catalog-section"
         style={{
           maxWidth: 1200,
           margin: '0 auto',
-          padding: '0 24px 14px',
+          padding: '32px 24px 14px',
           display: 'flex',
-          gap: 10,
+          gap: 8,
           flexWrap: 'wrap',
-          justifyContent: 'center',
         }}
       >
         {FILTERS.map((f) => (
@@ -198,16 +266,16 @@ export default function Catalog({ products }: CatalogProps) {
             key={f.value}
             onClick={() => setActiveCategory(f.value)}
             style={{
-              background: activeCategory === f.value ? 'var(--orange)' : '#fff',
-              border: `1.5px solid ${activeCategory === f.value ? 'var(--orange)' : 'var(--border)'}`,
+              background: activeCategory === f.value ? '#0F0F1A' : '#fff',
+              border: `1.5px solid ${activeCategory === f.value ? '#0F0F1A' : 'var(--border)'}`,
               color: activeCategory === f.value ? '#fff' : 'var(--ink-soft)',
-              padding: '10px 18px',
+              padding: '9px 18px',
               borderRadius: 100,
               fontWeight: 700,
               fontSize: 14,
               cursor: 'pointer',
               fontFamily: 'inherit',
-              transition: 'all 0.2s',
+              transition: 'all 0.15s',
             }}
           >
             {f.label}
