@@ -45,6 +45,19 @@ export default function Catalog({ products }: CatalogProps) {
     return () => window.removeEventListener('open-cart', handleOpen);
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('product');
+    if (!productId) return;
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+    setSheetProduct(product);
+    if (params.get('add') === '1') {
+      handleAdd(productId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
+
   function handleAdd(id: string) {
     const updated = addToCart(id);
     setCartIds(updated);
