@@ -17,7 +17,7 @@ const FILTERS: { value: FilterCategory; label: string }[] = [
   { value: 'songs', label: 'Песни' },
   { value: 'scenarios', label: 'Сценарии' },
   { value: 'materials', label: 'Материалы' },
-  { value: 'bundles', label: 'Компкеты' },
+  { value: 'bundles', label: 'Комплекты' },
 ];
 
 interface CatalogProps {
