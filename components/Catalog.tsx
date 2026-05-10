@@ -107,7 +107,7 @@ export default function Catalog({ products }: CatalogProps) {
           @media (max-width: 600px) {
             .hero-inner { flex-direction: column !important; }
             .hero-mascot { width: 100% !important; justify-content: center; margin-top: 24px; }
-            .hero-blob { width: 220px !important; height: 220px !important; }
+            .hero-blob { width: 140px !important; height: 140px !important; }
           }
         `}</style>
         <div className="hero-inner" style={{
@@ -170,18 +170,24 @@ export default function Catalog({ products }: CatalogProps) {
 
           {/* Right — mascot */}
           <div className="hero-mascot" style={{ flexShrink: 0, width: 'clamp(220px, 34vw, 400px)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="hero-blob" style={{
-              width: 'clamp(200px, 30vw, 360px)',
-              height: 'clamp(200px, 30vw, 360px)',
-              borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
-              background: 'linear-gradient(135deg, #F5EFE6, #EDE0D4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              position: 'relative',
-              boxShadow: '0 8px 40px rgba(180,130,90,0.18)',
-              overflow: 'hidden',
-            }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {/* Blob — меньше картинки */}
+              <div className="hero-blob" style={{
+                width: 'clamp(140px, 20vw, 240px)',
+                height: 'clamp(140px, 20vw, 240px)',
+                borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
+                background: 'linear-gradient(135deg, #F5EFE6, #EDE0D4)',
+                boxShadow: '0 8px 40px rgba(180,130,90,0.18)',
+                flexShrink: 0,
+              }} />
+              {/* Картинка поверх blob, больше него */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/3d_maks.png" alt="3D Макс" style={{ width: '95%', height: '95%', objectFit: 'contain' }} />
+              <img src="/3d_maks.png" alt="3D Макс" style={{
+                position: 'absolute',
+                width: 'clamp(200px, 30vw, 360px)',
+                height: 'clamp(200px, 30vw, 360px)',
+                objectFit: 'contain',
+              }} />
             </div>
             <div style={{
               position: 'absolute', top: '4%', right: '0%',
