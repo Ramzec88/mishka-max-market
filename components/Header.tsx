@@ -14,35 +14,42 @@ export default function Header() {
         zIndex: 50,
       }}
     >
+      <style>{`
+        .header-site-label { display: inline; }
+        @media (max-width: 480px) {
+          .header-site-label { display: none; }
+          .header-logo-text { display: none; }
+        }
+      `}</style>
       <div
         style={{
           maxWidth: 1200,
           margin: '0 auto',
-          padding: '16px 24px',
+          padding: '12px 16px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 16,
+          gap: 8,
         }}
       >
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 900, fontSize: 20, textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 900, fontSize: 18, textDecoration: 'none', color: 'inherit', flexShrink: 0 }}>
           <div
             style={{
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               background: 'var(--orange)',
               borderRadius: '50%',
               display: 'grid',
               placeItems: 'center',
               color: '#fff',
               fontWeight: 900,
-              fontSize: 20,
+              fontSize: 18,
               flexShrink: 0,
             }}
           >
             М
           </div>
-          <span>Мишка Макс</span>
+          <span className="header-logo-text">Мишка Макс</span>
         </Link>
 
         <a
@@ -64,7 +71,7 @@ export default function Header() {
             <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
-          Сайт Мишки Макса
+          <span className="header-site-label">Сайт Мишки Макса</span>
         </a>
 
         <CartButton />
