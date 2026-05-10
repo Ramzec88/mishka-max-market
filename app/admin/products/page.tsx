@@ -6,6 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Product } from '@/types/product';
 import { getPublicUrl } from '@/lib/storage';
 import DeactivateButton from './DeactivateButton';
+import CopyLinkButtons from './CopyLinkButtons';
 
 async function getProducts(): Promise<Product[]> {
   noStore();
@@ -158,12 +159,13 @@ export default async function AdminProductsPage() {
 
                   {/* Actions */}
                   <td style={{ padding: '12px 14px' }}>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                       <Link href={`/admin/products/${product.id}`}
                         style={{ fontSize: 13, fontWeight: 600, color: '#FF7A3D', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                         Изменить
                       </Link>
                       {product.is_active && <DeactivateButton productId={product.id} />}
+                      {product.is_active && <CopyLinkButtons productId={product.id} />}
                     </div>
                   </td>
                 </tr>
