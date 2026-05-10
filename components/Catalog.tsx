@@ -17,7 +17,7 @@ const FILTERS: { value: FilterCategory; label: string }[] = [
   { value: 'songs', label: 'Песни' },
   { value: 'scenarios', label: 'Сценарии' },
   { value: 'materials', label: 'Материалы' },
-  { value: 'bundles', label: 'Комплекты' },
+  { value: 'bundles', label: 'Компкеты' },
 ];
 
 interface CatalogProps {
@@ -171,9 +171,10 @@ export default function Catalog({ products }: CatalogProps) {
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               position: 'relative',
               boxShadow: '0 8px 40px rgba(180,130,90,0.18)',
+              overflow: 'hidden',
             }}>
-              <span style={{ fontSize: 'clamp(52px, 8vw, 88px)', lineHeight: 1 }}>🐻</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#6B4C2A', marginTop: 6 }}>3D Макс</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/3d_maks.png" alt="3D Макс" style={{ width: '85%', height: '85%', objectFit: 'contain' }} />
             </div>
             <div style={{
               position: 'absolute', top: '4%', right: '0%',
