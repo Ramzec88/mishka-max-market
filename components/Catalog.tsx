@@ -123,8 +123,8 @@ export default function Catalog({ products }: CatalogProps) {
               background: '#FFF7ED', border: '1.5px solid #FFD4B8',
               borderRadius: 100, padding: '6px 14px', marginBottom: 20,
             }}>
-              <span style={{ fontSize: 14 }}>✨</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#C2410C' }}>Сезон Выпускных 2026</span>
+              <span style={{ fontSize: 14 }}>🧸</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#C2410C' }}>Для заботливых мам и креативных педагогов</span>
             </div>
             <h1 style={{
               fontSize: 'clamp(28px, 4vw, 52px)',
@@ -134,14 +134,14 @@ export default function Catalog({ products }: CatalogProps) {
               color: '#0F0F1A',
               margin: '0 0 16px',
             }}>
-              Материалы,<br />которые сделают<br />праздник{' '}
+              Готовые решения для<br />увлекательных занятий<br />и ярких{' '}
               <span style={{ background: 'linear-gradient(90deg, #FF7A3D, #FF4D6D)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                незабываемым
+                праздников
               </span>
             </h1>
             <p style={{ fontSize: 16, color: '#555', lineHeight: 1.6, margin: '0 0 28px', maxWidth: 420 }}>
-              Готовые сценарии, развивающие игры и песни для детей.
-              Мгновенная доставка на email сразу после оплаты.
+              Сценарии, песни и развивающие материалы, которые экономят ваше время
+              и делают каждый праздник особенным. Доставка на email сразу после оплаты.
             </p>
             <button
               onClick={() => document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' })}
@@ -157,7 +157,7 @@ export default function Catalog({ products }: CatalogProps) {
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(15,15,26,0.3)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(15,15,26,0.25)'; }}
             >
-              Смотреть хиты
+              Открыть каталог
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
           </div>
