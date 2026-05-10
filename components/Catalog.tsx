@@ -133,23 +133,6 @@ export default function Catalog({ products }: CatalogProps) {
         </div>
       </section>
 
-      {/* ── Баннер для международных покупателей ── */}
-      {products.some(p => p.boosty_url || p.lava_url) && (
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 28px' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-            background: '#F0F4FF', border: '1.5px solid #C7D7FF',
-            borderRadius: 12, padding: '12px 18px',
-          }}>
-            <span style={{ fontSize: 20 }}>💳</span>
-            <span style={{ fontSize: 14, color: '#3B4A7A', lineHeight: 1.5, flex: 1 }}>
-              <strong>Карта Visa / Mastercard не из России?</strong>{' '}
-              Нажмите на нужный товар — внутри карточки есть ссылки для прямой оплаты через Boosty или Lava Top.
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* ── Showcase (tiles) ── */}
       {showcaseProducts.length > 0 && (
         <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 44px' }}>
