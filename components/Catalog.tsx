@@ -142,7 +142,7 @@ export default function Catalog({ products }: CatalogProps) {
               fontWeight: 900,
               lineHeight: 1.1,
               letterSpacing: '-0.03em',
-              color: '#0F0F1A',
+              color: 'var(--ink)',
               margin: '0 0 16px',
             }}>
               Готовые решения для<br />
@@ -151,23 +151,23 @@ export default function Catalog({ products }: CatalogProps) {
               </span>
               <br />и ярких праздников
             </h1>
-            <p style={{ fontSize: 16, color: '#555', lineHeight: 1.6, margin: '0 0 28px', maxWidth: 420 }}>
-              Авторские игры, песни и сценарии, которые сэкономят вам время
+            <p style={{ fontSize: 16, color: 'var(--ink-soft)', lineHeight: 1.6, margin: '0 0 28px', maxWidth: 420 }}>
+              Авторск͞е игры, песни и сценарии, которые сэкономят вам время
               и подарят детям радость. Мгновенная доставка на email после оплаты.
             </p>
             <button
               onClick={() => document.getElementById('showcase-section')?.scrollIntoView({ behavior: 'smooth' })}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: '#0F0F1A', color: '#fff',
+                background: 'var(--orange)', color: '#fff',
                 border: 'none', borderRadius: 100,
                 padding: '14px 28px', fontSize: 15, fontWeight: 700,
                 cursor: 'pointer', fontFamily: 'inherit',
-                boxShadow: '0 4px 16px rgba(15,15,26,0.25)',
+                boxShadow: '0 4px 16px rgba(255,122,61,0.35)',
                 transition: 'transform 0.15s, box-shadow 0.15s',
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(15,15,26,0.3)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(15,15,26,0.25)'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(255,122,61,0.5)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(255,122,61,0.35)'; }}
             >
               Открыть каталог
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -202,7 +202,7 @@ export default function Catalog({ products }: CatalogProps) {
       {/* ── Showcase (tiles) ── */}
       {showcaseProducts.length > 0 && (
         <section id="showcase-section" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 44px' }}>
-          <h2 style={{ fontSize: 17, fontWeight: 800, color: '#1A1A2E', marginBottom: 16, letterSpacing: '-0.01em' }}>
+          <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--ink)', marginBottom: 16, letterSpacing: '-0.01em' }}>
             Популярное
           </h2>
           <div style={{ display: 'flex', gap: 16, overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', paddingBottom: 4, scrollbarWidth: 'none' }}>
@@ -231,8 +231,8 @@ export default function Catalog({ products }: CatalogProps) {
             key={f.value}
             onClick={() => setActiveCategory(f.value)}
             style={{
-              background: activeCategory === f.value ? '#0F0F1A' : '#fff',
-              border: `1.5px solid ${activeCategory === f.value ? '#0F0F1A' : 'var(--border)'}`,
+              background: activeCategory === f.value ? 'var(--orange)' : '#fff',
+              border: `1.5px solid ${activeCategory === f.value ? 'var(--orange)' : 'var(--border)'}`,
               color: activeCategory === f.value ? '#fff' : 'var(--ink-soft)',
               padding: '9px 18px', borderRadius: 100, fontWeight: 700, fontSize: 14,
               cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
