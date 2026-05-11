@@ -106,8 +106,7 @@ export default function Catalog({ products }: CatalogProps) {
         <style>{`
           @media (max-width: 600px) {
             .hero-inner { flex-direction: column !important; }
-            .hero-mascot { width: 100% !important; justify-content: center; margin-top: 24px; }
-            .hero-blob { width: 140px !important; height: 140px !important; }
+            .hero-mascot { width: 100% !important; margin-top: 8px; }
           }
         `}</style>
         <div className="hero-inner" style={{
@@ -118,7 +117,6 @@ export default function Catalog({ products }: CatalogProps) {
           display: 'flex',
           alignItems: 'center',
           gap: 'clamp(24px, 4vw, 56px)',
-          overflow: 'hidden',
           position: 'relative',
         }}>
           {/* Left */}
@@ -169,42 +167,26 @@ export default function Catalog({ products }: CatalogProps) {
           </div>
 
           {/* Right — mascot */}
-          <div className="hero-mascot" style={{ flexShrink: 0, width: 'clamp(220px, 34vw, 400px)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {/* Blob — меньше картинки */}
-              <div className="hero-blob" style={{
-                width: 'clamp(140px, 20vw, 240px)',
-                height: 'clamp(140px, 20vw, 240px)',
-                borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
-                background: 'linear-gradient(135deg, #F5EFE6, #EDE0D4)',
-                boxShadow: '0 8px 40px rgba(180,130,90,0.18)',
-                flexShrink: 0,
-              }} />
-              {/* Картинка поверх blob, больше него */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/3d_maks.png" alt="3D Макс" style={{
-                position: 'absolute',
-                width: 'clamp(200px, 30vw, 360px)',
-                height: 'clamp(200px, 30vw, 360px)',
-                objectFit: 'contain',
-              }} />
-            </div>
+          <div className="hero-mascot" style={{ flexShrink: 0, width: 'clamp(260px, 36vw, 440px)', position: 'relative' }}>
+            {/* Blob за картинкой */}
             <div style={{
-              position: 'absolute', top: '4%', right: '0%',
-              background: '#fff', borderRadius: 14,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
-              padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6,
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-            </div>
-            <div style={{
-              position: 'absolute', bottom: '6%', left: '0%',
-              background: '#fff', borderRadius: 14,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
-              padding: '8px 12px',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF7A3D" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            </div>
+              position: 'absolute',
+              top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '55%', height: '55%',
+              borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
+              background: 'linear-gradient(135deg, #F5EFE6, #EDE0D4)',
+              boxShadow: '0 8px 40px rgba(180,130,90,0.18)',
+            }} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/3d_maks.png" alt="3D Макс" style={{
+              display: 'block',
+              width: '100%',
+              height: 'auto',
+              objectFit: 'contain',
+              position: 'relative',
+              zIndex: 1,
+            }} />
           </div>
         </div>
       </section>
