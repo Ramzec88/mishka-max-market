@@ -152,7 +152,7 @@ export default function Catalog({ products }: CatalogProps) {
               <br />и ярких праздников
             </h1>
             <p style={{ fontSize: 16, color: 'var(--ink-soft)', lineHeight: 1.6, margin: '0 0 28px', maxWidth: 420 }}>
-              Авторск͞е игры, песни и сценарии, которые сэкономят вам время
+              Авторские игры, песни и сценарии, которые сэкономят вам время
               и подарят детям радость. Мгновенная доставка на email после оплаты.
             </p>
             <button
