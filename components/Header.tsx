@@ -16,9 +16,11 @@ export default function Header() {
     >
       <style>{`
         .header-site-label { display: inline; }
+        .header-search { display: block; }
         @media (max-width: 480px) {
           .header-site-label { display: none; }
           .header-logo-text { display: none; }
+          .header-search { display: none; }
         }
       `}</style>
       <div
@@ -28,8 +30,7 @@ export default function Header() {
           padding: '12px 16px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
+          gap: 12,
         }}
       >
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 900, fontSize: 18, textDecoration: 'none', color: 'inherit', flexShrink: 0 }}>
@@ -51,6 +52,34 @@ export default function Header() {
           </div>
           <span className="header-logo-text">Мишка Макс</span>
         </Link>
+
+        {/* Search input — center */}
+        <div className="header-search" style={{ flex: 1, maxWidth: 360, position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#999', display: 'flex', alignItems: 'center' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+          <input
+            type="search"
+            placeholder="Поиск..."
+            onChange={(e) => {
+              const value = e.target.value;
+              (window as any).__catalogSearch = value;
+              window.dispatchEvent(new CustomEvent('catalog-search', { detail: value }));
+            }}
+            style={{
+              border: '1.5px solid var(--border)',
+              borderRadius: 100,
+              padding: '8px 16px 8px 36px',
+              fontSize: 14,
+              background: '#f9f9f9',
+              width: '100%',
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          />
+        </div>
 
         <a
           href="https://mishka-max.ru"
