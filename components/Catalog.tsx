@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ProductDisplay, Category } from '@/types/product';
 import { getCart, addToCart } from '@/lib/cart';
+import { playDemoUrl } from '@/lib/demo-audio';
 import ProductCard from './ProductCard';
 import ProductRow from './ProductRow';
 import ProductSheet from './ProductSheet';
@@ -31,6 +32,13 @@ export default function Catalog({ products }: CatalogProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sheetProduct, setSheetProduct] = useState<ProductDisplay | null>(null);
   const [playingProduct, setPlayingProduct] = useState<ProductDisplay | null>(null);
+
+  function handlePlay(product: ProductDisplay) {
+    // Call playDemoUrl synchronously in the user-gesture context so iOS Safari
+    // allows the audio to start. setPlayingProduct updates the UI afterwards.
+    if (product.demo_url) playDemoUrl(product.demo_url);
+    setPlayingProduct(product);
+  }
 
   useEffect(() => {
     const sync = () => setCartIds(getCart());
@@ -205,7 +213,7 @@ export default function Catalog({ products }: CatalogProps) {
                   inCart={cartIds.includes(product.id)}
                   onAdd={handleAdd}
                   onSelect={setSheetProduct}
-                  onPlay={setPlayingProduct}
+                  onPlay={handlePlay}
                 />
               </div>
             ))}
@@ -268,7 +276,7 @@ export default function Catalog({ products }: CatalogProps) {
                   inCart={cartIds.includes(product.id)}
                   onAdd={handleAdd}
                   onSelect={setSheetProduct}
-                  onPlay={setPlayingProduct}
+                  onPlay={handlePlay}
                 />
               </div>
             ))
@@ -283,7 +291,7 @@ export default function Catalog({ products }: CatalogProps) {
         inCart={sheetProduct ? cartIds.includes(sheetProduct.id) : false}
         onAdd={handleAdd}
         onClose={() => setSheetProduct(null)}
-        onPlay={setPlayingProduct}
+        onPlay={handlePlay}
       />
 
       <StickyPlayer
