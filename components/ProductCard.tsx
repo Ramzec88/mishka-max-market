@@ -101,6 +101,7 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
 
         {product.demo_url && (
           <button
+            onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); onPlay(product); }}
             onClick={(e) => { e.stopPropagation(); onPlay(product); }}
             style={{
               position: 'absolute', inset: 0,

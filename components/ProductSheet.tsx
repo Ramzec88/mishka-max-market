@@ -175,6 +175,7 @@ export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }
         {product.demo_url && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
             <button
+              onTouchEnd={(e) => { e.preventDefault(); onPlay(product); onClose(); }}
               onClick={() => { onPlay(product); onClose(); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,

@@ -13,6 +13,7 @@ export function playDemoUrl(url: string): void {
   const a = ensure();
   a.src = url;
   a.currentTime = 0;
+  a.load();
   a.play().catch(() => {});
 }
 
