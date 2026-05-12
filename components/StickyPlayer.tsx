@@ -32,7 +32,6 @@ export default function StickyPlayer({ product, inCart, onClose, onAdd }: Props)
   const [duration, setDuration] = useState(0);
   const [visible, setVisible] = useState(false);
 
-  // Attach event listeners to the singleton audio element on mount.
   useEffect(() => {
     const audio = ensureDemoAudio();
 
@@ -57,7 +56,6 @@ export default function StickyPlayer({ product, inCart, onClose, onAdd }: Props)
     };
   }, []);
 
-  // Show/hide player and reset time display when product changes.
   useEffect(() => {
     if (product?.demo_url) {
       setCurrentTime(0);
@@ -107,96 +105,99 @@ export default function StickyPlayer({ product, inCart, onClose, onAdd }: Props)
       }}
     >
       {product && (
-        <div
-          style={{
-            background: '#1A1A2E',
-            borderTop: '2px solid #FF7A3D',
-            padding: '10px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          {/* Cover */}
+        <div style={{ background: '#1A1A2E', borderTop: '2px solid #FF7A3D' }}>
           <div
             style={{
-              width: 44, height: 44, borderRadius: 8, flexShrink: 0,
-              overflow: 'hidden', position: 'relative',
-              background: coverBg[product.cover_variant] || coverBg.orange,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+              maxWidth: 1200,
+              width: '100%',
+              margin: '0 auto',
+              padding: '10px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
             }}
           >
-            {product.cover_url ? (
-              <Image src={product.cover_url} alt={product.title} fill style={{ objectFit: 'cover' }} unoptimized />
-            ) : (product.cover_emoji || '🎵')}
-          </div>
-
-          {/* Title + time */}
-          <div style={{ minWidth: 0, flexShrink: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {product.title}
+            {/* Cover */}
+            <div
+              style={{
+                width: 44, height: 44, borderRadius: 8, flexShrink: 0,
+                overflow: 'hidden', position: 'relative',
+                background: coverBg[product.cover_variant] || coverBg.orange,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+              }}
+            >
+              {product.cover_url ? (
+                <Image src={product.cover_url} alt={product.title} fill style={{ objectFit: 'cover' }} unoptimized />
+              ) : (product.cover_emoji || '🎵')}
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
-              Демо · {fmt(currentTime)} / {fmt(duration)}
+
+            {/* Title + time */}
+            <div style={{ minWidth: 0, flexShrink: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {product.title}
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
+                Демо · {fmt(currentTime)} / {fmt(duration)}
+              </div>
             </div>
+
+            {/* Progress */}
+            <input
+              type="range"
+              min={0}
+              max={duration || 100}
+              step={0.1}
+              value={currentTime}
+              onChange={handleSeek}
+              style={{ flex: 1, minWidth: 40, maxWidth: 220, accentColor: '#FF7A3D', cursor: 'pointer' }}
+            />
+
+            {/* Play/Pause */}
+            <button
+              onClick={togglePlay}
+              style={{
+                width: 40, height: 40, borderRadius: '50%',
+                background: '#FF7A3D', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {playing ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>
+              )}
+            </button>
+
+            {/* В корзину */}
+            <button
+              onClick={() => onAdd(product.id)}
+              style={{
+                background: inCart ? 'rgba(255,255,255,0.15)' : 'transparent',
+                border: '1.5px solid rgba(255,255,255,0.35)',
+                borderRadius: 100, padding: '6px 14px',
+                fontSize: 13, fontWeight: 700, color: '#fff',
+                cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              {inCart ? '✓ В корзине' : '+ В корзину'}
+            </button>
+
+            {/* Close */}
+            <button
+              onClick={handleClose}
+              style={{
+                background: 'none', border: 'none',
+                color: 'rgba(255,255,255,0.45)', cursor: 'pointer',
+                fontSize: 22, padding: '0 2px', flexShrink: 0,
+                lineHeight: 1, fontFamily: 'inherit',
+              }}
+            >
+              ×
+            </button>
           </div>
-
-          {/* Progress */}
-          <input
-            type="range"
-            min={0}
-            max={duration || 100}
-            step={0.1}
-            value={currentTime}
-            onChange={handleSeek}
-            style={{ flex: 1, minWidth: 40, maxWidth: 220, accentColor: '#FF7A3D', cursor: 'pointer' }}
-          />
-
-          {/* Play/Pause */}
-          <button
-            onClick={togglePlay}
-            style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: '#FF7A3D', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            {playing ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>
-            )}
-          </button>
-
-          {/* В корзину */}
-          <button
-            onClick={() => onAdd(product.id)}
-            style={{
-              background: inCart ? 'rgba(255,255,255,0.15)' : 'transparent',
-              border: '1.5px solid rgba(255,255,255,0.35)',
-              borderRadius: 100, padding: '6px 14px',
-              fontSize: 13, fontWeight: 700, color: '#fff',
-              cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-              fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}
-          >
-            {inCart ? '✓ В корзине' : '+ В корзину'}
-          </button>
-
-          {/* Close */}
-          <button
-            onClick={handleClose}
-            style={{
-              background: 'none', border: 'none',
-              color: 'rgba(255,255,255,0.45)', cursor: 'pointer',
-              fontSize: 22, padding: '0 2px', flexShrink: 0,
-              lineHeight: 1, fontFamily: 'inherit',
-            }}
-          >
-            ×
-          </button>
         </div>
       )}
     </div>
