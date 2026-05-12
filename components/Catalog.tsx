@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ProductDisplay, Category } from '@/types/product';
 import { getCart, addToCart } from '@/lib/cart';
 import { playDemoUrl } from '@/lib/demo-audio';
@@ -11,14 +11,11 @@ import CartButton from './CartButton';
 import CartDrawer from './CartDrawer';
 import StickyPlayer from './StickyPlayer';
 
-type FilterCategory = 'all' | Category;
-
-const FILTERS: { value: FilterCategory; label: string }[] = [
-  { value: 'all', label: 'Все' },
-  { value: 'songs', label: 'Песни' },
-  { value: 'scenarios', label: 'Сценарии' },
-  { value: 'materials', label: 'Материалы' },
-  { value: 'bundles', label: 'Комплекты' },
+const SECTIONS: { category: Category; label: string; icon: string }[] = [
+  { category: 'songs', label: 'Песни', icon: '🎵' },
+  { category: 'scenarios', label: 'Сценарии', icon: '🎭' },
+  { category: 'materials', label: 'Материалы', icon: '📚' },
+  { category: 'bundles', label: 'Комплекты', icon: '🎁' },
 ];
 
 interface CatalogProps {
@@ -26,16 +23,18 @@ interface CatalogProps {
 }
 
 export default function Catalog({ products }: CatalogProps) {
-  const [activeCategory, setActiveCategory] = useState<FilterCategory>('all');
-  const [search, setSearch] = useState('');
+  const [activeSection, setActiveSection] = useState<'all' | Category>('all');
+  const [search, setSearch] = useState(() =>
+    typeof window !== 'undefined' ? ((window as any).__catalogSearch ?? '') : ''
+  );
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [cartIds, setCartIds] = useState<string[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sheetProduct, setSheetProduct] = useState<ProductDisplay | null>(null);
   const [playingProduct, setPlayingProduct] = useState<ProductDisplay | null>(null);
+  const showcaseRef = useRef<HTMLDivElement>(null);
 
   function handlePlay(product: ProductDisplay) {
-    // Call playDemoUrl synchronously in the user-gesture context so iOS Safari
-    // allows the audio to start. setPlayingProduct updates the UI afterwards.
     if (product.demo_url) playDemoUrl(product.demo_url);
     setPlayingProduct(product);
   }
@@ -54,6 +53,12 @@ export default function Catalog({ products }: CatalogProps) {
   }, []);
 
   useEffect(() => {
+    const handler = (e: Event) => setSearch((e as CustomEvent<string>).detail);
+    window.addEventListener('catalog-search', handler as EventListener);
+    return () => window.removeEventListener('catalog-search', handler as EventListener);
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('product');
     if (!productId) return;
@@ -65,6 +70,14 @@ export default function Catalog({ products }: CatalogProps) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products]);
+
+  useEffect(() => {
+    const el = showcaseRef.current;
+    if (!el) return;
+    const t1 = setTimeout(() => el.scrollTo({ left: 100, behavior: 'smooth' }), 1000);
+    const t2 = setTimeout(() => el.scrollTo({ left: 0, behavior: 'smooth' }), 1700);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
 
   function handleAdd(id: string) {
     const updated = addToCart(id);
@@ -95,28 +108,80 @@ export default function Catalog({ products }: CatalogProps) {
   const showcaseProducts = products
     .filter((p) => p.badge !== null || p.category === 'bundles')
     .slice(0, 5);
-  const showcaseIds = new Set(showcaseProducts.map((p) => p.id));
 
   const q = search.trim().toLowerCase();
-  const catalogProducts = products
-    .filter((p) => !showcaseIds.has(p.id))
-    .filter((p) => activeCategory === 'all' || p.category === activeCategory)
+  const isSearching = q.length > 0;
+  const inSectionsMode = !isSearching && activeSection === 'all';
+
+  const filteredProducts = products
+    .filter((p) => activeSection === 'all' || p.category === activeSection)
     .filter((p) => !q || p.title.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q));
+
+  const ViewToggle = () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <button
+        onClick={() => setViewMode('grid')}
+        style={{
+          background: viewMode === 'grid' ? 'var(--orange)' : '#fff',
+          border: '1.5px solid ' + (viewMode === 'grid' ? 'var(--orange)' : 'var(--border)'),
+          color: viewMode === 'grid' ? '#fff' : 'var(--ink-soft)',
+          borderRadius: 8,
+          padding: '6px 10px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          transition: 'all 0.15s',
+        }}
+        title="Сетка"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      </button>
+      <button
+        onClick={() => setViewMode('list')}
+        style={{
+          background: viewMode === 'list' ? 'var(--orange)' : '#fff',
+          border: '1.5px solid ' + (viewMode === 'list' ? 'var(--orange)' : 'var(--border)'),
+          color: viewMode === 'list' ? '#fff' : 'var(--ink-soft)',
+          borderRadius: 8,
+          padding: '6px 10px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          transition: 'all 0.15s',
+        }}
+        title="Список"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="3" y="4" width="18" height="3" rx="1"/>
+          <rect x="3" y="10.5" width="18" height="3" rx="1"/>
+          <rect x="3" y="17" width="18" height="3" rx="1"/>
+        </svg>
+      </button>
+    </div>
+  );
 
   return (
     <>
+      <style>{`
+        .section-grid { grid-template-columns: repeat(4, 1fr); }
+        @media (max-width: 900px) { .section-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 580px) { .section-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) {
+          .hero-inner { flex-direction: column !important; }
+          .hero-mascot { width: 100% !important; margin-top: 8px; }
+        }
+      `}</style>
+
       <div style={{ position: 'fixed', top: 16, right: 24, zIndex: 49, display: 'none' }}>
         <CartButton onClick={() => setDrawerOpen(true)} />
       </div>
 
-      {/* Hero */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 0' }}>
-        <style>{`
-          @media (max-width: 600px) {
-            .hero-inner { flex-direction: column !important; }
-            .hero-mascot { width: 100% !important; margin-top: 8px; }
-          }
-        `}</style>
         <div className="hero-inner" style={{
           background: '#fff',
           borderRadius: 28,
@@ -127,7 +192,6 @@ export default function Catalog({ products }: CatalogProps) {
           gap: 'clamp(24px, 4vw, 56px)',
           position: 'relative',
         }}>
-          {/* Left */}
           <div style={{ flex: '1 1 0', minWidth: 0 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -174,9 +238,7 @@ export default function Catalog({ products }: CatalogProps) {
             </button>
           </div>
 
-          {/* Right — mascot */}
           <div className="hero-mascot" style={{ flexShrink: 0, width: 'clamp(260px, 36vw, 440px)', position: 'relative' }}>
-            {/* Blob за картинкой */}
             <div style={{
               position: 'absolute',
               top: '50%', left: '50%',
@@ -199,13 +261,25 @@ export default function Catalog({ products }: CatalogProps) {
         </div>
       </section>
 
-      {/* ── Showcase (tiles) ── */}
       {showcaseProducts.length > 0 && (
         <section id="showcase-section" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 44px' }}>
           <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--ink)', marginBottom: 16, letterSpacing: '-0.01em' }}>
             Популярное
           </h2>
-          <div style={{ display: 'flex', gap: 16, overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', paddingBottom: 4, scrollbarWidth: 'none' }}>
+          <div
+            ref={showcaseRef}
+            style={{
+              display: 'flex',
+              gap: 16,
+              overflowX: 'auto',
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              paddingBottom: 4,
+              scrollbarWidth: 'none',
+              WebkitMaskImage: 'linear-gradient(to right, black 75%, transparent 100%)',
+              maskImage: 'linear-gradient(to right, black 75%, transparent 100%)',
+            }}
+          >
             {showcaseProducts.map((product) => (
               <div key={product.id} style={{ scrollSnapAlign: 'start', flexShrink: 0, width: 'clamp(220px, 22vw, 260px)' }}>
                 <ProductCard
@@ -221,67 +295,140 @@ export default function Catalog({ products }: CatalogProps) {
         </section>
       )}
 
-      {/* ── Filters ── */}
-      <div
-        id="catalog-section"
-        style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 14px', display: 'flex', gap: 8, flexWrap: 'wrap' }}
-      >
-        {FILTERS.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setActiveCategory(f.value)}
-            style={{
-              background: activeCategory === f.value ? 'var(--orange)' : '#fff',
-              border: `1.5px solid ${activeCategory === f.value ? 'var(--orange)' : 'var(--border)'}`,
-              color: activeCategory === f.value ? '#fff' : 'var(--ink-soft)',
-              padding: '9px 18px', borderRadius: 100, fontWeight: 700, fontSize: 14,
-              cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      <div id="catalog-section" style={{ maxWidth: 1200, margin: '0 auto', padding: '8px 24px 80px' }}>
+        {inSectionsMode ? (
+          <>
+            {SECTIONS.map((section) => {
+              const categoryProducts = products.filter((p) => p.category === section.category);
+              if (categoryProducts.length === 0) return null;
+              return (
+                <section key={section.category} style={{ marginBottom: 40 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                      <span>{section.icon}</span> {section.label}
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-soft)', marginLeft: 4 }}>
+                        {categoryProducts.length}
+                      </span>
+                    </h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {categoryProducts.length > 4 && (
+                        <button
+                          onClick={() => setActiveSection(section.category)}
+                          style={{
+                            background: 'none', border: 'none', color: 'var(--orange)',
+                            fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            padding: 0,
+                          }}
+                        >
+                          Все {categoryProducts.length} →
+                        </button>
+                      )}
+                      <ViewToggle />
+                    </div>
+                  </div>
 
-      {/* ── Search ── */}
-      <div style={{ maxWidth: 480, margin: '0 auto 20px', padding: '0 24px' }}>
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Поиск по названию или описанию..."
-          style={{
-            width: '100%', border: '1.5px solid var(--border)', borderRadius: 100,
-            padding: '12px 20px', fontSize: 15, outline: 'none',
-            fontFamily: 'inherit', boxSizing: 'border-box', background: '#fff',
-          }}
-        />
-      </div>
-
-      {/* ── Catalog list ── */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 80px' }}>
-        <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid var(--border)', overflow: 'hidden' }}>
-          {catalogProducts.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--ink-soft)' }}>
-              В этой категории пока нет товаров
+                  {viewMode === 'grid' ? (
+                    <div className="section-grid" style={{ display: 'grid', gap: 16 }}>
+                      {categoryProducts.slice(0, 4).map((p) => (
+                        <ProductCard
+                          key={p.id}
+                          product={p}
+                          inCart={cartIds.includes(p.id)}
+                          onAdd={handleAdd}
+                          onSelect={setSheetProduct}
+                          onPlay={handlePlay}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid var(--border)', overflow: 'hidden' }}>
+                      {categoryProducts.slice(0, 4).map((p, idx) => (
+                        <div key={p.id} style={{ borderBottom: idx < Math.min(categoryProducts.length, 4) - 1 ? '1px solid var(--border)' : 'none' }}>
+                          <ProductRow
+                            product={p}
+                            inCart={cartIds.includes(p.id)}
+                            onAdd={handleAdd}
+                            onSelect={setSheetProduct}
+                            onPlay={handlePlay}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </>
+        ) : (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              {activeSection !== 'all' && (
+                <button
+                  onClick={() => setActiveSection('all')}
+                  style={{
+                    background: '#fff',
+                    border: '1.5px solid var(--border)',
+                    borderRadius: 100,
+                    padding: '8px 16px',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    color: 'var(--ink-soft)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  ← Назад
+                </button>
+              )}
+              <h2 style={{ fontWeight: 800, fontSize: 18, color: 'var(--ink)', flex: 1, margin: 0 }}>
+                {isSearching
+                  ? `Поиск: «${search}»`
+                  : SECTIONS.find((s) => s.category === activeSection)?.label}
+                <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink-soft)', marginLeft: 8 }}>
+                  {filteredProducts.length}
+                </span>
+              </h2>
+              <ViewToggle />
             </div>
-          ) : (
-            catalogProducts.map((product, idx) => (
-              <div
-                key={product.id}
-                style={{ borderBottom: idx < catalogProducts.length - 1 ? '1px solid var(--border)' : 'none' }}
-              >
-                <ProductRow
-                  product={product}
-                  inCart={cartIds.includes(product.id)}
-                  onAdd={handleAdd}
-                  onSelect={setSheetProduct}
-                  onPlay={handlePlay}
-                />
+
+            {filteredProducts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--ink-soft)' }}>
+                Ничего не найдено
               </div>
-            ))
-          )}
-        </div>
+            ) : viewMode === 'grid' ? (
+              <div className="section-grid" style={{ display: 'grid', gap: 16 }}>
+                {filteredProducts.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    inCart={cartIds.includes(p.id)}
+                    onAdd={handleAdd}
+                    onSelect={setSheetProduct}
+                    onPlay={handlePlay}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid var(--border)', overflow: 'hidden' }}>
+                {filteredProducts.map((p, idx) => (
+                  <div key={p.id} style={{ borderBottom: idx < filteredProducts.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <ProductRow
+                      product={p}
+                      inCart={cartIds.includes(p.id)}
+                      onAdd={handleAdd}
+                      onSelect={setSheetProduct}
+                      onPlay={handlePlay}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <CartDrawer products={products} isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />

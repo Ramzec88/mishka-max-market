@@ -54,7 +54,6 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
         transition: 'transform 0.22s, box-shadow 0.22s',
       }}
     >
-      {/* Cover — 1:1 */}
       <div style={{ aspectRatio: '1/1', position: 'relative', overflow: 'hidden' }}>
         {product.cover_url ? (
           <Image
@@ -124,19 +123,33 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
         )}
       </div>
 
-      {/* Body */}
       <div style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
         {product.format && (
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#999',
+              textTransform: 'uppercase',
+              letterSpacing: '0.07em',
+              marginBottom: 5,
+            }}
+          >
             {product.format}
           </div>
         )}
         <h3
           style={{
-            fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: 'var(--ink)',
+            fontSize: 15,
+            fontWeight: 700,
+            lineHeight: 1.35,
+            color: '#1A1A2E',
             marginBottom: 0,
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-            overflow: 'hidden', textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}
         >
           {product.title}
@@ -154,12 +167,22 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
         <button
           onClick={(e) => { e.stopPropagation(); onAdd(product.id); }}
           style={{
-            marginTop: 10, width: '100%', height: 40, borderRadius: 10,
-            fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer',
-            fontFamily: 'inherit', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', gap: 6,
+            marginTop: 10,
+            width: '100%',
+            height: 40,
+            borderRadius: 10,
+            fontWeight: 700,
+            fontSize: 14,
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
             background: inCart ? '#16a34a' : 'var(--orange)',
-            color: '#fff', transition: 'background 0.18s',
+            color: '#fff',
+            transition: 'background 0.18s',
           }}
         >
           {inCart ? (
