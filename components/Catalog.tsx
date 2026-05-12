@@ -181,6 +181,7 @@ export default function Catalog({ products }: CatalogProps) {
         <CartButton onClick={() => setDrawerOpen(true)} />
       </div>
 
+      {/* Hero */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 0' }}>
         <div className="hero-inner" style={{
           background: '#fff',
@@ -192,6 +193,7 @@ export default function Catalog({ products }: CatalogProps) {
           gap: 'clamp(24px, 4vw, 56px)',
           position: 'relative',
         }}>
+          {/* Left */}
           <div style={{ flex: '1 1 0', minWidth: 0 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -238,6 +240,7 @@ export default function Catalog({ products }: CatalogProps) {
             </button>
           </div>
 
+          {/* Right — mascot */}
           <div className="hero-mascot" style={{ flexShrink: 0, width: 'clamp(260px, 36vw, 440px)', position: 'relative' }}>
             <div style={{
               position: 'absolute',
@@ -261,6 +264,7 @@ export default function Catalog({ products }: CatalogProps) {
         </div>
       </section>
 
+      {/* ── Showcase (tiles) ── */}
       {showcaseProducts.length > 0 && (
         <section id="showcase-section" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 44px' }}>
           <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--ink)', marginBottom: 16, letterSpacing: '-0.01em' }}>
@@ -295,14 +299,18 @@ export default function Catalog({ products }: CatalogProps) {
         </section>
       )}
 
+      {/* ── Catalog sections ── */}
       <div id="catalog-section" style={{ maxWidth: 1200, margin: '0 auto', padding: '8px 24px 80px' }}>
+
         {inSectionsMode ? (
+          /* Sections view */
           <>
             {SECTIONS.map((section) => {
               const categoryProducts = products.filter((p) => p.category === section.category);
               if (categoryProducts.length === 0) return null;
               return (
                 <section key={section.category} style={{ marginBottom: 40 }}>
+                  {/* Section header */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                     <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
                       <span>{section.icon}</span> {section.label}
@@ -310,24 +318,10 @@ export default function Catalog({ products }: CatalogProps) {
                         {categoryProducts.length}
                       </span>
                     </h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      {categoryProducts.length > 4 && (
-                        <button
-                          onClick={() => setActiveSection(section.category)}
-                          style={{
-                            background: 'none', border: 'none', color: 'var(--orange)',
-                            fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-                            display: 'flex', alignItems: 'center', gap: 4,
-                            padding: 0,
-                          }}
-                        >
-                          Все {categoryProducts.length} →
-                        </button>
-                      )}
-                      <ViewToggle />
-                    </div>
+                    <ViewToggle />
                   </div>
 
+                  {/* Products */}
                   {viewMode === 'grid' ? (
                     <div className="section-grid" style={{ display: 'grid', gap: 16 }}>
                       {categoryProducts.slice(0, 4).map((p) => (
@@ -340,6 +334,48 @@ export default function Catalog({ products }: CatalogProps) {
                           onPlay={handlePlay}
                         />
                       ))}
+                      {categoryProducts.length > 4 && (
+                        <div
+                          onClick={() => setActiveSection(section.category)}
+                          style={{
+                            cursor: 'pointer',
+                            background: 'var(--orange-light)',
+                            borderRadius: 16,
+                            border: '2px dashed var(--orange)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 10,
+                            padding: 24,
+                          }}
+                        >
+                          <span style={{ fontSize: 38, fontWeight: 900, color: 'var(--orange)', lineHeight: 1 }}>
+                            +{categoryProducts.length - 4}
+                          </span>
+                          <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>
+                            ещё товаров
+                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setActiveSection(section.category); }}
+                            style={{
+                              marginTop: 4,
+                              background: 'var(--orange)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 100,
+                              padding: '10px 22px',
+                              fontWeight: 700,
+                              fontSize: 14,
+                              cursor: 'pointer',
+                              fontFamily: 'inherit',
+                              boxShadow: '0 4px 12px rgba(255,122,61,0.3)',
+                            }}
+                          >
+                            Показать все
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid var(--border)', overflow: 'hidden' }}>
@@ -354,6 +390,22 @@ export default function Catalog({ products }: CatalogProps) {
                           />
                         </div>
                       ))}
+                      {categoryProducts.length > 4 && (
+                        <div style={{ borderTop: '1px solid var(--border)', padding: '14px 16px', display: 'flex', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => setActiveSection(section.category)}
+                            style={{
+                              background: 'var(--orange)', color: '#fff',
+                              border: 'none', borderRadius: 100,
+                              padding: '10px 24px', fontWeight: 700, fontSize: 14,
+                              cursor: 'pointer', fontFamily: 'inherit',
+                              boxShadow: '0 4px 12px rgba(255,122,61,0.3)',
+                            }}
+                          >
+                            Ещё +{categoryProducts.length - 4} товара
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </section>
@@ -361,6 +413,7 @@ export default function Catalog({ products }: CatalogProps) {
             })}
           </>
         ) : (
+          /* Category / Search view */
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               {activeSection !== 'all' && (
