@@ -12,6 +12,8 @@ export default function Header() {
         position: 'sticky',
         top: 0,
         zIndex: 50,
+        display: 'flex',
+        justifyContent: 'center',
       }}
     >
       <style>{`
@@ -27,7 +29,6 @@ export default function Header() {
         style={{
           maxWidth: 1200,
           width: '100%',
-          margin: '0 auto',
           padding: '12px 16px',
           display: 'flex',
           alignItems: 'center',

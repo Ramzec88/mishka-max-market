@@ -105,12 +105,11 @@ export default function StickyPlayer({ product, inCart, onClose, onAdd }: Props)
       }}
     >
       {product && (
-        <div style={{ background: '#1A1A2E', borderTop: '2px solid #FF7A3D' }}>
+        <div style={{ background: '#1A1A2E', borderTop: '2px solid #FF7A3D', display: 'flex', justifyContent: 'center' }}>
           <div
             style={{
               maxWidth: 1200,
               width: '100%',
-              margin: '0 auto',
               padding: '10px 16px',
               display: 'flex',
               alignItems: 'center',
