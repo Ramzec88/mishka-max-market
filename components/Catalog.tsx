@@ -10,6 +10,7 @@ import ProductSheet from './ProductSheet';
 import CartButton from './CartButton';
 import CartDrawer from './CartDrawer';
 import StickyPlayer from './StickyPlayer';
+import CartToast from './CartToast';
 
 const SECTIONS: { category: Category; label: string; icon: string }[] = [
   { category: 'songs', label: 'Песни', icon: '🎵' },
@@ -32,6 +33,9 @@ export default function Catalog({ products }: CatalogProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sheetProduct, setSheetProduct] = useState<ProductDisplay | null>(null);
   const [playingProduct, setPlayingProduct] = useState<ProductDisplay | null>(null);
+  const [toast, setToast] = useState<{ visible: boolean; productTitle: string; cartCount: number; cartTotal: number }>({
+    visible: false, productTitle: '', cartCount: 0, cartTotal: 0,
+  });
   const showcaseRef = useRef<HTMLDivElement>(null);
 
   function handlePlay(product: ProductDisplay) {
@@ -83,10 +87,14 @@ export default function Catalog({ products }: CatalogProps) {
     const updated = addToCart(id);
     setCartIds(updated);
     window.dispatchEvent(new Event('cart-updated'));
-    setDrawerOpen(true);
 
     const product = products.find((p) => p.id === id);
     if (product) {
+      const total = updated.reduce((sum, pid) => {
+        const p = products.find((x) => x.id === pid);
+        return sum + (p?.price ?? 0);
+      }, 0);
+      setToast({ visible: true, productTitle: product.title, cartCount: updated.length, cartTotal: total });
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         ecommerce: {
@@ -102,6 +110,8 @@ export default function Catalog({ products }: CatalogProps) {
           },
         },
       });
+    } else {
+      setDrawerOpen(true);
     }
   }
 
@@ -499,6 +509,15 @@ export default function Catalog({ products }: CatalogProps) {
         inCart={playingProduct ? cartIds.includes(playingProduct.id) : false}
         onClose={() => setPlayingProduct(null)}
         onAdd={handleAdd}
+      />
+
+      <CartToast
+        visible={toast.visible}
+        productTitle={toast.productTitle}
+        cartCount={toast.cartCount}
+        cartTotal={toast.cartTotal}
+        onGoToCart={() => setDrawerOpen(true)}
+        onHide={() => setToast((t) => ({ ...t, visible: false }))}
       />
     </>
   );
