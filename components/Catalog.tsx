@@ -10,6 +10,7 @@ import ProductSheet from './ProductSheet';
 import CartButton from './CartButton';
 import CartDrawer from './CartDrawer';
 import StickyPlayer from './StickyPlayer';
+import CartToast from './CartToast';
 
 const SECTIONS: { category: Category; label: string; icon: string }[] = [
   { category: 'songs', label: 'Песни', icon: '🎵' },
@@ -32,6 +33,9 @@ export default function Catalog({ products }: CatalogProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sheetProduct, setSheetProduct] = useState<ProductDisplay | null>(null);
   const [playingProduct, setPlayingProduct] = useState<ProductDisplay | null>(null);
+  const [toast, setToast] = useState<{ visible: boolean; productTitle: string; cartCount: number; cartTotal: number }>({
+    visible: false, productTitle: '', cartCount: 0, cartTotal: 0,
+  });
   const showcaseRef = useRef<HTMLDivElement>(null);
 
   function handlePlay(product: ProductDisplay) {
@@ -83,10 +87,14 @@ export default function Catalog({ products }: CatalogProps) {
     const updated = addToCart(id);
     setCartIds(updated);
     window.dispatchEvent(new Event('cart-updated'));
-    setDrawerOpen(true);
 
     const product = products.find((p) => p.id === id);
     if (product) {
+      const total = updated.reduce((sum, pid) => {
+        const p = products.find((x) => x.id === pid);
+        return sum + (p?.price ?? 0);
+      }, 0);
+      setToast({ visible: true, productTitle: product.title, cartCount: updated.length, cartTotal: total });
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         ecommerce: {
@@ -102,6 +110,8 @@ export default function Catalog({ products }: CatalogProps) {
           },
         },
       });
+    } else {
+      setDrawerOpen(true);
     }
   }
 
@@ -117,7 +127,6 @@ export default function Catalog({ products }: CatalogProps) {
     .filter((p) => activeSection === 'all' || p.category === activeSection)
     .filter((p) => !q || p.title.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q));
 
-  // View toggle component
   const ViewToggle = () => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <button
@@ -319,22 +328,7 @@ export default function Catalog({ products }: CatalogProps) {
                         {categoryProducts.length}
                       </span>
                     </h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      {categoryProducts.length > 4 && (
-                        <button
-                          onClick={() => setActiveSection(section.category)}
-                          style={{
-                            background: 'none', border: 'none', color: 'var(--orange)',
-                            fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-                            display: 'flex', alignItems: 'center', gap: 4,
-                            padding: 0,
-                          }}
-                        >
-                          Все {categoryProducts.length} →
-                        </button>
-                      )}
-                      <ViewToggle />
-                    </div>
+                    <ViewToggle />
                   </div>
 
                   {/* Products */}
@@ -350,6 +344,48 @@ export default function Catalog({ products }: CatalogProps) {
                           onPlay={handlePlay}
                         />
                       ))}
+                      {categoryProducts.length > 4 && (
+                        <div
+                          onClick={() => setActiveSection(section.category)}
+                          style={{
+                            cursor: 'pointer',
+                            background: 'var(--orange-light)',
+                            borderRadius: 16,
+                            border: '2px dashed var(--orange)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 10,
+                            padding: 24,
+                          }}
+                        >
+                          <span style={{ fontSize: 38, fontWeight: 900, color: 'var(--orange)', lineHeight: 1 }}>
+                            +{categoryProducts.length - 4}
+                          </span>
+                          <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>
+                            ещё товаров
+                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setActiveSection(section.category); }}
+                            style={{
+                              marginTop: 4,
+                              background: 'var(--orange)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 100,
+                              padding: '10px 22px',
+                              fontWeight: 700,
+                              fontSize: 14,
+                              cursor: 'pointer',
+                              fontFamily: 'inherit',
+                              boxShadow: '0 4px 12px rgba(255,122,61,0.3)',
+                            }}
+                          >
+                            Показать все
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid var(--border)', overflow: 'hidden' }}>
@@ -364,6 +400,22 @@ export default function Catalog({ products }: CatalogProps) {
                           />
                         </div>
                       ))}
+                      {categoryProducts.length > 4 && (
+                        <div style={{ borderTop: '1px solid var(--border)', padding: '14px 16px', display: 'flex', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => setActiveSection(section.category)}
+                            style={{
+                              background: 'var(--orange)', color: '#fff',
+                              border: 'none', borderRadius: 100,
+                              padding: '10px 24px', fontWeight: 700, fontSize: 14,
+                              cursor: 'pointer', fontFamily: 'inherit',
+                              boxShadow: '0 4px 12px rgba(255,122,61,0.3)',
+                            }}
+                          >
+                            Ещё +{categoryProducts.length - 4} товара
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </section>
@@ -457,6 +509,15 @@ export default function Catalog({ products }: CatalogProps) {
         inCart={playingProduct ? cartIds.includes(playingProduct.id) : false}
         onClose={() => setPlayingProduct(null)}
         onAdd={handleAdd}
+      />
+
+      <CartToast
+        visible={toast.visible}
+        productTitle={toast.productTitle}
+        cartCount={toast.cartCount}
+        cartTotal={toast.cartTotal}
+        onGoToCart={() => setDrawerOpen(true)}
+        onHide={() => setToast((t) => ({ ...t, visible: false }))}
       />
     </>
   );
