@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendOrderEmail, DownloadItem } from '@/lib/email';
 import { getFileSizeBytes } from '@/lib/storage';
+import { getTokenExpiry } from '@/lib/tokens';
 
 export async function POST(
   _request: NextRequest,
@@ -29,6 +30,12 @@ export async function POST(
     if (!tokens || tokens.length === 0) {
       return NextResponse.json({ error: 'Токены не найдены' }, { status: 404 });
     }
+
+    // Reset download count and extend expiry for all tokens before resending
+    await supabaseAdmin
+      .from('download_tokens')
+      .update({ downloads_count: 0, expires_at: getTokenExpiry().toISOString() })
+      .eq('order_id', params.id);
 
     const productIds = Array.from(new Set(tokens.map((t) => t.product_id)));
     const { data: products } = await supabaseAdmin
