@@ -14,7 +14,7 @@ export async function GET(
 
   const { data: order, error } = await supabaseAdmin
     .from('orders')
-    .select('id, status, email, amount, items, promo_code, discount_amount')
+    .select('id, status, email, amount, items, promo_code, discount_amount, cancellation_reason')
     .eq('id', id)
     .single();
 
@@ -27,11 +27,16 @@ export async function GET(
     amount?: number;
     promo_code?: string | null;
     discount_amount?: number;
+    cancellation_reason?: string | null;
     ecommerce_products?: { id: string; name: string; price: number }[];
     download_links?: unknown[];
   } = {
     status: order.status,
   };
+
+  if (order.status === 'canceled' || order.status === 'failed') {
+    response.cancellation_reason = order.cancellation_reason ?? null;
+  }
 
   // Если заказ оплачен, возвращаем ссылки для скачивания и данные для ecommerce
   if (order.status === 'paid') {
