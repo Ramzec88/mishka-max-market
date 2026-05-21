@@ -33,7 +33,7 @@ export async function createLavaInvoice(params: LavaInvoiceParams): Promise<Lava
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'X-Api-Key': apiKey,
     },
     body: JSON.stringify(body),
   });
