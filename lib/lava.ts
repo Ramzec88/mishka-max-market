@@ -4,7 +4,7 @@ export interface LavaInvoiceParams {
   email: string;
   offerId: string;
   currency: 'RUB';
-  amount: number;     // рубли (не копейки)
+  amount?: number;    // рубли (не копейки), опционально
   successUrl?: string;
   failUrl?: string;
 }
@@ -22,10 +22,10 @@ export async function createLavaInvoice(params: LavaInvoiceParams): Promise<Lava
 
   const body: Record<string, unknown> = {
     email: params.email,
-    offer_id: params.offerId,
+    offerId: params.offerId,
     currency: params.currency,
-    amount: params.amount,
   };
+  if (params.amount) body.amount = params.amount;
   if (params.successUrl) body.successUrl = params.successUrl;
   if (params.failUrl) body.failUrl = params.failUrl;
 
@@ -33,7 +33,8 @@ export async function createLavaInvoice(params: LavaInvoiceParams): Promise<Lava
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Api-Key': apiKey,
+      'accept': 'application/json',
+      'Authorization': `ApiKey ${apiKey}`,
     },
     body: JSON.stringify(body),
   });
