@@ -23,6 +23,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('yookassa');
+  const [formError, setFormError] = useState('');
 
   const [promoInput, setPromoInput] = useState('');
   const [promoChecking, setPromoChecking] = useState(false);
@@ -62,10 +63,16 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
     setPromoError('');
   }
 
+  function handleError(msg: string) {
+    setFormError(msg);
+    onError(msg);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setFormError('');
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      onError('Укажите корректный email — на него придут купленные файлы');
+      handleError('Укажите корректный email — на него придут купленные файлы');
       return;
     }
     setLoading(true);
@@ -96,7 +103,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
         onSuccess(confirmation_token, order_id);
       }
     } catch (err) {
-      onError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+      handleError(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {
       setLoading(false);
     }
@@ -262,6 +269,16 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
           <span>{finalTotal} ₽</span>
         </div>
       </div>
+
+      {formError && (
+        <div style={{
+          background: '#FFF1F0', border: '1px solid #FFB3AE',
+          borderRadius: 10, padding: '10px 14px', marginBottom: 12,
+          fontSize: 13, color: '#C0392B', lineHeight: 1.4,
+        }}>
+          {formError}
+        </div>
+      )}
 
       <button
         type="submit"
