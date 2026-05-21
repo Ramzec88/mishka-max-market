@@ -17,9 +17,12 @@ interface PromoData {
   applicable_to_all: boolean;
 }
 
+type PaymentMethod = 'yookassa' | 'lava';
+
 export default function CheckoutForm({ total, items, onSuccess, onError }: CheckoutFormProps) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('yookassa');
 
   const [promoInput, setPromoInput] = useState('');
   const [promoChecking, setPromoChecking] = useState(false);
@@ -67,17 +70,31 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/create-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, email, promoCode: promoData?.code ?? null }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Ошибка при создании платежа');
+      if (paymentMethod === 'lava') {
+        const res = await fetch('/api/create-lava-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, email, promoCode: promoData?.code ?? null }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Ошибка при создании платежа');
+        }
+        const { payment_url } = await res.json();
+        window.location.href = payment_url;
+      } else {
+        const res = await fetch('/api/create-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, email, promoCode: promoData?.code ?? null }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Ошибка при создании платежа');
+        }
+        const { confirmation_token, order_id } = await res.json();
+        onSuccess(confirmation_token, order_id);
       }
-      const { confirmation_token, order_id } = await res.json();
-      onSuccess(confirmation_token, order_id);
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {
@@ -87,6 +104,55 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
 
   return (
     <form onSubmit={handleSubmit}>
+      {/* Способ оплаты */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 8 }}>
+          Способ оплаты
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => setPaymentMethod('yookassa')}
+            style={{
+              padding: '10px 8px',
+              borderRadius: 12,
+              border: `2px solid ${paymentMethod === 'yookassa' ? 'var(--orange)' : 'var(--border)'}`,
+              background: paymentMethod === 'yookassa' ? 'var(--orange-light)' : '#fff',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              transition: 'all 0.15s',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 18, marginBottom: 2 }}>🏦</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: paymentMethod === 'yookassa' ? 'var(--orange)' : 'var(--ink)' }}>
+              Российская карта
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 1 }}>МИР, Visa, MC</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentMethod('lava')}
+            style={{
+              padding: '10px 8px',
+              borderRadius: 12,
+              border: `2px solid ${paymentMethod === 'lava' ? 'var(--orange)' : 'var(--border)'}`,
+              background: paymentMethod === 'lava' ? 'var(--orange-light)' : '#fff',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              transition: 'all 0.15s',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 18, marginBottom: 2 }}>🌍</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: paymentMethod === 'lava' ? 'var(--orange)' : 'var(--ink)' }}>
+              Иностранная карта
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 1 }}>Visa, Mastercard</div>
+          </button>
+        </div>
+      </div>
+
       {/* Email */}
       <label
         htmlFor="emailInput"
@@ -207,12 +273,14 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
           fontFamily: 'inherit', opacity: loading ? 0.6 : 1, transition: 'all 0.2s',
         }}
       >
-        {loading ? 'Создаём платёж...' : 'Перейти к оплате'}
+        {loading
+          ? (paymentMethod === 'lava' ? 'Переходим к оплате...' : 'Создаём платёж...')
+          : 'Перейти к оплате'}
       </button>
       <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 10, textAlign: 'center', lineHeight: 1.4 }}>
         Нажимая кнопку, вы принимаете условия{' '}
         <Link href="/offer" style={{ color: 'var(--orange)', textDecoration: 'underline' }}>оферты</Link>{' '}
-        и соглашаетесь на обработку персональных данных
+        и соглашаетесь на обработку персоналэнных данных
       </p>
     </form>
   );
