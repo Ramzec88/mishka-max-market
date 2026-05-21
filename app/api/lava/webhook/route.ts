@@ -17,7 +17,21 @@ interface LavaWebhookPayload {
   timestamp?: string;
 }
 
+function checkBasicAuth(request: NextRequest): boolean {
+  const login = process.env.LAVA_WEBHOOK_LOGIN;
+  const password = process.env.LAVA_WEBHOOK_PASSWORD;
+  if (!login || !password) return true; // если не настроено — пропускаем
+  const authHeader = request.headers.get('authorization') || '';
+  if (!authHeader.startsWith('Basic ')) return false;
+  const expected = Buffer.from(`${login}:${password}`).toString('base64');
+  return authHeader === `Basic ${expected}`;
+}
+
 export async function POST(request: NextRequest) {
+  if (!checkBasicAuth(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const payload: LavaWebhookPayload = await request.json();
     const { eventType, contractId } = payload;
