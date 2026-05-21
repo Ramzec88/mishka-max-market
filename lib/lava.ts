@@ -20,13 +20,22 @@ export async function createLavaInvoice(params: LavaInvoiceParams): Promise<Lava
   const apiKey = process.env.LAVA_API_KEY;
   if (!apiKey) throw new Error('LAVA_API_KEY не настроен');
 
+  const body: Record<string, unknown> = {
+    email: params.email,
+    offer_id: params.offerId,
+    currency: params.currency,
+    amount: params.amount,
+  };
+  if (params.successUrl) body.successUrl = params.successUrl;
+  if (params.failUrl) body.failUrl = params.failUrl;
+
   const res = await fetch(`${LAVA_BASE}/api/v3/invoice`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify(params),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
