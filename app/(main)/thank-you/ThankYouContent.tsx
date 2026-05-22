@@ -6,6 +6,30 @@ import Link from 'next/link';
 import { OrderStatus } from '@/types/order';
 import { clearCart } from '@/lib/cart';
 
+const LAVA_SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+function recoverOrderId(): string | null {
+  try {
+    const v = sessionStorage.getItem('lava_pending_order');
+    if (v) return v;
+  } catch { /* ignore */ }
+  try {
+    const raw = localStorage.getItem('lava_payment_session');
+    if (raw) {
+      const parsed = JSON.parse(raw) as { id?: string; ts?: number };
+      if (parsed.id && parsed.ts && Date.now() - parsed.ts < LAVA_SESSION_TTL_MS) {
+        return parsed.id;
+      }
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function clearPaymentSession() {
+  try { sessionStorage.removeItem('lava_pending_order'); } catch { /* ignore */ }
+  try { localStorage.removeItem('lava_payment_session'); } catch { /* ignore */ }
+}
+
 const LARGE_FILE_BYTES = 50 * 1024 * 1024;
 
 interface DownloadLink {
@@ -29,18 +53,58 @@ interface OrderStatusResponse {
   amount?: number;
   promo_code?: string | null;
   discount_amount?: number;
+  cancellation_reason?: string | null;
   ecommerce_products?: EcommerceProduct[];
   download_links?: DownloadLink[];
 }
 
+const CANCEL_MESSAGES: Record<string, { title: string; body: string }> = {
+  payment_canceled:        { title: 'Платёж отменён', body: 'Вы отменили оплату. Вернитесь в каталог и попробуйте снова.' },
+  expired_on_confirmation: { title: 'Время на оплату вышло', body: 'Вы не завершили оплату вовремя. Попробуйте снова — корзина сохранена.' },
+  insufficient_funds:      { title: 'Недостаточно средств', body: 'На карте не хватает средств. Попробуйте другую карту или пополните баланс.' },
+  card_expired:            { title: 'Карта просрочена', body: 'Срок действия карты истёк. Используйте другую карту.' },
+  fraud_suspected:         { title: 'Платёж заблокирован банком', body: 'Ваш банк заблокировал транзакцию как подозрительную. Свяжитесь с банком или используйте другую карту.' },
+  card_not_supported:      { title: 'Карта не поддерживается', body: 'К сожалению, иностранные карты не принимаются. Попробуйте российскую карту или другой способ оплаты.' },
+  country_forbidden:       { title: 'Оплата из вашей страны недоступна', body: 'Платёжная система не поддерживает карты из вашей страны. Попробуйте другой способ оплаты или напишите нам.' },
+  '3ds_failed':            { title: 'Не удалось подтвердить платёж', body: 'Банк не смог подтвердить платёж (3D-Secure). Попробуйте снова или используйте другую карту.' },
+  call_issuer:             { title: 'Требуется звонок в банк', body: 'Ваш банк требует дополнительного подтверждения. Позвоните на горячую линию банка и повторите оплату.' },
+  rejected_by_payee:       { title: 'Платёж отклонён', body: 'Платёжная система отклонила транзакцию. Попробуйте другую карту или напишите нам.' },
+  internal_timeout:        { title: 'Технический сбой', body: 'Произошла техническая ошибка. Попробуйте снова через несколько минут.' },
+};
+
 export default function ThankYouContent() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get('order');
+  const orderIdFromQuery = searchParams.get('order');
+  const [orderId, setOrderId] = useState<string | null>(orderIdFromQuery);
+  const [orderResolved, setOrderResolved] = useState(!!orderIdFromQuery);
+
+  useEffect(() => {
+    if (orderIdFromQuery) {
+      setOrderId(orderIdFromQuery);
+      setOrderResolved(true);
+      clearPaymentSession();
+      return;
+    }
+
+    const recovered = recoverOrderId();
+    if (recovered) {
+      setOrderId(recovered);
+      clearPaymentSession();
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('order', recovered);
+        window.history.replaceState(null, '', url.pathname + url.search);
+      } catch { /* ignore */ }
+    }
+
+    setOrderResolved(true);
+  }, [orderIdFromQuery]);
 
   const [status, setStatus] = useState<OrderStatus | null>(null);
   const [links, setLinks] = useState<DownloadLink[]>([]);
   const [polling, setPolling] = useState(true);
   const [retryKey, setRetryKey] = useState(0);
+  const [cancelReason, setCancelReason] = useState<string | null>(null);
   const ymFired = useRef(false);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
@@ -105,7 +169,10 @@ export default function ThankYouContent() {
             }
           }
           if (data.status === 'canceled' || data.status === 'failed') {
-            if (!cancelled) setPolling(false);
+            if (!cancelled) {
+              setCancelReason(data.cancellation_reason ?? null);
+              setPolling(false);
+            }
             return;
           }
         }
@@ -132,22 +199,35 @@ export default function ThankYouContent() {
     setRetryKey((k) => k + 1);
   }, []);
 
-  if (!orderId) {
+  if (!orderResolved) {
     return (
       <div style={{ maxWidth: 600, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>❌</div>
-        <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 12 }}>Заказ не найден</h1>
-        <p style={{ color: 'var(--ink-soft)', marginBottom: 24 }}>
-          Ссылка недействительна. Проверьте письмо на email или обратитесь в поддержку.
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+        <p style={{ color: 'var(--ink-soft)' }}>Загружаем ваш заказ…</p>
+      </div>
+    );
+  }
+
+  if (!orderId) {
+    return (
+      <div style={{ maxWidth: 520, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 12 }}>Оплата прошла успешно!</h1>
+        <p style={{ color: 'var(--ink-soft)', fontSize: 16, lineHeight: 1.6, marginBottom: 24 }}>
+          Файлы уже готовятся — в течение нескольких минут вы получите письмо со ссылками для скачивания.
+        </p>
+        <p style={{ color: 'var(--ink-soft)', fontSize: 14, marginBottom: 32 }}>
+          Не нашли письмо? Проверьте папку «Спам». Если письмо не пришло в течение 10 минут — напишите нам на{' '}
+          <a href="mailto:info@mishka-max.ru" style={{ color: 'var(--orange)' }}>info@mishka-max.ru</a>
         </p>
         <Link
           href="/"
           style={{
             display: 'inline-block', background: 'var(--orange)', color: '#fff',
-            padding: '14px 28px', borderRadius: 100, fontWeight: 800, fontSize: 16,
+            padding: '14px 32px', borderRadius: 100, fontWeight: 800, textDecoration: 'none', fontSize: 15,
           }}
         >
-          На главную
+          Вернуться в каталог
         </Link>
       </div>
     );
@@ -185,23 +265,35 @@ export default function ThankYouContent() {
         </div>
       )}
 
-      {!polling && (status === 'canceled' || status === 'failed') && (
-        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>❌</div>
-          <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 12 }}>Платёж не прошёл</h1>
-          <p style={{ color: 'var(--ink-soft)', marginBottom: 24 }}>
-            Оплата была отменена или отклонена банком. Попробуйте снова.
-          </p>
-          <Link href="/"
-            style={{
-              display: 'inline-block', background: 'var(--orange)', color: '#fff',
-              padding: '14px 28px', borderRadius: 100, fontWeight: 800, fontSize: 16,
-            }}
-          >
-            Вернуться в каталог
-          </Link>
-        </div>
-      )}
+      {!polling && (status === 'canceled' || status === 'failed') && (() => {
+        const msg = (cancelReason && CANCEL_MESSAGES[cancelReason]) || {
+          title: 'Платёж не прошёл',
+          body: 'Оплата была отменена или отклонена. Попробуйте снова или напишите нам.',
+        };
+        return (
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>❌</div>
+            <h1 style={{ fontSize: 26, fontWeight: 900, marginBottom: 12 }}>{msg.title}</h1>
+            <p style={{ color: 'var(--ink-soft)', marginBottom: 8, lineHeight: 1.6 }}>
+              {msg.body}
+            </p>
+            <p style={{ color: 'var(--ink-soft)', fontSize: 13, marginBottom: 28 }}>
+              Остались вопросы?{' '}
+              <a href="mailto:info@mishka-max.ru" style={{ color: 'var(--orange)', fontWeight: 700 }}>
+                info@mishka-max.ru
+              </a>
+            </p>
+            <Link href="/"
+              style={{
+                display: 'inline-block', background: 'var(--orange)', color: '#fff',
+                padding: '14px 28px', borderRadius: 100, fontWeight: 800, fontSize: 16,
+              }}
+            >
+              Вернуться в каталог
+            </Link>
+          </div>
+        );
+      })()}
 
       {!polling && status === 'paid' && (
         <div>
