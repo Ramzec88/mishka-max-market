@@ -17,28 +17,8 @@ interface LavaWebhookPayload {
   timestamp?: string;
 }
 
-function checkWebhookAuth(request: NextRequest): boolean {
-  const secret = process.env.LAVA_WEBHOOK_API_KEY;
-  if (!secret) return true;
-
-  const xApiKey = request.headers.get('x-api-key') || '';
-  return xApiKey === secret;
-}
-
 export async function POST(request: NextRequest) {
-  if (!checkWebhookAuth(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
-    const webhookKey = process.env.LAVA_WEBHOOK_API_KEY;
-    if (webhookKey) {
-      const incomingKey = request.headers.get('x-api-key');
-      if (incomingKey !== webhookKey) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-    }
-
     const payload: LavaWebhookPayload = await request.json();
     const { eventType, contractId } = payload;
 
