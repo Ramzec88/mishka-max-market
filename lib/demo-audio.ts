@@ -17,19 +17,15 @@ export function playDemoUrl(url: string): void {
   if (typeof window === 'undefined') return;
   const a = ensure();
 
-  // Completely reset the audio element for iOS Safari compatibility
   a.pause();
   a.src = '';
-
-  // Now set new source and play
   a.src = url;
   a.play()
     .then(() => {
       console.log('[Audio] Playing:', url);
     })
-    .catch((err: any) => {
-      console.error('[Audio] play() failed:', err.name, err.message);
-      // Try load() as fallback
+    .catch((err: unknown) => {
+      console.error('[Audio] play() failed:', (err as Error).name, (err as Error).message);
       a.load();
       a.play().catch(() => {});
     });

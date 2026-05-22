@@ -17,7 +17,19 @@ interface LavaWebhookPayload {
   timestamp?: string;
 }
 
+function checkWebhookAuth(request: NextRequest): boolean {
+  const secret = process.env.LAVA_WEBHOOK_API_KEY;
+  if (!secret) return true;
+
+  const xApiKey = request.headers.get('x-api-key') || '';
+  return xApiKey === secret;
+}
+
 export async function POST(request: NextRequest) {
+  if (!checkWebhookAuth(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const payload: LavaWebhookPayload = await request.json();
     const { eventType, contractId } = payload;
@@ -33,9 +45,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError || !order) {
+      // Неизвестный контракт — отвечаем 200 чтобы Lava не ретраила
       return NextResponse.json({ ok: true });
     }
 
+    // Идемпотентность
     if (order.webhook_processed_at) {
       return NextResponse.json({ ok: true });
     }
@@ -120,6 +134,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('lava webhook error:', err);
+    // Возвращаем 500 чтобы Lava повторила попытку
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

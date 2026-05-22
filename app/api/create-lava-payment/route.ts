@@ -88,15 +88,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ошибка создания заказа', detail: orderError?.message }, { status: 500 });
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
-
     const invoice = await createLavaInvoice({
       email,
       offerId,
       currency: 'RUB',
       amount: Math.round(finalAmount / 100),
-      successUrl: `${siteUrl}/thank-you?order=${order.id}`,
-      failUrl: `${siteUrl}/thank-you?order=${order.id}`,
     });
 
     await supabaseAdmin

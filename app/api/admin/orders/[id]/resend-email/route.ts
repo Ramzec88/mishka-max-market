@@ -31,7 +31,7 @@ export async function POST(
       return NextResponse.json({ error: 'Токены не найдены' }, { status: 404 });
     }
 
-    // Reset download count and extend expiry for all tokens before resending
+    // Сбрасываем лимит скачиваний и продлеваем срок действия
     await supabaseAdmin
       .from('download_tokens')
       .update({ downloads_count: 0, expires_at: getTokenExpiry().toISOString() })
