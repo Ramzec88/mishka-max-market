@@ -18,20 +18,12 @@ interface LavaWebhookPayload {
 }
 
 function checkWebhookAuth(request: NextRequest): boolean {
-  const login = process.env.LAVA_WEBHOOK_LOGIN;
-  const password = process.env.LAVA_WEBHOOK_PASSWORD;
-  if (!login || !password) return true; // если не настроено — пропускаем
+  const secret = process.env.LAVA_WEBHOOK_API_KEY;
+  if (!secret) return true; // если не настроено — пропускаем
 
-  // Basic auth (если в Lava выбран тип "Basic")
-  const authHeader = request.headers.get('authorization') || '';
-  if (authHeader.startsWith('Basic ')) {
-    const expected = Buffer.from(`${login}:${password}`).toString('base64');
-    return authHeader === `Basic ${expected}`;
-  }
-
-  // X-Api-Key (если в Lava выбран тип "API key вашего сервиса")
+  // X-Api-Key (тип "API key вашего сервиса" в настройках webhook Lava Top)
   const xApiKey = request.headers.get('x-api-key') || '';
-  if (xApiKey) return xApiKey === password;
+  return xApiKey === secret;
 
   return false;
 }

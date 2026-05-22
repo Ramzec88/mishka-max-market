@@ -4,9 +4,7 @@ export interface LavaInvoiceParams {
   email: string;
   offerId: string;
   currency: 'RUB';
-  amount?: number;    // рубли (не копейки), опционально
-  successUrl?: string;
-  failUrl?: string;
+  amount?: number; // рубли, только для оффера с динамической ценой
 }
 
 export interface LavaInvoice {
@@ -25,9 +23,10 @@ export async function createLavaInvoice(params: LavaInvoiceParams): Promise<Lava
     offerId: params.offerId,
     currency: params.currency,
   };
-  if (params.amount) body.amount = params.amount;
-  if (params.successUrl) body.successUrl = params.successUrl;
-  if (params.failUrl) body.failUrl = params.failUrl;
+
+  if (params.amount && process.env.LAVA_DYNAMIC_PRICE === 'true') {
+    body.amount = params.amount;
+  }
 
   const res = await fetch(`${LAVA_BASE}/api/v3/invoice`, {
     method: 'POST',
