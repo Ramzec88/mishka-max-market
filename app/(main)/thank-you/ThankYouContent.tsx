@@ -153,20 +153,18 @@ export default function ThankYouContent() {
 
   if (!orderId) {
     return (
-      <div style={{ maxWidth: 600, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>❌</div>
-        <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 12 }}>Заказ не найден</h1>
-        <p style={{ color: 'var(--ink-soft)', marginBottom: 24 }}>
-          Ссылка недействительна. Проверьте письмо на email или обратитесь в поддержку.
+      <div style={{ maxWidth: 520, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 12 }}>Оплата прошла успешно!</h1>
+        <p style={{ color: 'var(--ink-soft)', fontSize: 16, lineHeight: 1.6, marginBottom: 24 }}>
+          Файлы уже готовятся — в течение нескольких минут вы получите письмо со ссылками для скачивания.
         </p>
-        <Link
-          href="/"
-          style={{
-            display: 'inline-block', background: 'var(--orange)', color: '#fff',
-            padding: '14px 28px', borderRadius: 100, fontWeight: 800, fontSize: 16,
-          }}
-        >
-          На главную
+        <p style={{ color: 'var(--ink-soft)', fontSize: 14, marginBottom: 32 }}>
+          Не нашли письмо? Проверьте папку «Спам». Если письмо не пришло в течение 10 минут — напишите нам на{' '}
+          <a href="mailto:info@mishka-max.ru" style={{ color: 'var(--orange)' }}>info@mishka-max.ru</a>
+        </p>
+        <Link href="/" style={{ display: 'inline-block', background: 'var(--orange)', color: '#fff', padding: '14px 32px', borderRadius: 100, fontWeight: 800, textDecoration: 'none', fontSize: 15 }}>
+          Вернуться в каталог
         </Link>
       </div>
     );
