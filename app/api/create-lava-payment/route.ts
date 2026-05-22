@@ -96,11 +96,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ошибка создания заказа', detail: orderError?.message }, { status: 500 });
     }
 
-    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
-    if (!siteUrl) {
-      console.warn('create-lava-payment: NEXT_PUBLIC_SITE_URL не задан — Lava не сможет вернуть покупателя на /thank-you');
-    }
-    const thankYouUrl = siteUrl ? `${siteUrl}/thank-you?order=${order.id}` : undefined;
+    const origin =
+      (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '') ||
+      request.headers.get('origin') ||
+      `https://${request.headers.get('host')}`;
+    const thankYouUrl = `${origin}/thank-you?order=${order.id}`;
 
     const invoice = await createLavaInvoice({
       email: buyerEmail,
@@ -108,7 +108,8 @@ export async function POST(request: NextRequest) {
       currency: 'RUB',
       amount: Math.round(finalAmount / 100),
       buyerLanguage: 'RU',
-      ...(thankYouUrl ? { successUrl: thankYouUrl, failUrl: thankYouUrl } : {}),
+      successUrl: thankYouUrl,
+      failUrl: thankYouUrl,
       clientUtm: {
         utm_source: 'mishka-max-market',
         utm_medium: 'checkout',
