@@ -5,9 +5,9 @@ import { isValidLavaEmail, lavaErrorMessage, normalizeLavaEmail } from '@/lib/la
 import { Product } from '@/types/product';
 
 function getLavaCurrency(): LavaCurrency {
-  const c = (process.env.LAVA_CURRENCY || 'USD').toUpperCase();
+  const c = (process.env.LAVA_CURRENCY || 'RUB').toUpperCase();
   if (c === 'RUB' || c === 'USD' || c === 'EUR') return c;
-  return 'USD';
+  return 'RUB';
 }
 
 /** Сумма корзины в копейках (RUB) → сумма для Lava в валюте оффера */
