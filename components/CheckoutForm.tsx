@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { clearCart } from '@/lib/cart';
 
 interface CheckoutFormProps {
   total: number;
@@ -97,6 +98,9 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
           try { sessionStorage.setItem('lava_pending_order', order_id); } catch { /* ignore */ }
           try { localStorage.setItem('lava_payment_session', payload); } catch { /* ignore */ }
         }
+        // Очищаем корзину до редиректа — чтобы счётчик сбросился сразу
+        clearCart();
+        window.dispatchEvent(new Event('cart-updated'));
         window.location.href = payment_url;
       } else {
         const res = await fetch('/api/create-payment', {
