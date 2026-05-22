@@ -12,6 +12,10 @@ export async function GET() {
     SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
     YOOKASSA_SHOP_ID: !!process.env.YOOKASSA_SHOP_ID,
     YOOKASSA_SECRET_KEY: !!process.env.YOOKASSA_SECRET_KEY,
+    LAVA_API_KEY: !!process.env.LAVA_API_KEY,
+    LAVA_OFFER_ID: !!process.env.LAVA_OFFER_ID,
+    LAVA_WEBHOOK_API_KEY: !!process.env.LAVA_WEBHOOK_API_KEY,
+    LAVA_DYNAMIC_PRICE: process.env.LAVA_DYNAMIC_PRICE === 'true',
   };
 
   // 2. Проверяем подключение к Supabase через anon key

@@ -50,7 +50,30 @@ const CANCEL_MESSAGES: Record<string, { title: string; body: string }> = {
 
 export default function ThankYouContent() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get('order');
+  const orderIdFromQuery = searchParams.get('order');
+  const [orderId, setOrderId] = useState<string | null>(orderIdFromQuery);
+  const [orderResolved, setOrderResolved] = useState(!!orderIdFromQuery);
+
+  useEffect(() => {
+    if (orderIdFromQuery) {
+      setOrderId(orderIdFromQuery);
+      setOrderResolved(true);
+      return;
+    }
+    try {
+      const pending = sessionStorage.getItem('lava_pending_order');
+      if (pending) {
+        setOrderId(pending);
+        sessionStorage.removeItem('lava_pending_order');
+        const url = new URL(window.location.href);
+        url.searchParams.set('order', pending);
+        window.history.replaceState(null, '', url.pathname + url.search);
+      }
+    } catch {
+      /* ignore */
+    }
+    setOrderResolved(true);
+  }, [orderIdFromQuery]);
 
   const [status, setStatus] = useState<OrderStatus | null>(null);
   const [links, setLinks] = useState<DownloadLink[]>([]);
@@ -151,6 +174,15 @@ export default function ThankYouContent() {
     setRetryKey((k) => k + 1);
   }, []);
 
+  if (!orderResolved) {
+    return (
+      <div style={{ maxWidth: 600, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+        <p style={{ color: 'var(--ink-soft)' }}>Загружаем ваш заказ…</p>
+      </div>
+    );
+  }
+
   if (!orderId) {
     return (
       <div style={{ maxWidth: 520, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
@@ -163,7 +195,13 @@ export default function ThankYouContent() {
           Не нашли письмо? Проверьте папку «Спам». Если письмо не пришло в течение 10 минут — напишите нам на{' '}
           <a href="mailto:info@mishka-max.ru" style={{ color: 'var(--orange)' }}>info@mishka-max.ru</a>
         </p>
-        <Link href="/" style={{ display: 'inline-block', background: 'var(--orange)', color: '#fff', padding: '14px 32px', borderRadius: 100, fontWeight: 800, textDecoration: 'none', fontSize: 15 }}>
+        <Link
+          href="/"
+          style={{
+            display: 'inline-block', background: 'var(--orange)', color: '#fff',
+            padding: '14px 32px', borderRadius: 100, fontWeight: 800, textDecoration: 'none', fontSize: 15,
+          }}
+        >
           Вернуться в каталог
         </Link>
       </div>

@@ -71,8 +71,12 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError('');
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      handleError('Укажите корректный email — на него придут купленные файлы');
+    const trimmedEmail = email.trim().toLowerCase();
+    const emailOk =
+      /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(trimmedEmail) &&
+      !/[^\x00-\x7F]/.test(trimmedEmail);
+    if (!emailOk) {
+      handleError('Укажите email латиницей (например name@gmail.com) — на него придут файлы');
       return;
     }
     setLoading(true);
@@ -81,19 +85,26 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
         const res = await fetch('/api/create-lava-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, email, promoCode: promoData?.code ?? null }),
+          body: JSON.stringify({ items, email: trimmedEmail, promoCode: promoData?.code ?? null }),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || 'Ошибка при создании платежа');
         }
-        const { payment_url } = await res.json();
+        const { payment_url, order_id } = await res.json();
+        if (order_id) {
+          try {
+            sessionStorage.setItem('lava_pending_order', order_id);
+          } catch {
+            /* private mode / blocked storage */
+          }
+        }
         window.location.href = payment_url;
       } else {
         const res = await fetch('/api/create-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, email, promoCode: promoData?.code ?? null }),
+          body: JSON.stringify({ items, email: trimmedEmail, promoCode: promoData?.code ?? null }),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));

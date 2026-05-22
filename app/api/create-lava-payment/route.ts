@@ -1,7 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { createLavaInvoice } from '@/lib/lava';
+import { createLavaInvoice, LavaCurrency } from '@/lib/lava';
+import { isValidLavaEmail, lavaErrorMessage, normalizeLavaEmail } from '@/lib/lava-email';
 import { Product } from '@/types/product';
+
+function getLavaCurrency(): LavaCurrency {
+  const c = (process.env.LAVA_CURRENCY || 'USD').toUpperCase();
+  if (c === 'RUB' || c === 'USD' || c === 'EUR') return c;
+  return 'USD';
+}
+
+/** Сумма корзины в копейках (RUB) → сумма для Lava в валюте оффера */
+function lavaAmountFromKopecks(kopecks: number, currency: LavaCurrency): number {
+  if (currency === 'RUB') return Math.round(kopecks / 100);
+  const rub = kopecks / 100;
+  const rateEnv = currency === 'EUR' ? process.env.LAVA_RUB_PER_EUR : process.env.LAVA_RUB_PER_USD;
+  const rate = Number(rateEnv || '95');
+  if (!Number.isFinite(rate) || rate <= 0) return Math.max(1, Math.round(rub / 95));
+  return Math.max(1, Math.round(rub / rate));
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,8 +32,15 @@ export async function POST(request: NextRequest) {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Корзина пуста' }, { status: 400 });
     }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: 'Некорректный email' }, { status: 400 });
+    const buyerEmail = normalizeLavaEmail(email || '');
+    if (!isValidLavaEmail(buyerEmail)) {
+      return NextResponse.json(
+        {
+          error:
+            'Укажите email латиницей (например name@gmail.com). Кириллица и пробелы в адресе Lava не принимает.',
+        },
+        { status: 400 }
+      );
     }
 
     const offerId = process.env.LAVA_OFFER_ID;
@@ -73,7 +97,7 @@ export async function POST(request: NextRequest) {
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
-        email,
+        email: buyerEmail,
         items: foundProducts.map((p) => p.id),
         amount: finalAmount,
         status: 'pending',
@@ -88,11 +112,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ошибка создания заказа', detail: orderError?.message }, { status: 500 });
     }
 
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
+    if (!siteUrl) {
+      console.warn('create-lava-payment: NEXT_PUBLIC_SITE_URL не задан — Lava не сможет вернуть покупателя на /thank-you');
+    }
+    const thankYouUrl = siteUrl ? `${siteUrl}/thank-you?order=${order.id}` : undefined;
+
+    const currency = getLavaCurrency();
     const invoice = await createLavaInvoice({
-      email,
+      email: buyerEmail,
       offerId,
-      currency: 'RUB',
-      amount: Math.round(finalAmount / 100),
+      currency,
+      buyerLanguage: 'RU',
+      ...(thankYouUrl ? { successUrl: thankYouUrl, failUrl: thankYouUrl } : {}),
+      clientUtm: {
+        utm_source: 'mishka-max-market',
+        utm_medium: 'checkout',
+        utm_campaign: 'lava',
+        utm_content: order.id,
+      },
+      ...(process.env.LAVA_PERIODICITY === 'MONTHLY' ? { periodicity: 'MONTHLY' as const } : {}),
+      ...(process.env.LAVA_DYNAMIC_PRICE === 'true'
+        ? { amount: lavaAmountFromKopecks(finalAmount, currency) }
+        : {}),
     });
 
     await supabaseAdmin
@@ -104,6 +146,6 @@ export async function POST(request: NextRequest) {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('create-lava-payment error:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: lavaErrorMessage(message) }, { status: 500 });
   }
 }

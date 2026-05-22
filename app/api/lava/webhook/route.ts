@@ -31,6 +31,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const webhookKey = process.env.LAVA_WEBHOOK_API_KEY;
+    if (webhookKey) {
+      const incomingKey = request.headers.get('x-api-key');
+      if (incomingKey !== webhookKey) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const payload: LavaWebhookPayload = await request.json();
     const { eventType, contractId } = payload;
 
