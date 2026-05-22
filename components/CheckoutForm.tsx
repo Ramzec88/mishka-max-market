@@ -93,11 +93,9 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
         }
         const { payment_url, order_id } = await res.json();
         if (order_id) {
-          try {
-            sessionStorage.setItem('lava_pending_order', order_id);
-          } catch {
-            /* private mode / blocked storage */
-          }
+          const payload = JSON.stringify({ id: order_id, ts: Date.now() });
+          try { sessionStorage.setItem('lava_pending_order', order_id); } catch { /* ignore */ }
+          try { localStorage.setItem('lava_payment_session', payload); } catch { /* ignore */ }
         }
         window.location.href = payment_url;
       } else {

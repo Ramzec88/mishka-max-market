@@ -6,6 +6,30 @@ import Link from 'next/link';
 import { OrderStatus } from '@/types/order';
 import { clearCart } from '@/lib/cart';
 
+const LAVA_SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+function recoverOrderId(): string | null {
+  try {
+    const v = sessionStorage.getItem('lava_pending_order');
+    if (v) return v;
+  } catch { /* ignore */ }
+  try {
+    const raw = localStorage.getItem('lava_payment_session');
+    if (raw) {
+      const parsed = JSON.parse(raw) as { id?: string; ts?: number };
+      if (parsed.id && parsed.ts && Date.now() - parsed.ts < LAVA_SESSION_TTL_MS) {
+        return parsed.id;
+      }
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function clearPaymentSession() {
+  try { sessionStorage.removeItem('lava_pending_order'); } catch { /* ignore */ }
+  try { localStorage.removeItem('lava_payment_session'); } catch { /* ignore */ }
+}
+
 const LARGE_FILE_BYTES = 50 * 1024 * 1024;
 
 interface DownloadLink {
@@ -58,20 +82,21 @@ export default function ThankYouContent() {
     if (orderIdFromQuery) {
       setOrderId(orderIdFromQuery);
       setOrderResolved(true);
+      clearPaymentSession();
       return;
     }
-    try {
-      const pending = sessionStorage.getItem('lava_pending_order');
-      if (pending) {
-        setOrderId(pending);
-        sessionStorage.removeItem('lava_pending_order');
+
+    const recovered = recoverOrderId();
+    if (recovered) {
+      setOrderId(recovered);
+      clearPaymentSession();
+      try {
         const url = new URL(window.location.href);
-        url.searchParams.set('order', pending);
+        url.searchParams.set('order', recovered);
         window.history.replaceState(null, '', url.pathname + url.search);
-      }
-    } catch {
-      /* ignore */
+      } catch { /* ignore */ }
     }
+
     setOrderResolved(true);
   }, [orderIdFromQuery]);
 
