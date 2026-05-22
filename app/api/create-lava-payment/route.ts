@@ -1,24 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { createLavaInvoice, LavaCurrency } from '@/lib/lava';
+import { createLavaInvoice } from '@/lib/lava';
 import { isValidLavaEmail, lavaErrorMessage, normalizeLavaEmail } from '@/lib/lava-email';
 import { Product } from '@/types/product';
-
-function getLavaCurrency(): LavaCurrency {
-  const c = (process.env.LAVA_CURRENCY || 'RUB').toUpperCase();
-  if (c === 'RUB' || c === 'USD' || c === 'EUR') return c;
-  return 'RUB';
-}
-
-/** Сумма корзины в копейках (RUB) → сумма для Lava в валюте оффера */
-function lavaAmountFromKopecks(kopecks: number, currency: LavaCurrency): number {
-  if (currency === 'RUB') return Math.round(kopecks / 100);
-  const rub = kopecks / 100;
-  const rateEnv = currency === 'EUR' ? process.env.LAVA_RUB_PER_EUR : process.env.LAVA_RUB_PER_USD;
-  const rate = Number(rateEnv || '95');
-  if (!Number.isFinite(rate) || rate <= 0) return Math.max(1, Math.round(rub / 95));
-  return Math.max(1, Math.round(rub / rate));
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -118,11 +102,11 @@ export async function POST(request: NextRequest) {
     }
     const thankYouUrl = siteUrl ? `${siteUrl}/thank-you?order=${order.id}` : undefined;
 
-    const currency = getLavaCurrency();
     const invoice = await createLavaInvoice({
       email: buyerEmail,
       offerId,
-      currency,
+      currency: 'RUB',
+      amount: Math.round(finalAmount / 100),
       buyerLanguage: 'RU',
       ...(thankYouUrl ? { successUrl: thankYouUrl, failUrl: thankYouUrl } : {}),
       clientUtm: {
@@ -131,10 +115,6 @@ export async function POST(request: NextRequest) {
         utm_campaign: 'lava',
         utm_content: order.id,
       },
-      ...(process.env.LAVA_PERIODICITY === 'MONTHLY' ? { periodicity: 'MONTHLY' as const } : {}),
-      ...(process.env.LAVA_DYNAMIC_PRICE === 'true'
-        ? { amount: lavaAmountFromKopecks(finalAmount, currency) }
-        : {}),
     });
 
     await supabaseAdmin
