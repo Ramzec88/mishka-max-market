@@ -21,6 +21,13 @@ const CANCEL_REASON: Record<string, string> = {
   three_d_secure_failed:   'Ошибка 3-D Secure',
   call_issuer:             'Обратитесь в банк',
   cancel_by_merchant:      'Отменён магазином',
+  // Lava error messages (English)
+  'The bank card is past its expiration date': 'Карта просрочена',
+  'The transaction was canceled due to the confirmation timeout': 'Не завершил оплату',
+  'Insufficient funds': 'Недостаточно средств',
+  'Payment was declined': 'Отказ банка',
+  'Card not supported': 'Карта не поддерживается',
+  '3DS verification failed': 'Ошибка 3-D Secure',
 };
 
 interface Order {
@@ -199,11 +206,11 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
             </div>
           </form>
 
-          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {displayedOrders.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Заказов не найдено</div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
                 <thead>
                   <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                     {['Email', 'Сумма', 'Промокод', 'Статус', 'Оплачен', 'Письмо', ''].map(h => (
@@ -239,7 +246,8 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                             {s.label}
                           </span>
                           {order.cancellation_reason && (
-                            <div style={{ fontSize: 11, color: '#aaa', marginTop: 3, whiteSpace: 'nowrap' }}>
+                            <div style={{ fontSize: 11, color: '#aaa', marginTop: 3, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                              title={CANCEL_REASON[order.cancellation_reason] ?? order.cancellation_reason}>
                               {CANCEL_REASON[order.cancellation_reason] ?? order.cancellation_reason}
                             </div>
                           )}
@@ -270,13 +278,13 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
 
       {/* ── View: needs help ── */}
       {view === 'needs-help' && (
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           {needHelpRows.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>
               Все покупатели с отменёнными заказами позже совершили успешную покупку
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
               <thead>
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                   {['Email', 'Попыток', 'Последняя попытка', 'Сумма попыток', 'Статус письма', ''].map(h => (
