@@ -7,6 +7,7 @@ import RichTextEditor from './RichTextEditor';
 interface Props {
   product?: Product;
   initialCoverUrl?: string | null;
+  allProducts?: Pick<Product, 'id' | 'title' | 'category' | 'cover_emoji'>[];
 }
 
 const LABEL: React.CSSProperties = {
@@ -104,7 +105,9 @@ async function getUploadUrl(productId: string, fileName: string, contentType: st
   return res.json() as Promise<{ url: string; key: string }>;
 }
 
-export default function ProductForm({ product, initialCoverUrl }: Props) {
+const MAX_RECOMMENDATIONS = 3;
+
+export default function ProductForm({ product, initialCoverUrl, allProducts = [] }: Props) {
   const isEdit = Boolean(product);
 
   const originalCoverImage = product?.cover_image ?? null;
@@ -143,6 +146,7 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
 
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [recommendedIds, setRecommendedIds] = useState<string[]>(product?.recommended_product_ids ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -289,6 +293,7 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
         is_active: isActive,
         sort_order: Number(sortOrder) || 0,
         cover_image: newCoverKey,
+        recommended_product_ids: recommendedIds,
         _deleteKeys: deleteKeys,
       };
 
@@ -636,6 +641,60 @@ export default function ProductForm({ product, initialCoverUrl }: Props) {
           MP3, PDF и др. Имена с кириллицей переводятся автоматически.
         </div>
       </div>
+
+      {/* Рекомендованные товары */}
+      {allProducts.length > 0 && (
+        <div style={CARD}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 4, color: '#1a1a1a' }}>Рекомендованные товары</h2>
+          <p style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>
+            Эти товары будут предложены покупателю на странице «Спасибо» и в письме после покупки данного товара. Максимум {MAX_RECOMMENDATIONS} шт.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {allProducts
+              .filter((p) => p.id !== (product?.id ?? ''))
+              .map((p) => {
+                const checked = recommendedIds.includes(p.id);
+                const disabled = !checked && recommendedIds.length >= MAX_RECOMMENDATIONS;
+                return (
+                  <label
+                    key={p.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: `1px solid ${checked ? '#FF7A3D' : '#e5e7eb'}`,
+                      background: checked ? '#FFF8F3' : '#fff',
+                      cursor: disabled ? 'not-allowed' : 'pointer',
+                      opacity: disabled ? 0.5 : 1,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => {
+                        if (checked) {
+                          setRecommendedIds(prev => prev.filter(id => id !== p.id));
+                        } else if (!disabled) {
+                          setRecommendedIds(prev => [...prev, p.id]);
+                        }
+                      }}
+                      style={{ width: 16, height: 16, flexShrink: 0 }}
+                    />
+                    <span style={{ fontSize: 18 }}>{p.cover_emoji ?? '📦'}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', flex: 1 }}>{p.title}</span>
+                    <span style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{p.category}</span>
+                  </label>
+                );
+              })}
+          </div>
+          {recommendedIds.length >= MAX_RECOMMENDATIONS && (
+            <div style={{ fontSize: 12, color: '#aaa', marginTop: 8 }}>
+              Достигнут лимит в {MAX_RECOMMENDATIONS} рекомендации. Снимите галочку, чтобы выбрать другой товар.
+            </div>
+          )}
+        </div>
+      )}
 
       {uploadStatus && (
         <div style={{ background: '#fff', borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #fed7aa' }}>

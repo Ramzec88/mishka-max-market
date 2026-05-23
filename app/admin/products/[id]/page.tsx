@@ -32,5 +32,13 @@ export default async function EditProductPage({ params }: Props) {
 
   const initialCoverUrl = product.cover_image ? getPublicUrl(product.cover_image) : null;
 
-  return <ProductForm product={product} initialCoverUrl={initialCoverUrl} />;
+  const { data: allProductsRaw } = await supabaseAdmin
+    .from('products')
+    .select('id, title, category, cover_emoji')
+    .eq('is_active', true)
+    .order('sort_order');
+
+  const allProducts = (allProductsRaw ?? []) as Pick<Product, 'id' | 'title' | 'category' | 'cover_emoji'>[];
+
+  return <ProductForm product={product} initialCoverUrl={initialCoverUrl} allProducts={allProducts} />;
 }

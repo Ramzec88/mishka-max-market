@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { OrderStatus } from '@/types/order';
-import { clearCart } from '@/lib/cart';
+import { clearCart, addToCart } from '@/lib/cart';
 
 const LAVA_SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
@@ -40,6 +40,18 @@ interface DownloadLink {
   expires_at: string;
   downloads_remaining: number;
   file_size_bytes?: number | null;
+}
+
+interface RecommendedProduct {
+  id: string;
+  title: string;
+  price: number;
+  price_old: number | null;
+  category: string;
+  cover_emoji: string | null;
+  cover_variant: string;
+  badge: string | null;
+  format: string | null;
 }
 
 interface EcommerceProduct {
@@ -106,6 +118,8 @@ export default function ThankYouContent() {
   const [retryKey, setRetryKey] = useState(0);
   const [cancelReason, setCancelReason] = useState<string | null>(null);
   const ymFired = useRef(false);
+  const [recommendations, setRecommendations] = useState<RecommendedProduct[]>([]);
+  const [addedToCart, setAddedToCart] = useState<Set<string>>(new Set());
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
@@ -194,6 +208,21 @@ export default function ThankYouContent() {
       clearTimeout(timer);
     };
   }, [orderId, retryKey]);
+
+  useEffect(() => {
+    if (status === 'paid' && orderId) {
+      fetch(`/api/recommendations?order=${orderId}`)
+        .then((r) => r.ok ? r.json() : [])
+        .then((data) => Array.isArray(data) && setRecommendations(data))
+        .catch(() => {});
+    }
+  }, [status, orderId]);
+
+  const handleAddToCart = useCallback((productId: string) => {
+    addToCart(productId);
+    window.dispatchEvent(new Event('cart-updated'));
+    setAddedToCart((prev) => new Set(prev).add(productId));
+  }, []);
 
   const handleRetry = useCallback(() => {
     setRetryKey((k) => k + 1);
@@ -382,6 +411,78 @@ export default function ThankYouContent() {
               ));
             })()}
           </div>
+
+          {/* Рекомендации */}
+          {recommendations.length > 0 && (
+            <div style={{
+              marginTop: 20,
+              background: '#fff',
+              border: '1.5px solid #F0E4D6',
+              borderRadius: 16,
+              padding: 24,
+            }}>
+              <h3 style={{ fontSize: 16, fontWeight: 900, color: '#1a1a1a', marginBottom: 16 }}>
+                Вам также может понравиться
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {recommendations.map((rec) => (
+                  <div key={rec.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '12px 0',
+                    borderBottom: '1px solid var(--border)',
+                  }}>
+                    <div style={{
+                      width: 48, height: 48, borderRadius: 10, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 26,
+                      background: rec.cover_variant === 'lavender' ? 'linear-gradient(135deg,#E8E0F5,#D4C7ED)'
+                        : rec.cover_variant === 'green' ? 'linear-gradient(135deg,#E0F2E4,#C7E8CF)'
+                        : rec.cover_variant === 'blue' ? 'linear-gradient(135deg,#E0EBF5,#C7DAED)'
+                        : 'linear-gradient(135deg,#FFE4D1,#FFCBA8)',
+                    }}>
+                      {rec.cover_emoji ?? '🎵'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a1a', marginBottom: 2 }}>{rec.title}</div>
+                      <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+                        {Math.round(rec.price / 100)} ₽
+                        {rec.price_old && (
+                          <span style={{ marginLeft: 6, textDecoration: 'line-through', color: '#bbb', fontSize: 12 }}>
+                            {Math.round(rec.price_old / 100)} ₽
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {addedToCart.has(rec.id) ? (
+                      <Link
+                        href="/"
+                        style={{
+                          background: '#22c55e', color: '#fff',
+                          padding: '8px 16px', borderRadius: 100,
+                          fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap',
+                          textDecoration: 'none', flexShrink: 0,
+                        }}
+                      >
+                        В корзине →
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => handleAddToCart(rec.id)}
+                        style={{
+                          background: 'var(--orange)', color: '#fff',
+                          padding: '8px 16px', borderRadius: 100,
+                          fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap',
+                          border: 'none', cursor: 'pointer', flexShrink: 0,
+                        }}
+                      >
+                        В корзину
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Кросс-сейл блок */}
           <div style={{

@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
       lava_url: body.lava_url || null,
       is_active: Boolean(body.is_active),
       sort_order: Number(body.sort_order) || 0,
+      recommended_product_ids: Array.isArray(body.recommended_product_ids) ? body.recommended_product_ids : [],
     };
 
     const { data, error } = await supabaseAdmin
