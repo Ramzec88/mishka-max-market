@@ -18,6 +18,7 @@ export interface Product {
   boosty_url: string | null;
   lava_url: string | null;
   recommended_product_ids: string[];
+  letter_s3_key: string | null; // PDF «Письмо Мишки Макса» для follow-up рассылки
   is_active: boolean;
   sort_order: number;
   created_at: string;

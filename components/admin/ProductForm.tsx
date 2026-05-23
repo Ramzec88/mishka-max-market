@@ -136,6 +136,10 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
   const [demoUploading, setDemoUploading] = useState(false);
   const [demoUploadProgress, setDemoUploadProgress] = useState(0);
   const [demoUploadError, setDemoUploadError] = useState('');
+  const [letterS3Key, setLetterS3Key] = useState<string | null>(product?.letter_s3_key ?? null);
+  const [letterUploading, setLetterUploading] = useState(false);
+  const [letterUploadProgress, setLetterUploadProgress] = useState(0);
+  const [letterUploadError, setLetterUploadError] = useState('');
   const [storagePaths, setStoragePaths] = useState<string[]>(originalStoragePaths);
   const [coverImageKey, setCoverImageKey] = useState<string | null>(originalCoverImage);
   const [savedCoverUrl, setSavedCoverUrl] = useState<string | null>(initialCoverUrl ?? null);
@@ -153,6 +157,7 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const demoInputRef = useRef<HTMLInputElement>(null);
+  const letterInputRef = useRef<HTMLInputElement>(null);
 
   function handleTitleChange(value: string) {
     setTitle(value);
@@ -213,6 +218,36 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
     } finally {
       setDemoUploading(false);
       if (demoInputRef.current) demoInputRef.current.value = '';
+    }
+  }
+
+  async function handleLetterUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const productId = isEdit ? product!.id : id.trim();
+    if (!productId) { setLetterUploadError('Сначала задайте ID товара'); return; }
+
+    setLetterUploading(true);
+    setLetterUploadProgress(0);
+    setLetterUploadError('');
+
+    try {
+      const ext = file.name.split('.').pop() || 'pdf';
+      const res = await fetch('/api/admin/upload-letter-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, ext }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Ошибка получения URL');
+      const { url, key } = await res.json() as { url: string; key: string };
+
+      await uploadFileXHR(url, file, 'application/pdf', setLetterUploadProgress);
+      setLetterS3Key(key);
+    } catch (err) {
+      setLetterUploadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLetterUploading(false);
+      if (letterInputRef.current) letterInputRef.current.value = '';
     }
   }
 
@@ -294,6 +329,7 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         sort_order: Number(sortOrder) || 0,
         cover_image: newCoverKey,
         recommended_product_ids: recommendedIds,
+        letter_s3_key: letterS3Key || null,
         _deleteKeys: deleteKeys,
       };
 
@@ -640,6 +676,59 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         <div style={{ fontSize: 11, color: '#aaa', marginTop: 6 }}>
           MP3, PDF и др. Имена с кириллицей переводятся автоматически.
         </div>
+      </div>
+
+      {/* Письмо Мишки Макса */}
+      <div style={CARD}>
+        <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 4, color: '#1a1a1a' }}>Письмо Мишки Макса (PDF)</h2>
+        <p style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>
+          Файл-вложение, который уходит покупателю этой серии через 7 дней после покупки.
+          У каждой серии своё письмо.
+        </p>
+
+        {letterS3Key && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, marginBottom: 12 }}>
+            <span>📄</span>
+            <span style={{ fontSize: 13, color: '#166534', fontWeight: 600, flex: 1, wordBreak: 'break-all' }}>
+              {letterS3Key.split('/').pop()}
+            </span>
+            <button type="button" onClick={() => setLetterS3Key(null)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 18, lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>
+              ×
+            </button>
+          </div>
+        )}
+
+        <input ref={letterInputRef} type="file" accept=".pdf,application/pdf" onChange={handleLetterUpload} style={{ display: 'none' }} />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+          <button type="button" onClick={() => letterInputRef.current?.click()} disabled={letterUploading}
+            style={{
+              border: '1px dashed #d1d5db', background: 'none', borderRadius: 8,
+              padding: '10px 18px', fontSize: 13, fontWeight: 600,
+              color: letterUploading ? '#aaa' : '#666',
+              cursor: letterUploading ? 'not-allowed' : 'pointer',
+            }}>
+            {letterUploading ? `Загружаем… ${letterUploadProgress}%` : (letterS3Key ? '🔄 Заменить PDF' : '+ Загрузить PDF')}
+          </button>
+        </div>
+
+        {letterUploading && (
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ width: '100%', height: 6, background: '#f0f0f0', borderRadius: 100, overflow: 'hidden' }}>
+              <div style={{ width: `${letterUploadProgress}%`, height: '100%', background: '#FF7A3D', transition: 'width 0.3s', borderRadius: 100 }} />
+            </div>
+          </div>
+        )}
+
+        {letterUploadError && (
+          <div style={{ fontSize: 13, color: '#dc2626', marginTop: 4 }}>⚠ {letterUploadError}</div>
+        )}
+
+        {!letterS3Key && !letterUploading && (
+          <div style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>
+            Пока не загружено — follow-up письмо всё равно уйдёт, но без вложения.
+          </div>
+        )}
       </div>
 
       {/* Рекомендованные товары */}

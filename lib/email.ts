@@ -150,20 +150,19 @@ export interface FollowupRecommendedItem {
 export interface SendFollowupEmailParams {
   to: string;
   productTitle: string;
+  letterS3Key: string | null; // путь в S3 к PDF «Письмо Мишки Макса» для этой серии
   siteUrl: string;
   recommendations?: FollowupRecommendedItem[];
 }
 
 export async function sendFollowupEmail(params: SendFollowupEmailParams): Promise<void> {
-  const { to, productTitle, siteUrl, recommendations } = params;
+  const { to, productTitle, letterS3Key, siteUrl, recommendations } = params;
 
   const templatePath = join(process.cwd(), 'emails', 'followup-letter.html');
   let html = readFileSync(templatePath, 'utf-8');
 
-  // Attachment: PDF letter from S3
-  const letterS3Key = process.env.MISHKA_LETTER_S3_KEY || 'assets/mishka-letter.pdf';
   const attachments: nodemailer.SendMailOptions['attachments'] = [];
-  const letterBuffer = await downloadFromS3(letterS3Key);
+  const letterBuffer = letterS3Key ? await downloadFromS3(letterS3Key) : null;
   if (letterBuffer) {
     attachments.push({
       filename: 'Письмо Мишки Макса.pdf',

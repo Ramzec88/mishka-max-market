@@ -93,6 +93,7 @@ async function handleFollowup(req: NextRequest) {
       await sendFollowupEmail({
         to: order.email,
         productTitle,
+        letterS3Key: mainProduct?.letter_s3_key ?? null,
         siteUrl,
         recommendations,
       });
