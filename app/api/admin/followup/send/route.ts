@@ -9,11 +9,12 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { productId, letterBody, subject, skipAttachment } = await req.json() as {
+    const { productId, letterBody, subject, skipAttachment, includeAlreadySent } = await req.json() as {
       productId: string;
       letterBody: string;
       subject: string;
       skipAttachment?: boolean;
+      includeAlreadySent?: boolean;
     };
 
     if (!productId || !letterBody) {
@@ -22,7 +23,6 @@ export async function POST(req: NextRequest) {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mishka-max.ru';
 
-    // Load target product for letter attachment + recommendations
     const { data: productData } = await supabaseAdmin
       .from('products')
       .select('*')
@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
 
     const targetProduct = productData as Product | null;
 
-    // Load all active products for recommendations
     const { data: allProductsData } = await supabaseAdmin
       .from('products')
       .select('*')
@@ -40,7 +39,6 @@ export async function POST(req: NextRequest) {
     const allProducts = (allProductsData || []) as Product[];
     const productMap = new Map(allProducts.map((p) => [p.id, p]));
 
-    // Find pending recipients (same logic as preview)
     const { data: orders } = await supabaseAdmin
       .from('orders')
       .select('id, email, items')
@@ -50,19 +48,20 @@ export async function POST(req: NextRequest) {
       Array.isArray(o.items) && o.items.includes(productId),
     );
 
-    if (matching.length === 0) {
-      return NextResponse.json({ sent: 0 });
+    if (matching.length === 0) return NextResponse.json({ sent: 0 });
+
+    // When includeAlreadySent=false — filter out already-sent orders
+    let pending = matching;
+    if (!includeAlreadySent) {
+      const orderIds = matching.map((o) => o.id);
+      const { data: alreadySent } = await supabaseAdmin
+        .from('followup_emails')
+        .select('order_id')
+        .eq('product_id', productId)
+        .in('order_id', orderIds);
+      const sentSet = new Set((alreadySent || []).map((r: { order_id: string }) => r.order_id));
+      pending = matching.filter((o) => !sentSet.has(o.id));
     }
-
-    const orderIds = matching.map((o) => o.id);
-    const { data: alreadySent } = await supabaseAdmin
-      .from('followup_emails')
-      .select('order_id')
-      .eq('product_id', productId)
-      .in('order_id', orderIds);
-
-    const sentSet = new Set((alreadySent || []).map((r: { order_id: string }) => r.order_id));
-    const pending = matching.filter((o) => !sentSet.has(o.id));
 
     // Deduplicate by email
     const emailToOrder = new Map<string, string>();
@@ -74,7 +73,6 @@ export async function POST(req: NextRequest) {
     const errors: string[] = [];
 
     for (const [email, orderId] of Array.from(emailToOrder.entries())) {
-      // Build recommendations: exclude already-purchased products for this order
       const order = matching.find((o) => o.id === orderId);
       const purchasedIds: string[] = order?.items ?? [];
       const recommended = getRecommendations(purchasedIds, Array.from(productMap.values()), 3);
@@ -95,9 +93,13 @@ export async function POST(req: NextRequest) {
           recommendations,
         });
 
+        // Upsert: update sent_at if record already exists (repeat send case)
         await supabaseAdmin
           .from('followup_emails')
-          .insert({ order_id: orderId, email, product_id: productId });
+          .upsert(
+            { order_id: orderId, email, product_id: productId, sent_at: new Date().toISOString() },
+            { onConflict: 'order_id,product_id' },
+          );
 
         sent++;
       } catch (err) {

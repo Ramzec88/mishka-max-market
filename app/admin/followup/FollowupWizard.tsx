@@ -9,6 +9,7 @@ interface Recipient {
   orderId: string;
   email: string;
   paidAt: string;
+  sentAt?: string;
 }
 
 type Step = 'select' | 'preview' | 'sending' | 'done';
@@ -48,12 +49,23 @@ function formatDate(iso: string) {
   });
 }
 
+function plural(n: number, one: string, few: string, many: string) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 19) return `${n} ${many}`;
+  if (mod10 === 1) return `${n} ${one}`;
+  if (mod10 >= 2 && mod10 <= 4) return `${n} ${few}`;
+  return `${n} ${many}`;
+}
+
 export default function FollowupWizard({ products }: { products: ProductOption[] }) {
   const [productId, setProductId] = useState('');
   const [step, setStep] = useState<Step>('select');
 
-  const [recipients, setRecipients] = useState<Recipient[]>([]);
-  const [showEmails, setShowEmails] = useState(false);
+  const [newRecipients, setNewRecipients] = useState<Recipient[]>([]);
+  const [repeatRecipients, setRepeatRecipients] = useState<Recipient[]>([]);
+  const [includeAlreadySent, setIncludeAlreadySent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showRepeat, setShowRepeat] = useState(false);
 
   const [subject, setSubject] = useState('🐻 Письмо от Мишки Макса — продолжаем учить буквы?');
   const [letterBody, setLetterBody] = useState('');
@@ -68,11 +80,16 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
 
   const selectedProduct = products.find((p) => p.id === productId) ?? null;
 
+  const activeRecipients = includeAlreadySent
+    ? [...newRecipients, ...repeatRecipients]
+    : newRecipients;
+
   async function handleCollect() {
     if (!productId) return;
     setCollecting(true);
     setCollectError('');
     setStep('select');
+    setIncludeAlreadySent(false);
 
     try {
       const res = await fetch('/api/admin/followup/preview', {
@@ -83,7 +100,8 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка');
 
-      setRecipients(data.recipients || []);
+      setNewRecipients(data.newRecipients || []);
+      setRepeatRecipients(data.repeatRecipients || []);
       setLetterBody(DEFAULT_BODY(selectedProduct?.title ?? ''));
       setStep('preview');
     } catch (err) {
@@ -96,14 +114,14 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
   async function handleSend() {
     setStep('sending');
     setSendProgress(0);
-    setSendTotal(recipients.length);
+    setSendTotal(activeRecipients.length);
     setSendErrors([]);
 
     try {
       const res = await fetch('/api/admin/followup/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, letterBody, subject, skipAttachment }),
+        body: JSON.stringify({ productId, letterBody, subject, skipAttachment, includeAlreadySent }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка');
@@ -120,10 +138,15 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
   function handleReset() {
     setStep('select');
     setProductId('');
-    setRecipients([]);
-    setShowEmails(false);
+    setNewRecipients([]);
+    setRepeatRecipients([]);
+    setIncludeAlreadySent(false);
+    setShowNew(false);
+    setShowRepeat(false);
     setSendErrors([]);
   }
+
+  const totalAfterCollect = newRecipients.length + repeatRecipients.length;
 
   return (
     <div style={{ maxWidth: 780, margin: '0 auto' }}>
@@ -142,7 +165,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
         <div style={{ display: 'flex', gap: 10 }}>
           <select
             value={productId}
-            onChange={(e) => { setProductId(e.target.value); setStep('select'); setRecipients([]); }}
+            onChange={(e) => { setProductId(e.target.value); setStep('select'); setNewRecipients([]); setRepeatRecipients([]); }}
             style={{ ...INPUT, flex: 1 }}
             disabled={step === 'sending'}
           >
@@ -172,40 +195,110 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
           <div style={{ marginTop: 10, fontSize: 13, color: '#dc2626' }}>⚠ {collectError}</div>
         )}
 
-        {/* Итог сбора */}
-        {step !== 'select' && recipients.length === 0 && !collecting && (
+        {/* Результат сбора */}
+        {step !== 'select' && totalAfterCollect === 0 && !collecting && (
           <div style={{ marginTop: 14, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 16px', fontSize: 14, color: '#16a34a', fontWeight: 600 }}>
-            Нет новых адресов — по этой серии все уже получили письмо.
+            Покупателей этой серии пока нет.
           </div>
         )}
 
-        {step !== 'select' && recipients.length > 0 && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ background: '#FFF0E8', borderRadius: 8, padding: '10px 18px', fontSize: 22, fontWeight: 900, color: '#FF7A3D' }}>
-                {recipients.length}
+        {step !== 'select' && totalAfterCollect > 0 && (
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+            {/* Новые */}
+            <div style={{
+              border: `1px solid ${newRecipients.length > 0 ? '#bbf7d0' : '#e5e7eb'}`,
+              borderRadius: 8, overflow: 'hidden',
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                background: newRecipients.length > 0 ? '#f0fdf4' : '#f9fafb',
+              }}>
+                <div style={{
+                  minWidth: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: newRecipients.length > 0 ? '#16a34a' : '#d1d5db',
+                  color: '#fff', fontWeight: 900, fontSize: 16,
+                }}>
+                  {newRecipients.length}
+                </div>
+                <div style={{ flex: 1, fontSize: 14, color: '#1a1a1a' }}>
+                  {newRecipients.length > 0
+                    ? <><strong>{plural(newRecipients.length, 'новый адрес', 'новых адреса', 'новых адресов')}</strong> — ещё не получали письмо по этой серии</>
+                    : <span style={{ color: '#888' }}>Новых адресов нет — все уже получали письмо</span>
+                  }
+                </div>
+                {newRecipients.length > 0 && (
+                  <button onClick={() => setShowNew(v => !v)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#16a34a', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    {showNew ? '▲ Скрыть' : '▼ Список'}
+                  </button>
+                )}
               </div>
-              <div style={{ fontSize: 14, color: '#3D3530', lineHeight: 1.4 }}>
-                <strong>адресов</strong>, которым ещё не отправлялось письмо<br />
-                по серии <strong>«{selectedProduct?.title}»</strong>
-              </div>
+              {showNew && newRecipients.length > 0 && (
+                <div style={{ maxHeight: 180, overflowY: 'auto', background: '#fff', padding: '8px 14px' }}>
+                  {newRecipients.map((r) => (
+                    <div key={r.orderId} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
+                      <span>{r.email}</span>
+                      <span style={{ color: '#aaa', marginLeft: 12, whiteSpace: 'nowrap' }}>оплата {formatDate(r.paidAt)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <button
-              onClick={() => setShowEmails((v) => !v)}
-              style={{ marginTop: 10, background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#FF7A3D', fontWeight: 600, padding: 0 }}
-            >
-              {showEmails ? '▲ Скрыть список' : '▼ Показать список адресов'}
-            </button>
-
-            {showEmails && (
-              <div style={{ marginTop: 8, maxHeight: 200, overflowY: 'auto', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
-                {recipients.map((r) => (
-                  <div key={r.orderId} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
-                    <span style={{ color: '#1a1a1a' }}>{r.email}</span>
-                    <span style={{ color: '#aaa', marginLeft: 12, whiteSpace: 'nowrap' }}>оплата {formatDate(r.paidAt)}</span>
+            {/* Уже получали */}
+            {repeatRecipients.length > 0 && (
+              <div style={{ border: `1px solid ${includeAlreadySent ? '#fed7aa' : '#e5e7eb'}`, borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                  background: includeAlreadySent ? '#fff7ed' : '#f9fafb',
+                }}>
+                  <div style={{
+                    minWidth: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: includeAlreadySent ? '#FF7A3D' : '#9ca3af',
+                    color: '#fff', fontWeight: 900, fontSize: 16,
+                  }}>
+                    {repeatRecipients.length}
                   </div>
-                ))}
+                  <div style={{ flex: 1, fontSize: 14, color: '#1a1a1a' }}>
+                    <strong>{plural(repeatRecipients.length, 'адрес', 'адреса', 'адресов')}</strong> уже получали письмо по этой серии
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: step === 'preview' ? 'pointer' : 'default', whiteSpace: 'nowrap' }}>
+                    <input
+                      type="checkbox"
+                      checked={includeAlreadySent}
+                      onChange={(e) => setIncludeAlreadySent(e.target.checked)}
+                      disabled={step !== 'preview'}
+                      style={{ width: 15, height: 15 }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: includeAlreadySent ? '#FF7A3D' : '#555' }}>
+                      Включить в рассылку
+                    </span>
+                  </label>
+                  <button onClick={() => setShowRepeat(v => !v)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    {showRepeat ? '▲ Скрыть' : '▼ Список'}
+                  </button>
+                </div>
+                {showRepeat && (
+                  <div style={{ maxHeight: 180, overflowY: 'auto', background: '#fff', padding: '8px 14px' }}>
+                    {repeatRecipients.map((r) => (
+                      <div key={r.orderId} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
+                        <span>{r.email}</span>
+                        <span style={{ color: '#aaa', marginLeft: 12, whiteSpace: 'nowrap' }}>
+                          последнее письмо {r.sentAt ? formatDate(r.sentAt) : '—'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Итог */}
+            {step === 'preview' && (
+              <div style={{ fontSize: 13, color: '#5A4F45', paddingLeft: 4 }}>
+                Итого будет отправлено: <strong style={{ color: '#FF7A3D' }}>{activeRecipients.length}</strong> писем
               </div>
             )}
           </div>
@@ -213,7 +306,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       </div>
 
       {/* ── Шаг 2: редактирование письма ── */}
-      {(step === 'preview' || step === 'sending' || step === 'done') && recipients.length > 0 && (
+      {(step === 'preview' || step === 'sending' || step === 'done') && activeRecipients.length > 0 && (
         <>
           <div style={CARD}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -302,7 +395,6 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
               />
             </div>
 
-            {/* Превью — как выглядит разбивка на абзацы */}
             {letterBody && step === 'preview' && (
               <div style={{ marginTop: 16, background: '#FFF8F3', border: '1px solid #F0E4D6', borderRadius: 8, padding: '16px 20px' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
@@ -336,12 +428,11 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
                   cursor: (!letterBody.trim() || !subject.trim()) ? 'not-allowed' : 'pointer',
                 }}
               >
-                Отправить {recipients.length} письм{recipients.length === 1 ? 'о' : recipients.length < 5 ? 'а' : ''}
+                Отправить {plural(activeRecipients.length, 'письмо', 'письма', 'писем')}
               </button>
             </div>
           )}
 
-          {/* ── Прогресс отправки ── */}
           {step === 'sending' && (
             <div style={{ ...CARD, background: '#FFF8F3', border: '1px solid #F0E4D6', textAlign: 'center' }}>
               <div style={{ fontSize: 32, marginBottom: 12 }}>📨</div>
@@ -350,7 +441,6 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
             </div>
           )}
 
-          {/* ── Результат ── */}
           {step === 'done' && (
             <div style={{ ...CARD, border: `1px solid ${sendErrors.length === 0 ? '#bbf7d0' : '#fed7aa'}` }}>
               <div style={{ fontSize: 32, marginBottom: 12, textAlign: 'center' }}>

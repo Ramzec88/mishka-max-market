@@ -3,7 +3,6 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
-// Returns the list of recipients who haven't received a follow-up for this product yet.
 export async function POST(req: NextRequest) {
   try {
     const { productId } = await req.json() as { productId: string };
@@ -17,13 +16,12 @@ export async function POST(req: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // Filter: items must contain productId
     const matching = (orders || []).filter((o) =>
       Array.isArray(o.items) && o.items.includes(productId),
     );
 
     if (matching.length === 0) {
-      return NextResponse.json({ count: 0, emails: [] });
+      return NextResponse.json({ newCount: 0, repeatCount: 0, newRecipients: [], repeatRecipients: [] });
     }
 
     const orderIds = matching.map((o) => o.id);
@@ -31,25 +29,40 @@ export async function POST(req: NextRequest) {
     // Which ones already got a follow-up for this product?
     const { data: alreadySent } = await supabaseAdmin
       .from('followup_emails')
-      .select('order_id')
+      .select('order_id, sent_at')
       .eq('product_id', productId)
       .in('order_id', orderIds);
 
-    const sentSet = new Set((alreadySent || []).map((r: { order_id: string }) => r.order_id));
+    const sentMap = new Map(
+      (alreadySent || []).map((r: { order_id: string; sent_at: string }) => [r.order_id, r.sent_at]),
+    );
 
-    const pending = matching.filter((o) => !sentSet.has(o.id));
+    // Deduplicate by email within each group
+    const newEmailSet = new Set<string>();
+    const repeatEmailSet = new Set<string>();
+    const newRecipients: { orderId: string; email: string; paidAt: string }[] = [];
+    const repeatRecipients: { orderId: string; email: string; paidAt: string; sentAt: string }[] = [];
 
-    // Deduplicate by email (one email may have multiple orders for same product)
-    const emailSet = new Set<string>();
-    const result: { orderId: string; email: string; paidAt: string }[] = [];
-    for (const o of pending) {
-      if (!emailSet.has(o.email)) {
-        emailSet.add(o.email);
-        result.push({ orderId: o.id, email: o.email, paidAt: o.paid_at });
+    for (const o of matching) {
+      if (sentMap.has(o.id)) {
+        if (!repeatEmailSet.has(o.email)) {
+          repeatEmailSet.add(o.email);
+          repeatRecipients.push({ orderId: o.id, email: o.email, paidAt: o.paid_at, sentAt: sentMap.get(o.id)! });
+        }
+      } else {
+        if (!newEmailSet.has(o.email)) {
+          newEmailSet.add(o.email);
+          newRecipients.push({ orderId: o.id, email: o.email, paidAt: o.paid_at });
+        }
       }
     }
 
-    return NextResponse.json({ count: result.length, recipients: result });
+    return NextResponse.json({
+      newCount: newRecipients.length,
+      repeatCount: repeatRecipients.length,
+      newRecipients,
+      repeatRecipients,
+    });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
