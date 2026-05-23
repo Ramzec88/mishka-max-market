@@ -32,11 +32,15 @@ export default async function EditProductPage({ params }: Props) {
 
   const initialCoverUrl = product.cover_image ? getPublicUrl(product.cover_image) : null;
 
-  const { data: allProductsRaw } = await supabaseAdmin
+  const { data: allProductsRaw, error: productsError } = await supabaseAdmin
     .from('products')
     .select('id, title, category, cover_emoji')
     .eq('is_active', true)
     .order('sort_order');
+
+  if (productsError) {
+    console.error('Failed to load products for recommendations:', productsError.message);
+  }
 
   const allProducts = (allProductsRaw ?? []) as Pick<Product, 'id' | 'title' | 'category' | 'cover_emoji'>[];
 
