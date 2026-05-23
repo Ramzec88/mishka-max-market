@@ -48,23 +48,20 @@ export function getRecommendations(
     if (result.length >= limit) return result;
   }
 
-  const purchasedCategories = new Set(purchasedProducts.map((p) => p.category));
-  const wantCategories = new Set<Category>();
-  for (const cat of purchasedCategories) {
-    for (const rel of CATEGORY_AFFINITY[cat] ?? []) {
-      wantCategories.add(rel);
-    }
-  }
+  const purchasedCategories = purchasedProducts.map((p) => p.category);
+  const wantCategoriesSet = new Set<Category>();
+  purchasedCategories.forEach((cat) => {
+    (CATEGORY_AFFINITY[cat] ?? []).forEach((rel) => wantCategoriesSet.add(rel));
+  });
+  const wantCategories = Array.from(wantCategoriesSet);
 
-  for (const cat of wantCategories) {
+  wantCategories.forEach((cat) => {
+    if (result.length >= limit) return;
     const candidate = activeUnpurchased.find(
       (p) => p.category === cat && !result.includes(p),
     );
-    if (candidate) {
-      result.push(candidate);
-      if (result.length >= limit) break;
-    }
-  }
+    if (candidate) result.push(candidate);
+  });
 
   return result;
 }
