@@ -57,6 +57,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
 
   const [subject, setSubject] = useState('🐻 Письмо от Мишки Макса — продолжаем учить буквы?');
   const [letterBody, setLetterBody] = useState('');
+  const [skipAttachment, setSkipAttachment] = useState(false);
 
   const [collecting, setCollecting] = useState(false);
   const [collectError, setCollectError] = useState('');
@@ -102,7 +103,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       const res = await fetch('/api/admin/followup/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, letterBody, subject }),
+        body: JSON.stringify({ productId, letterBody, subject, skipAttachment }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка');
@@ -234,24 +235,55 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
             </div>
 
             {/* Вложение */}
-            <div style={{
-              marginBottom: 16, padding: '10px 14px', borderRadius: 8,
-              background: selectedProduct?.letter_s3_key ? '#f0fdf4' : '#fff7ed',
-              border: `1px solid ${selectedProduct?.letter_s3_key ? '#bbf7d0' : '#fed7aa'}`,
-              fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-              <span style={{ fontSize: 20 }}>{selectedProduct?.letter_s3_key ? '📎' : '⚠️'}</span>
-              {selectedProduct?.letter_s3_key ? (
-                <span style={{ color: '#166534' }}>
-                  Вложение: <strong>{selectedProduct.letter_s3_key.split('/').pop()}</strong> — будет прикреплено к каждому письму
-                </span>
-              ) : (
+            {selectedProduct?.letter_s3_key ? (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{
+                  padding: '10px 14px', borderRadius: skipAttachment ? '8px 8px 0 0' : 8,
+                  background: skipAttachment ? '#f9fafb' : '#f0fdf4',
+                  border: `1px solid ${skipAttachment ? '#e5e7eb' : '#bbf7d0'}`,
+                  fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <span style={{ fontSize: 20 }}>{skipAttachment ? '🚫' : '📎'}</span>
+                  <span style={{ color: skipAttachment ? '#888' : '#166534', flex: 1 }}>
+                    {skipAttachment
+                      ? <s>{selectedProduct.letter_s3_key.split('/').pop()}</s>
+                      : <><strong>{selectedProduct.letter_s3_key.split('/').pop()}</strong> — будет прикреплено к каждому письму</>
+                    }
+                  </span>
+                </div>
+                <label style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 14px',
+                  background: skipAttachment ? '#fef2f2' : '#f9fafb',
+                  border: `1px solid ${skipAttachment ? '#fecaca' : '#e5e7eb'}`,
+                  borderTop: 'none', borderRadius: '0 0 8px 8px',
+                  cursor: step === 'preview' ? 'pointer' : 'default',
+                  fontSize: 13, fontWeight: 600,
+                  color: skipAttachment ? '#dc2626' : '#555',
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={skipAttachment}
+                    onChange={(e) => setSkipAttachment(e.target.checked)}
+                    disabled={step !== 'preview'}
+                    style={{ width: 15, height: 15 }}
+                  />
+                  Отправить без вложения
+                </label>
+              </div>
+            ) : (
+              <div style={{
+                marginBottom: 16, padding: '10px 14px', borderRadius: 8,
+                background: '#fff7ed', border: '1px solid #fed7aa',
+                fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <span style={{ fontSize: 20 }}>⚠️</span>
                 <span style={{ color: '#92400E' }}>
                   PDF-письмо не загружено для этой серии — письма уйдут без вложения.
                   Загрузить можно в карточке товара.
                 </span>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Текст письма */}
             <div>

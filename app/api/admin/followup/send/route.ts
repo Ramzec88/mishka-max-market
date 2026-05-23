@@ -9,10 +9,11 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { productId, letterBody, subject } = await req.json() as {
+    const { productId, letterBody, subject, skipAttachment } = await req.json() as {
       productId: string;
       letterBody: string;
       subject: string;
+      skipAttachment?: boolean;
     };
 
     if (!productId || !letterBody) {
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
         await sendFollowupEmail({
           to: email,
           letterBody,
-          letterS3Key: targetProduct?.letter_s3_key ?? null,
+          letterS3Key: skipAttachment ? null : (targetProduct?.letter_s3_key ?? null),
           siteUrl,
           subject: subject || '🐻 Письмо от Мишки Макса',
           recommendations,
