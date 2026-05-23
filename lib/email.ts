@@ -147,16 +147,36 @@ export interface FollowupRecommendedItem {
   url: string;
 }
 
+export interface FollowupRecommendedItem {
+  title: string;
+  price: number; // kopecks
+  emoji: string;
+  url: string;
+}
+
 export interface SendFollowupEmailParams {
   to: string;
-  productTitle: string;
-  letterS3Key: string | null; // путь в S3 к PDF «Письмо Мишки Макса» для этой серии
+  letterBody: string;   // plain text из textarea — абзацы разделены \n\n
+  letterS3Key: string | null;
   siteUrl: string;
+  subject: string;
   recommendations?: FollowupRecommendedItem[];
 }
 
+// Converts plain text (paragraphs separated by \n\n) to HTML paragraphs.
+function textToHtml(text: string): string {
+  return text
+    .split(/\n\n+/)
+    .map((para) =>
+      `<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#3D3530;">${
+        para.trim().replace(/\n/g, '<br />')
+      }</p>`,
+    )
+    .join('');
+}
+
 export async function sendFollowupEmail(params: SendFollowupEmailParams): Promise<void> {
-  const { to, productTitle, letterS3Key, siteUrl, recommendations } = params;
+  const { to, letterBody, letterS3Key, siteUrl, subject, recommendations } = params;
 
   const templatePath = join(process.cwd(), 'emails', 'followup-letter.html');
   let html = readFileSync(templatePath, 'utf-8');
@@ -171,15 +191,6 @@ export async function sendFollowupEmail(params: SendFollowupEmailParams): Promis
     });
   }
 
-  const letterButtonHtml = letterBuffer
-    ? '' // attachment present — no separate button needed
-    : `<tr>
-        <td style="padding:0 40px 24px;text-align:center;">
-          <p style="margin:0 0 12px;font-size:13px;color:#888;">Письмо прикреплено к этому email как PDF-файл.</p>
-        </td>
-      </tr>`;
-
-  // Recommendations block
   let recommendationsHtml = '';
   if (recommendations && recommendations.length > 0) {
     const rows = recommendations
@@ -212,9 +223,7 @@ export async function sendFollowupEmail(params: SendFollowupEmailParams): Promis
   }
 
   html = html
-    .replace('{{PRODUCT_TITLE}}', productTitle)
-    .replace('{{GENDER_SUFFIX}}', 'а') // нейтральное "купила" не используем — просто "купил(а)"
-    .replace('{{LETTER_BUTTON}}', letterButtonHtml)
+    .replace('{{LETTER_BODY}}', textToHtml(letterBody))
     .replace('{{RECOMMENDATIONS}}', recommendationsHtml)
     .replace(/\{\{SITE_URL\}\}/g, siteUrl);
 
@@ -222,7 +231,7 @@ export async function sendFollowupEmail(params: SendFollowupEmailParams): Promis
   await transport.sendMail({
     from: process.env.SMTP_FROM || '"Мишка Макс" <info@mishka-max.ru>',
     to,
-    subject: '🐻 Письмо от Мишки Макса — продолжаем учить буквы?',
+    subject,
     html,
     attachments,
   });
