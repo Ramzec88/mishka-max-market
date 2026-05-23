@@ -17,6 +17,7 @@ export interface Product {
   demo_url: string | null;
   boosty_url: string | null;
   lava_url: string | null;
+  recommended_product_ids: string[];
   is_active: boolean;
   sort_order: number;
   created_at: string;

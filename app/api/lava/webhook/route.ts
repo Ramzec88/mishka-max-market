@@ -4,6 +4,7 @@ import { generateToken, getTokenExpiry } from '@/lib/tokens';
 import { sendOrderEmail, DownloadItem } from '@/lib/email';
 import { getFileSizeBytes } from '@/lib/storage';
 import { Product } from '@/types/product';
+import { getRecommendations } from '@/lib/recommendations';
 
 interface LavaWebhookPayload {
   eventType: 'payment.success' | 'payment.failed' | string;
@@ -51,6 +52,14 @@ export async function POST(request: NextRequest) {
 
       const productList = (products || []) as Pick<Product, 'id' | 'title' | 'format' | 'storage_paths'>[];
       const downloadItems: DownloadItem[] = [];
+
+      // Загружаем все активные продукты для рекомендаций
+      const { data: allProducts } = await supabaseAdmin
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+      const recommendations = getRecommendations(itemIds, (allProducts ?? []) as Product[]);
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
       for (const product of productList) {
@@ -100,7 +109,18 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        await sendOrderEmail({ to: order.email, orderId: order.id, items: downloadItems, siteUrl });
+        await sendOrderEmail({
+          to: order.email,
+          orderId: order.id,
+          items: downloadItems,
+          siteUrl,
+          recommendations: recommendations.map((p) => ({
+            title: p.title,
+            price: p.price,
+            emoji: p.cover_emoji ?? '🎵',
+            url: `${siteUrl}/?product=${p.id}`,
+          })),
+        });
         await supabaseAdmin
           .from('orders')
           .update({ email_sent_at: new Date().toISOString() })

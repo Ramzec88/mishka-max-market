@@ -5,6 +5,7 @@ import { sendOrderEmail, DownloadItem } from '@/lib/email';
 import { getFileSizeBytes } from '@/lib/storage';
 import { YooKassaWebhookPayload } from '@/types/yookassa';
 import { Product } from '@/types/product';
+import { getRecommendations } from '@/lib/recommendations';
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,6 +42,14 @@ export async function POST(request: NextRequest) {
         .in('id', itemIds);
 
       const productList = (products || []) as Pick<Product, 'id' | 'title' | 'format' | 'storage_paths'>[];
+
+      // Загружаем все активные продукты для рекомендаций
+      const { data: allProducts } = await supabaseAdmin
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+      const recommendations = getRecommendations(itemIds, (allProducts ?? []) as Product[]);
 
       // Создаём токены скачивания (один токен на файл)
       const downloadItems: DownloadItem[] = [];
@@ -103,6 +112,12 @@ export async function POST(request: NextRequest) {
           orderId: order.id,
           items: downloadItems,
           siteUrl,
+          recommendations: recommendations.map((p) => ({
+            title: p.title,
+            price: p.price,
+            emoji: p.cover_emoji ?? '🎵',
+            url: `${siteUrl}/?product=${p.id}`,
+          })),
         });
 
         await supabaseAdmin

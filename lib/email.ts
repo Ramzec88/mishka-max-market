@@ -22,15 +22,23 @@ export interface DownloadItem {
   fileSizeBytes?: number;
 }
 
+export interface RecommendedItem {
+  title: string;
+  price: number; // in kopecks
+  emoji: string;
+  url: string;
+}
+
 export interface SendOrderEmailParams {
   to: string;
   orderId: string;
   items: DownloadItem[];
   siteUrl: string;
+  recommendations?: RecommendedItem[];
 }
 
 export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void> {
-  const { to, orderId, items, siteUrl } = params;
+  const { to, orderId, items, siteUrl, recommendations } = params;
 
   const templatePath = join(process.cwd(), 'emails', 'order-delivery.html');
   let html = readFileSync(templatePath, 'utf-8');
@@ -57,8 +65,41 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
     })
     .join('');
 
+  let recommendationsHtml = '';
+  if (recommendations && recommendations.length > 0) {
+    const rows = recommendations
+      .map(
+        (r) => `
+    <tr>
+      <td style="padding: 12px 0; border-bottom: 1px solid #F0E4D6;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="width: 40px; font-size: 28px; vertical-align: middle;">${r.emoji}</td>
+            <td style="vertical-align: middle; padding: 0 12px;">
+              <div style="font-weight: 700; font-size: 14px; color: #1F1B16;">${r.title}</div>
+              <div style="font-size: 13px; color: #5A4F45; margin-top: 2px;">${Math.round(r.price / 100)} ₽</div>
+            </td>
+            <td style="width: 110px; text-align: right; vertical-align: middle;">
+              <a href="${r.url}" style="display: inline-block; background: #FF7A3D; color: #fff; padding: 8px 16px; border-radius: 100px; font-weight: 700; font-size: 13px; text-decoration: none;">Купить</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`,
+      )
+      .join('');
+    recommendationsHtml = `
+    <tr>
+      <td style="background: #FFF8F3; padding: 20px 32px; border-top: 1px solid #F0E4D6; border-bottom: 1px solid #F0E4D6;">
+        <p style="margin: 0 0 12px; font-size: 15px; font-weight: 900; color: #1F1B16;">Вам также может понравиться</p>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
+      </td>
+    </tr>`;
+  }
+
   html = html
     .replace('{{ITEMS}}', itemsHtml)
+    .replace('{{RECOMMENDATIONS}}', recommendationsHtml)
     .replace(/\{\{THANK_YOU_URL\}\}/g, `${siteUrl}/thank-you?order=${orderId}`)
     .replace(/\{\{SITE_URL\}\}/g, siteUrl);
 
