@@ -45,6 +45,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           Промокоды
         </Link>
+        <Link
+          href="/admin/followup"
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+        >
+          Письма Мишки
+        </Link>
         <div style={{ marginLeft: 'auto' }}>
           <button
             onClick={handleLogout}
