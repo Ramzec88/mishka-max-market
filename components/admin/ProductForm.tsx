@@ -147,6 +147,7 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [recommendedIds, setRecommendedIds] = useState<string[]>(product?.recommended_product_ids ?? []);
+  const [recsOpen, setRecsOpen] = useState((product?.recommended_product_ids ?? []).length > 0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -729,83 +730,105 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
       {/* Рекомендованные товары */}
       {allProducts.length > 0 && (
         <div style={CARD}>
-          <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 4, color: '#1a1a1a' }}>Рекомендованные товары</h2>
-          <p style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>
-            Предлагаются покупателю после покупки этого товара. Максимум {MAX_RECOMMENDATIONS} шт.
-          </p>
-          <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
-            {allProducts
-              .filter((p) => p.id !== (product?.id ?? ''))
-              .map((p, idx, arr) => {
-                const checked = recommendedIds.includes(p.id);
-                const disabled = !checked && recommendedIds.length >= MAX_RECOMMENDATIONS;
-                const isLast = idx === arr.length - 1;
-                return (
-                  <div
-                    key={p.id}
-                    onClick={() => {
-                      if (disabled) return;
-                      if (checked) setRecommendedIds(prev => prev.filter(id => id !== p.id));
-                      else setRecommendedIds(prev => [...prev, p.id]);
-                    }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '10px 14px',
-                      borderBottom: isLast ? 'none' : '1px solid #f0f0f0',
-                      background: checked ? '#FFF8F3' : '#fff',
-                      cursor: disabled ? 'not-allowed' : 'pointer',
-                      opacity: disabled ? 0.45 : 1,
-                      transition: 'background 0.15s',
-                    }}
-                  >
-                    <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{p.cover_emoji ?? '📦'}</span>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#1a1a1a', lineHeight: 1.3 }}>{p.title}</span>
-                    <span style={{ fontSize: 11, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 8 }}>{p.category}</span>
-                    {/* Toggle switch */}
-                    <div style={{
-                      width: 36, height: 20, borderRadius: 100, flexShrink: 0,
-                      background: checked ? '#FF7A3D' : '#e5e7eb',
-                      position: 'relative', transition: 'background 0.2s',
-                    }}>
-                      <div style={{
-                        position: 'absolute', top: 2,
-                        left: checked ? 18 : 2,
-                        width: 16, height: 16, borderRadius: '50%',
-                        background: '#fff',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                        transition: 'left 0.2s',
-                      }} />
-                    </div>
-                  </div>
-                );
-              })}
+          {/* Collapsible header */}
+          <div
+            onClick={() => setRecsOpen(o => !o)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+          >
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: '#1a1a1a' }}>Рекомендованные товары</h2>
+              {recommendedIds.length > 0 ? (
+                <div style={{ marginTop: 6, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                  {recommendedIds.map(id => {
+                    const p = allProducts.find(x => x.id === id);
+                    if (!p) return null;
+                    return (
+                      <span key={id} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        background: '#FFF0E8', border: '1px solid #FFCFB3',
+                        borderRadius: 100, padding: '2px 8px 2px 5px',
+                        fontSize: 11, fontWeight: 600, color: '#FF7A3D',
+                      }}>
+                        {p.cover_emoji ?? '📦'} {p.title}
+                        <span
+                          onClick={(e) => { e.stopPropagation(); setRecommendedIds(prev => prev.filter(x => x !== id)); }}
+                          style={{ cursor: 'pointer', color: '#FFB899', marginLeft: 1, fontWeight: 900, fontSize: 13, lineHeight: 1 }}>×</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: '#aaa', margin: '4px 0 0', lineHeight: 1.4 }}>Не выбрано</p>
+              )}
+            </div>
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%', background: '#f3f4f6',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, marginLeft: 12,
+              fontSize: 13, color: '#888',
+              transform: recsOpen ? 'rotate(180deg)' : 'none',
+              transition: 'transform 0.2s',
+            }}>▾</div>
           </div>
-          {recommendedIds.length >= MAX_RECOMMENDATIONS && (
-            <div style={{ fontSize: 12, color: '#aaa', marginTop: 8 }}>
-              Выбрано максимум ({MAX_RECOMMENDATIONS}). Выключите один, чтобы выбрать другой.
-            </div>
-          )}
-          {recommendedIds.length > 0 && (
-            <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {recommendedIds.map(id => {
-                const p = allProducts.find(x => x.id === id);
-                if (!p) return null;
-                return (
-                  <span key={id} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    background: '#FFF0E8', border: '1px solid #FFCFB3',
-                    borderRadius: 100, padding: '3px 10px 3px 6px',
-                    fontSize: 12, fontWeight: 600, color: '#FF7A3D',
-                  }}>
-                    {p.cover_emoji ?? '📦'} {p.title}
-                    <span
-                      onClick={() => setRecommendedIds(prev => prev.filter(x => x !== id))}
-                      style={{ cursor: 'pointer', color: '#FFB899', marginLeft: 2, fontWeight: 900, fontSize: 14, lineHeight: 1 }}
-                    >×</span>
-                  </span>
-                );
-              })}
-            </div>
+
+          {/* Expandable list */}
+          {recsOpen && (
+            <>
+              <p style={{ fontSize: 13, color: '#888', margin: '12px 0', lineHeight: 1.5 }}>
+                Предлагаются покупателю после покупки этого товара. Максимум {MAX_RECOMMENDATIONS} шт.
+              </p>
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                {allProducts
+                  .filter((p) => p.id !== (product?.id ?? ''))
+                  .map((p, idx, arr) => {
+                    const checked = recommendedIds.includes(p.id);
+                    const disabled = !checked && recommendedIds.length >= MAX_RECOMMENDATIONS;
+                    const isLast = idx === arr.length - 1;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          if (disabled) return;
+                          if (checked) setRecommendedIds(prev => prev.filter(id => id !== p.id));
+                          else setRecommendedIds(prev => [...prev, p.id]);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '10px 14px',
+                          borderBottom: isLast ? 'none' : '1px solid #f0f0f0',
+                          background: checked ? '#FFF8F3' : '#fff',
+                          cursor: disabled ? 'not-allowed' : 'pointer',
+                          opacity: disabled ? 0.45 : 1,
+                          transition: 'background 0.15s',
+                        }}
+                      >
+                        <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{p.cover_emoji ?? '📦'}</span>
+                        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#1a1a1a', lineHeight: 1.3 }}>{p.title}</span>
+                        <span style={{ fontSize: 11, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 8 }}>{p.category}</span>
+                        <div style={{
+                          width: 36, height: 20, borderRadius: 100, flexShrink: 0,
+                          background: checked ? '#FF7A3D' : '#e5e7eb',
+                          position: 'relative', transition: 'background 0.2s',
+                        }}>
+                          <div style={{
+                            position: 'absolute', top: 2,
+                            left: checked ? 18 : 2,
+                            width: 16, height: 16, borderRadius: '50%',
+                            background: '#fff',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                            transition: 'left 0.2s',
+                          }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+              {recommendedIds.length >= MAX_RECOMMENDATIONS && (
+                <div style={{ fontSize: 12, color: '#aaa', marginTop: 8 }}>
+                  Выбрано максимум ({MAX_RECOMMENDATIONS}). Выключите один, чтобы выбрать другой.
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
