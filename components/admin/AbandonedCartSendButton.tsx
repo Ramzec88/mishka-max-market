@@ -16,12 +16,22 @@ export default function AbandonedCartSendButton() {
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [result, setResult] = useState<{ sent: number; failed: string[] } | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [promoCode, setPromoCode] = useState('');
+  const [promoDiscount, setPromoDiscount] = useState('');
+
+  function buildPreviewUrl() {
+    const params = new URLSearchParams();
+    if (promoCode.trim()) params.set('promoCode', promoCode.trim());
+    if (promoDiscount.trim()) params.set('promoDiscount', promoDiscount.trim());
+    const qs = params.toString();
+    return `/api/admin/abandoned-cart/preview${qs ? `?${qs}` : ''}`;
+  }
 
   async function handleBuildPreview() {
     setStep('loading-preview');
     setErrorMsg('');
     try {
-      const res = await fetch('/api/admin/abandoned-cart/preview');
+      const res = await fetch(buildPreviewUrl());
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка загрузки предпросмотра');
       if (data.count === 0) {
@@ -41,7 +51,14 @@ export default function AbandonedCartSendButton() {
     if (!preview) return;
     setStep('sending');
     try {
-      const res = await fetch('/api/admin/abandoned-cart/send', { method: 'POST' });
+      const res = await fetch('/api/admin/abandoned-cart/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          promoCode: promoCode.trim() || undefined,
+          promoDiscount: promoDiscount.trim() ? Number(promoDiscount.trim()) : undefined,
+        }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка отправки');
       setResult(data);
@@ -149,6 +166,67 @@ export default function AbandonedCartSendButton() {
               {/* PREVIEW state */}
               {step === 'preview' && preview && (
                 <>
+                  {/* Promo code inputs */}
+                  <div style={{ marginBottom: 16, background: '#FFF8F3', borderRadius: 10, padding: '14px 16px', border: '1px solid #F0E4D6' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+                      Промокод (необязательно)
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div>
+                        <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>Код</div>
+                        <input
+                          type="text"
+                          placeholder="MISHKA20"
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                          style={{
+                            border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px',
+                            fontSize: 14, fontFamily: 'monospace', width: 140,
+                            textTransform: 'uppercase', color: '#FF7A3D', fontWeight: 700,
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>Скидка %</div>
+                        <input
+                          type="number"
+                          placeholder="20"
+                          min={1}
+                          max={99}
+                          value={promoDiscount}
+                          onChange={(e) => setPromoDiscount(e.target.value)}
+                          style={{
+                            border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px',
+                            fontSize: 14, width: 80,
+                          }}
+                        />
+                      </div>
+                      <button
+                        onClick={async () => {
+                          setStep('loading-preview');
+                          try {
+                            const res = await fetch(buildPreviewUrl());
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error || 'Ошибка');
+                            setPreview(data);
+                            setStep('preview');
+                          } catch (e) {
+                            setErrorMsg(e instanceof Error ? e.message : String(e));
+                            setStep('error');
+                          }
+                        }}
+                        style={{
+                          background: '#1a1a1a', color: '#fff', border: 'none',
+                          borderRadius: 8, padding: '8px 14px', fontSize: 13,
+                          fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Обновить предпросмотр
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Recipients */}
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>

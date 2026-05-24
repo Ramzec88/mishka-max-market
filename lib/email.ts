@@ -151,10 +151,25 @@ export interface SendAbandonedCartEmailParams {
   items: AbandonedCartItem[];
   totalAmount: number; // kopecks
   siteUrl: string;
+  promoCode?: string;
+  promoDiscount?: number; // percent, e.g. 20
+}
+
+function buildPromoBlock(promoCode: string, promoDiscount: number): string {
+  return `
+          <tr>
+            <td style="padding:8px 40px 20px;">
+              <div style="background:linear-gradient(135deg,#FFF7ED 0%,#FFEDD5 100%);border:1.5px dashed #FF7A3D;border-radius:14px;padding:18px 24px;text-align:center;">
+                <div style="font-size:13px;color:#92400E;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">🎁 Скидка ${promoDiscount}% по промокоду</div>
+                <div style="font-size:28px;font-weight:900;color:#FF7A3D;letter-spacing:2px;font-family:monospace,monospace;">${promoCode}</div>
+                <div style="font-size:12px;color:#B45309;margin-top:8px;">Введите при оформлении заказа</div>
+              </div>
+            </td>
+          </tr>`;
 }
 
 export async function sendAbandonedCartEmail(params: SendAbandonedCartEmailParams): Promise<void> {
-  const { to, items, totalAmount, siteUrl } = params;
+  const { to, items, totalAmount, siteUrl, promoCode, promoDiscount } = params;
 
   const templatePath = join(process.cwd(), 'emails', 'abandoned-cart.html');
   let html = readFileSync(templatePath, 'utf-8');
@@ -180,9 +195,15 @@ export async function sendAbandonedCartEmail(params: SendAbandonedCartEmailParam
     )
     .join('');
 
+  const promoBlock =
+    promoCode && promoDiscount && promoDiscount > 0
+      ? buildPromoBlock(promoCode.toUpperCase(), promoDiscount)
+      : '';
+
   html = html
     .replace('{{ITEMS_HTML}}', itemsHtml)
     .replace('{{AMOUNT}}', Math.round(totalAmount / 100).toLocaleString('ru-RU'))
+    .replace('{{PROMO_BLOCK}}', promoBlock)
     .replace(/\{\{SITE_URL\}\}/g, siteUrl);
 
   const transport = createTransport();

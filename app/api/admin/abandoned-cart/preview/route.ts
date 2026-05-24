@@ -4,8 +4,12 @@ import { join } from 'path';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getAbandonedCartTargets } from '@/lib/abandoned-cart-targets';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const promoCode = searchParams.get('promoCode') || '';
+    const promoDiscount = Number(searchParams.get('promoDiscount') || '0');
+
     const targets = await getAbandonedCartTargets();
 
     if (targets.length === 0) {
@@ -53,11 +57,26 @@ export async function GET() {
       )
       .join('');
 
+    const promoBlock =
+      promoCode && promoDiscount > 0
+        ? `
+          <tr>
+            <td style="padding:8px 40px 20px;">
+              <div style="background:linear-gradient(135deg,#FFF7ED 0%,#FFEDD5 100%);border:1.5px dashed #FF7A3D;border-radius:14px;padding:18px 24px;text-align:center;">
+                <div style="font-size:13px;color:#92400E;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">🎁 Скидка ${promoDiscount}% по промокоду</div>
+                <div style="font-size:28px;font-weight:900;color:#FF7A3D;letter-spacing:2px;font-family:monospace,monospace;">${promoCode.toUpperCase()}</div>
+                <div style="font-size:12px;color:#B45309;margin-top:8px;">Введите при оформлении заказа</div>
+              </div>
+            </td>
+          </tr>`
+        : '';
+
     const templatePath = join(process.cwd(), 'emails', 'abandoned-cart.html');
     let previewHtml = readFileSync(templatePath, 'utf-8');
     previewHtml = previewHtml
       .replace('{{ITEMS_HTML}}', itemsHtml || '<tr><td style="padding:10px 0;color:#888;font-size:14px;">Материалы из каталога</td></tr>')
       .replace('{{AMOUNT}}', Math.round(sample.totalAmount / 100).toLocaleString('ru-RU'))
+      .replace('{{PROMO_BLOCK}}', promoBlock)
       .replace(/\{\{SITE_URL\}\}/g, siteUrl);
 
     return NextResponse.json({

@@ -3,8 +3,12 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getAbandonedCartTargets } from '@/lib/abandoned-cart-targets';
 import { sendAbandonedCartEmail } from '@/lib/email';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    const body = await request.json().catch(() => ({}));
+    const promoCode: string = body.promoCode || '';
+    const promoDiscount: number = Number(body.promoDiscount || 0);
+
     const targets = await getAbandonedCartTargets();
 
     if (targets.length === 0) {
@@ -40,6 +44,8 @@ export async function POST() {
           items,
           totalAmount: target.totalAmount,
           siteUrl,
+          promoCode: promoCode || undefined,
+          promoDiscount: promoDiscount || undefined,
         });
 
         // Mark as contacted
