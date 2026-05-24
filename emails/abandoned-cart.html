@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вы не завершили покупку</title>
+</head>
+<body style="margin:0;padding:0;background:#FFF8F3;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF8F3;">
+    <tr>
+      <td align="center" style="padding:32px 16px 0;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#fff;border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,0.07);overflow:hidden;">
+
+          <!-- Шапка -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#FF7A3D 0%,#FF9B6A 100%);padding:32px 40px;text-align:center;">
+              <div style="font-size:52px;margin-bottom:12px;">🐻</div>
+              <div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-0.5px;">Мишка Макс</div>
+              <div style="font-size:14px;color:rgba(255,255,255,0.85);margin-top:6px;">Маркет авторских материалов</div>
+            </td>
+          </tr>
+
+          <!-- Вступление -->
+          <tr>
+            <td style="padding:32px 40px 8px;">
+              <p style="margin:0 0 16px;font-size:22px;font-weight:900;color:#1F1B16;letter-spacing:-0.3px;">
+                Вы не завершили покупку 🧸
+              </p>
+              <p style="margin:0;font-size:15px;line-height:1.7;color:#3D3530;">
+                Здравствуйте! Мы заметили, что вы хотели приобрести материалы в Маркете Мишки Макса,
+                но что-то помешало завершить оплату.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Список товаров -->
+          <tr>
+            <td style="padding:20px 40px 8px;">
+              <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.05em;">
+                Вы выбирали:
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                {{ITEMS_HTML}}
+              </table>
+            </td>
+          </tr>
+
+          <!-- Итого -->
+          <tr>
+            <td style="padding:8px 40px 24px;">
+              <div style="background:#FFF8F3;border-radius:12px;padding:14px 20px;display:inline-block;">
+                <span style="font-size:14px;color:#5A4F45;">Итого: </span>
+                <span style="font-size:18px;font-weight:900;color:#FF7A3D;">{{AMOUNT}} ₽</span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Разделитель -->
+          <tr>
+            <td style="padding:0 40px;">
+              <hr style="border:none;border-top:1px solid #F0E4D6;margin:0;" />
+            </td>
+          </tr>
+
+          <!-- Призыв к действию -->
+          <tr>
+            <td style="padding:28px 40px;">
+              <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#3D3530;">
+                Все материалы ждут вас — достаточно вернуться и завершить оплату.
+                Если возникли трудности с картой или появились вопросы — просто ответьте на это письмо,
+                мы поможем!
+              </p>
+              <div style="text-align:center;">
+                <a href="{{SITE_URL}}"
+                   style="display:inline-block;background:#FF7A3D;color:#fff;padding:16px 40px;border-radius:100px;font-weight:900;font-size:16px;text-decoration:none;letter-spacing:-0.2px;">
+                  Вернуться в магазин →
+                </a>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Разделитель -->
+          <tr>
+            <td style="padding:0 40px;">
+              <hr style="border:none;border-top:1px solid #F0E4D6;margin:0;" />
+            </td>
+          </tr>
+
+          <!-- Подпись -->
+          <tr>
+            <td style="padding:24px 40px 32px;">
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#5A4F45;">
+                С теплом,<br>
+                <strong style="color:#1F1B16;">Мишка Макс</strong><br>
+                <span style="font-size:13px;color:#888;">Если вы не делали эту попытку покупки, просто проигнорируйте письмо.</span>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#F5EDE3;padding:16px 40px;text-align:center;border-radius:0 0 20px 20px;">
+              <p style="margin:0;font-size:12px;color:#A09080;line-height:1.5;">
+                © Мишка Макс · <a href="{{SITE_URL}}" style="color:#FF7A3D;text-decoration:none;">mishka-max.ru</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

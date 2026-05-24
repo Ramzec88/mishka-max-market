@@ -140,18 +140,58 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
   });
 }
 
-export interface FollowupRecommendedItem {
+export interface AbandonedCartItem {
   title: string;
   price: number; // kopecks
-  emoji: string;
-  url: string;
+  emoji: string | null;
 }
 
-export interface FollowupRecommendedItem {
-  title: string;
-  price: number; // kopecks
-  emoji: string;
-  url: string;
+export interface SendAbandonedCartEmailParams {
+  to: string;
+  items: AbandonedCartItem[];
+  totalAmount: number; // kopecks
+  siteUrl: string;
+}
+
+export async function sendAbandonedCartEmail(params: SendAbandonedCartEmailParams): Promise<void> {
+  const { to, items, totalAmount, siteUrl } = params;
+
+  const templatePath = join(process.cwd(), 'emails', 'abandoned-cart.html');
+  let html = readFileSync(templatePath, 'utf-8');
+
+  const itemsHtml = items
+    .map(
+      (item) => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #F5EDE3;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="width:36px;font-size:26px;vertical-align:middle;">${item.emoji ?? '📦'}</td>
+            <td style="vertical-align:middle;padding:0 12px;">
+              <div style="font-weight:700;font-size:14px;color:#1F1B16;">${item.title}</div>
+            </td>
+            <td style="width:80px;text-align:right;vertical-align:middle;font-weight:700;font-size:14px;color:#FF7A3D;white-space:nowrap;">
+              ${Math.round(item.price / 100)} ₽
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`,
+    )
+    .join('');
+
+  html = html
+    .replace('{{ITEMS_HTML}}', itemsHtml)
+    .replace('{{AMOUNT}}', Math.round(totalAmount / 100).toLocaleString('ru-RU'))
+    .replace(/\{\{SITE_URL\}\}/g, siteUrl);
+
+  const transport = createTransport();
+  await transport.sendMail({
+    from: process.env.SMTP_FROM || '"Мишка Макс" <info@mishka-max.ru>',
+    to,
+    subject: 'Вы не завершили покупку 🧸',
+    html,
+  });
 }
 
 export interface SendFollowupEmailParams {

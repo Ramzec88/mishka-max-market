@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import CopyEmailButton from '@/components/admin/CopyEmailButton';
 import MarkContactedButton from '@/components/admin/MarkContactedButton';
+import AbandonedCartSendButton from '@/components/admin/AbandonedCartSendButton';
 
 const CANCEL_REASON: Record<string, string> = {
   payment_canceled:        'Отменён покупателем',
@@ -232,6 +233,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 900, color: '#1a1a1a' }}>Заказы</h1>
+
           {view === 'all' && (
             <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
               Найдено: {filteredOrders.length} · Оплачено: {filteredOrders.filter(o => o.status === 'paid').length}
@@ -256,6 +258,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
             );
           })()}
         </div>
+        {view === 'needs-help' && needHelpRows.filter(r => !r.convertedAt).length > 0 && (
+          <AbandonedCartSendButton />
+        )}
       </div>
 
       {/* Tabs */}
