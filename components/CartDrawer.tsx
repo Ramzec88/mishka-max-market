@@ -126,7 +126,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
           </button>
         </div>
 
-        {/* Body */}
+        {/* Body — единая скроллируемая зона */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
           {checkoutState ? (
             <YooKassaWidget
@@ -140,95 +140,93 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
               <p style={{ marginTop: 8, fontSize: 14 }}>Выберите материалы из каталога</p>
             </div>
           ) : (
-            cartItems.map((product) => (
-              <div
-                key={product.id}
-                style={{
-                  display: 'flex',
-                  gap: 14,
-                  padding: '16px 0',
-                  borderBottom: '1px solid var(--border)',
-                }}
-              >
+            <>
+              {/* Товары в корзине */}
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                В корзине
+              </div>
+              {cartItems.map((product) => (
                 <div
+                  key={product.id}
                   style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 12,
-                    flexShrink: 0,
-                    overflow: 'hidden',
-                    background: 'var(--orange-light)',
-                    display: 'grid',
-                    placeItems: 'center',
-                    fontSize: 28,
+                    display: 'flex',
+                    gap: 14,
+                    padding: '14px 0',
+                    borderBottom: '1px solid var(--border)',
                   }}
                 >
-                  {product.cover_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={product.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    product.cover_emoji || '📦'
-                  )}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{product.title}</div>
-                  <div style={{ fontWeight: 800, color: 'var(--orange)' }}>
-                    {Math.round(product.price / 100)} ₽
-                  </div>
-                  <button
-                    onClick={() => handleRemove(product.id)}
+                  <div
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--ink-soft)',
-                      fontSize: 13,
-                      textDecoration: 'underline',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      padding: 0,
-                      marginTop: 4,
+                      width: 56,
+                      height: 56,
+                      borderRadius: 10,
+                      flexShrink: 0,
+                      overflow: 'hidden',
+                      background: 'var(--orange-light)',
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: 26,
                     }}
                   >
-                    удалить
-                  </button>
+                    {product.cover_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={product.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      product.cover_emoji || '📦'
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 3, lineHeight: 1.3 }}>{product.title}</div>
+                    <div style={{ fontWeight: 800, color: 'var(--orange)', fontSize: 14 }}>
+                      {Math.round(product.price / 100)} ₽
+                    </div>
+                    <button
+                      onClick={() => handleRemove(product.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--ink-soft)',
+                        fontSize: 12,
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        padding: 0,
+                        marginTop: 3,
+                      }}
+                    >
+                      удалить
+                    </button>
+                  </div>
                 </div>
+              ))}
+
+              {/* Форма оформления */}
+              <div style={{ marginTop: 20 }}>
+                {error && (
+                  <div
+                    style={{
+                      background: '#FFF1F0',
+                      border: '1px solid #FFB3AE',
+                      borderRadius: 12,
+                      padding: '12px 16px',
+                      marginBottom: 12,
+                      fontSize: 14,
+                      color: '#C0392B',
+                    }}
+                  >
+                    {error}
+                  </div>
+                )}
+                <CheckoutForm
+                  total={total}
+                  items={cartIds}
+                  onSuccess={handleCheckoutSuccess}
+                  onError={setError}
+                />
               </div>
-            ))
+            </>
           )}
         </div>
-
-        {/* Footer with checkout form */}
-        {!checkoutState && cartItems.length > 0 && (
-          <div
-            style={{
-              padding: '20px 24px',
-              background: '#fff',
-              borderTop: '1px solid var(--border)',
-            }}
-          >
-            {error && (
-              <div
-                style={{
-                  background: '#FFF1F0',
-                  border: '1px solid #FFB3AE',
-                  borderRadius: 12,
-                  padding: '12px 16px',
-                  marginBottom: 12,
-                  fontSize: 14,
-                  color: '#C0392B',
-                }}
-              >
-                {error}
-              </div>
-            )}
-            <CheckoutForm
-              total={total}
-              items={cartIds}
-              onSuccess={handleCheckoutSuccess}
-              onError={setError}
-            />
-          </div>
-        )}
       </aside>
     </>
   );

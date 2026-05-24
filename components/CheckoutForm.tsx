@@ -53,10 +53,13 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.join(',')]);
 
+  const effectiveBumpPrice = (rec: BumpProduct) =>
+    rec.bump_price ?? Math.round(rec.price * 0.85);
+
   const visibleBumpRecs = bumpRecs.filter((r) => !bumpedItems.includes(r.id));
   const bumpExtraKopecks = bumpedItems.reduce((sum, id) => {
     const rec = bumpRecs.find((r) => r.id === id);
-    return sum + (rec ? (rec.bump_price ?? rec.price) : 0);
+    return sum + (rec ? effectiveBumpPrice(rec) : 0);
   }, 0);
   const effectiveTotal = total + Math.round(bumpExtraKopecks / 100);
 
@@ -305,8 +308,8 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
             🎁 Добавьте к заказу со скидкой
           </div>
           {visibleBumpRecs.map((rec) => {
-            const showPrice = rec.bump_price ?? rec.price;
-            const hasBumpDiscount = rec.bump_price && rec.bump_price < rec.price;
+            const showPrice = effectiveBumpPrice(rec);
+            const hasBumpDiscount = showPrice < rec.price;
             return (
               <div key={rec.id} style={{
                 display: 'flex', alignItems: 'center', gap: 10,
@@ -362,7 +365,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
           {bumpedItems.map((id) => {
             const rec = bumpRecs.find((r) => r.id === id);
             if (!rec) return null;
-            const price = rec.bump_price ?? rec.price;
+            const price = effectiveBumpPrice(rec);
             return (
               <div key={id} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
