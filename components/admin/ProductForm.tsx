@@ -70,39 +70,34 @@ function sanitizeFileName(name: string): string {
   return (transliterated || 'file') + ext;
 }
 
-async function uploadFileXHR(
-  url: string,
+async function uploadViaProxy(
   file: File,
-  contentType: string,
+  key: string,
   onProgress: (pct: number) => void,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('key', key);
     const xhr = new XMLHttpRequest();
-    xhr.open('PUT', url);
-    xhr.setRequestHeader('Content-Type', contentType);
+    xhr.open('POST', '/api/admin/upload-proxy');
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
     };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) { onProgress(100); resolve(); }
-      else reject(new Error(`S3 ответил ${xhr.status}: ${xhr.responseText.slice(0, 200)}`));
+      else {
+        try { reject(new Error(JSON.parse(xhr.responseText).error || `Ошибка ${xhr.status}`)); }
+        catch { reject(new Error(`Ошибка загрузки: ${xhr.status}`)); }
+      }
     };
     xhr.onerror = () => reject(new Error('Сетевая ошибка при загрузке файла'));
-    xhr.send(file);
+    xhr.send(fd);
   });
 }
 
-async function getUploadUrl(productId: string, fileName: string, contentType: string) {
-  const res = await fetch('/api/admin/upload-url', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ productId, fileName, contentType }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Ошибка получения URL загрузки (${res.status})`);
-  }
-  return res.json() as Promise<{ url: string; key: string }>;
+function buildKey(productId: string, fileName: string): string {
+  return `products/${productId}/${fileName}`;
 }
 
 const MAX_RECOMMENDATIONS = 3;
@@ -233,16 +228,9 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
     setLetterUploadError('');
 
     try {
-      const ext = file.name.split('.').pop() || 'pdf';
-      const res = await fetch('/api/admin/upload-letter-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, ext }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || 'Ошибка получения URL');
-      const { url, key } = await res.json() as { url: string; key: string };
-
-      await uploadFileXHR(url, file, 'application/pdf', setLetterUploadProgress);
+      const ext = (file.name.split('.').pop() || 'pdf').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'pdf';
+      const key = `letters/${productId}/mishka-letter.${ext}`;
+      await uploadViaProxy(file, key, setLetterUploadProgress);
       setLetterS3Key(key);
     } catch (err) {
       setLetterUploadError(err instanceof Error ? err.message : String(err));
@@ -281,9 +269,8 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         setUploadStatus('Загрузка обложки...');
         setUploadProgress(0);
         const ext = coverFile.name.split('.').pop() || 'jpg';
-        const ct = coverFile.type || 'image/jpeg';
-        const { url, key } = await getUploadUrl(productId, `cover.${ext}`, ct);
-        await uploadFileXHR(url, coverFile, ct, setUploadProgress);
+        const key = buildKey(productId, `cover.${ext}`);
+        await uploadViaProxy(coverFile, key, setUploadProgress);
         newCoverKey = key;
       }
 
@@ -291,11 +278,10 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
         const safeFileName = sanitizeFileName(file.name);
-        const ct = file.type || 'application/octet-stream';
         setUploadStatus(`Загрузка файла ${i + 1} из ${selectedFiles.length}: ${file.name}`);
         setUploadProgress(0);
-        const { url, key } = await getUploadUrl(productId, safeFileName, ct);
-        await uploadFileXHR(url, file, ct, setUploadProgress);
+        const key = buildKey(productId, safeFileName);
+        await uploadViaProxy(file, key, setUploadProgress);
         newFileKeys.push(key);
       }
 
