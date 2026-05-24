@@ -21,7 +21,6 @@ const CANCEL_REASON: Record<string, string> = {
   three_d_secure_failed:   'Ошибка 3-D Secure',
   call_issuer:             'Обратитесь в банк',
   cancel_by_merchant:      'Отменён магазином',
-  // Lava error messages (English)
   'The bank card is past its expiration date': 'Карта просрочена',
   'The transaction was canceled due to the confirmation timeout': 'Не завершил оплату',
   'Insufficient funds': 'Недостаточно средств',
@@ -44,15 +43,42 @@ interface Order {
   discount_amount: number;
 }
 
-async function getOrders(email?: string): Promise<Order[]> {
+function dateFrom(period: string): string | null {
+  const now = new Date();
+  if (period === 'today') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  }
+  if (period === 'week') {
+    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  }
+  if (period === 'month') {
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  }
+  return null;
+}
+
+async function getOrders(opts: {
+  email?: string;
+  date?: string;
+  status?: string;
+}): Promise<Order[]> {
   noStore();
   let query = supabaseAdmin
     .from('orders')
     .select('id, email, status, amount, items, paid_at, email_sent_at, created_at, cancellation_reason, promo_code, discount_amount')
     .order('created_at', { ascending: false })
-    .limit(200);
+    .limit(500);
 
-  if (email) query = query.ilike('email', `%${email}%`);
+  if (opts.email) query = query.ilike('email', `%${opts.email}%`);
+
+  const from = opts.date ? dateFrom(opts.date) : null;
+  if (from) query = query.gte('created_at', from);
+
+  if (opts.status === 'paid') {
+    query = query.eq('status', 'paid');
+  } else if (opts.status === 'problem') {
+    query = query.in('status', ['canceled', 'failed']);
+  }
 
   const { data } = await query;
   return (data || []) as Order[];
@@ -71,7 +97,7 @@ interface NeedHelpRow {
   email: string;
   attempts: number;
   lastAttempt: string;
-  totalAmount: number; // sum of attempted amounts
+  totalAmount: number;
 }
 
 function buildNeedHelp(orders: Order[]): NeedHelpRow[] {
@@ -85,18 +111,17 @@ function buildNeedHelp(orders: Order[]): NeedHelpRow[] {
   const result: NeedHelpRow[] = [];
   for (const email of Array.from(byEmail.keys())) {
     const list = byEmail.get(email)!;
-    const hasPaid = list.some((o: Order) => o.status === 'paid');
+    const hasPaid = list.some((o) => o.status === 'paid');
     if (hasPaid) continue;
-    const failed = list.filter((o: Order) => o.status === 'canceled' || o.status === 'failed');
+    const failed = list.filter((o) => o.status === 'canceled' || o.status === 'failed');
     if (failed.length === 0) continue;
     result.push({
       email,
       attempts: failed.length,
       lastAttempt: failed[0].created_at,
-      totalAmount: failed.reduce((s: number, o: Order) => s + o.amount, 0),
+      totalAmount: failed.reduce((s, o) => s + o.amount, 0),
     });
   }
-  // sort by last attempt desc
   result.sort((a, b) => new Date(b.lastAttempt).getTime() - new Date(a.lastAttempt).getTime());
   return result;
 }
@@ -126,20 +151,58 @@ const TAB_STYLE = (active: boolean): React.CSSProperties => ({
   color: active ? '#fff' : '#555',
 });
 
-interface Props { searchParams: { email?: string; view?: string } }
+function buildUrl(current: Record<string, string>, overrides: Record<string, string | undefined>) {
+  const params = new URLSearchParams(current);
+  for (const [k, v] of Object.entries(overrides)) {
+    if (v === undefined || v === '') params.delete(k);
+    else params.set(k, v);
+  }
+  return `/admin/orders?${params.toString()}`;
+}
+
+const CHIP = (active: boolean): React.CSSProperties => ({
+  padding: '6px 14px',
+  borderRadius: 100,
+  fontSize: 13,
+  fontWeight: active ? 700 : 600,
+  cursor: 'pointer',
+  textDecoration: 'none',
+  display: 'inline-block',
+  whiteSpace: 'nowrap',
+  border: active ? '2px solid #FF7A3D' : '2px solid #e5e7eb',
+  background: active ? '#FFF8F3' : '#fff',
+  color: active ? '#FF7A3D' : '#555',
+  transition: 'all 0.15s',
+});
+
+interface Props { searchParams: { email?: string; view?: string; date?: string; status?: string } }
 
 export default async function AdminOrdersPage({ searchParams }: Props) {
   const emailFilter = searchParams.email?.trim() || '';
-  const view = searchParams.view || 'all';
+  const view        = searchParams.view   || 'all';
+  const dateFilter  = searchParams.date   || '';
+  const statusFilter = searchParams.status || '';
 
-  // For "needs help" we need all orders (no email filter)
-  const [allOrders, contactedMap] = await Promise.all([
-    getOrders(view === 'all' ? emailFilter : undefined),
+  const currentParams: Record<string, string> = { view };
+  if (emailFilter)  currentParams.email  = emailFilter;
+  if (dateFilter)   currentParams.date   = dateFilter;
+  if (statusFilter) currentParams.status = statusFilter;
+
+  // For needs-help we always fetch all orders (no date/status filter on that query)
+  const [filteredOrders, allForNeedsHelp, contactedMap] = await Promise.all([
+    getOrders({ email: emailFilter, date: dateFilter || undefined, status: statusFilter || undefined }),
+    view === 'needs-help'
+      ? getOrders({})
+      : Promise.resolve([] as Order[]),
     getContactedEmails(),
   ]);
-  const needHelpRows = buildNeedHelp(allOrders);
 
-  const displayedOrders = view === 'all' ? allOrders : [];
+  const needHelpRows = buildNeedHelp(
+    view === 'needs-help' ? allForNeedsHelp : filteredOrders,
+  );
+  const displayedOrders = view === 'all' ? filteredOrders : [];
+
+  const hasAnyFilter = emailFilter || dateFilter || statusFilter;
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -148,7 +211,10 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
           <h1 style={{ fontSize: 24, fontWeight: 900, color: '#1a1a1a' }}>Заказы</h1>
           {view === 'all' && (
             <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-              Найдено: {allOrders.length} · Оплачено: {allOrders.filter(o => o.status === 'paid').length}
+              Найдено: {filteredOrders.length} · Оплачено: {filteredOrders.filter(o => o.status === 'paid').length}
+              {filteredOrders.filter(o => o.status === 'paid').length > 0 && (
+                <> · Сумма: {(filteredOrders.filter(o => o.status === 'paid').reduce((s, o) => s + o.amount, 0) / 100).toLocaleString('ru-RU')} ₽</>
+              )}
             </div>
           )}
           {view === 'needs-help' && (
@@ -164,15 +230,15 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
         <Link href="/admin/orders?view=all" style={TAB_STYLE(view === 'all')}>
           Все заказы
         </Link>
-        <Link href="/admin/orders?view=needs-help" style={{ ...TAB_STYLE(view === 'needs-help'), display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+        <Link
+          href="/admin/orders?view=needs-help"
+          style={{ ...TAB_STYLE(view === 'needs-help'), display: 'inline-flex', alignItems: 'center', gap: 7 }}
+        >
           {needHelpRows.length > 0 && (
             <span style={{
               background: view === 'needs-help' ? 'rgba(255,255,255,0.3)' : '#FF7A3D',
-              color: '#fff',
-              borderRadius: 100,
-              padding: '1px 7px',
-              fontSize: 11,
-              fontWeight: 800,
+              color: '#fff', borderRadius: 100, padding: '1px 7px',
+              fontSize: 11, fontWeight: 800,
             }}>
               {needHelpRows.length}
             </span>
@@ -184,27 +250,50 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       {/* ── View: all orders ── */}
       {view === 'all' && (
         <>
-          <form method="GET" action="/admin/orders" style={{ marginBottom: 16 }}>
-            <input type="hidden" name="view" value="all" />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                name="email"
-                defaultValue={emailFilter}
-                placeholder="Поиск по email покупателя..."
-                style={{ flex: 1, border: '1px solid #e5e7eb', borderRadius: 8, padding: '9px 13px', fontSize: 14, outline: 'none' }}
-              />
-              <button type="submit"
-                style={{ background: '#FF7A3D', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                Найти
-              </button>
-              {emailFilter && (
-                <a href="/admin/orders"
-                  style={{ background: '#f3f4f6', color: '#555', border: 'none', borderRadius: 8, padding: '9px 16px', fontWeight: 600, fontSize: 14, cursor: 'pointer', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-                  Сбросить
-                </a>
-              )}
+          {/* Search + filters */}
+          <div style={{ background: '#fff', borderRadius: 12, padding: '16px', marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            {/* Search row */}
+            <form method="GET" action="/admin/orders">
+              <input type="hidden" name="view" value="all" />
+              {dateFilter   && <input type="hidden" name="date"   value={dateFilter} />}
+              {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <input
+                  name="email"
+                  defaultValue={emailFilter}
+                  placeholder="Поиск по email покупателя..."
+                  style={{ flex: 1, border: '1px solid #e5e7eb', borderRadius: 8, padding: '9px 13px', fontSize: 14, outline: 'none' }}
+                />
+                <button type="submit"
+                  style={{ background: '#FF7A3D', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  Найти
+                </button>
+                {hasAnyFilter && (
+                  <a href="/admin/orders?view=all"
+                    style={{ background: '#f3f4f6', color: '#555', border: 'none', borderRadius: 8, padding: '9px 16px', fontWeight: 600, fontSize: 14, cursor: 'pointer', textDecoration: 'none', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                    Сбросить
+                  </a>
+                )}
+              </div>
+            </form>
+
+            {/* Date chips */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#aaa', alignSelf: 'center', marginRight: 2 }}>Период:</span>
+              <Link href={buildUrl(currentParams, { date: undefined })} style={CHIP(!dateFilter)}>Все время</Link>
+              <Link href={buildUrl(currentParams, { date: 'today' })}  style={CHIP(dateFilter === 'today')}>Сегодня</Link>
+              <Link href={buildUrl(currentParams, { date: 'week' })}   style={CHIP(dateFilter === 'week')}>7 дней</Link>
+              <Link href={buildUrl(currentParams, { date: 'month' })}  style={CHIP(dateFilter === 'month')}>Этот месяц</Link>
             </div>
-          </form>
+
+            {/* Status chips */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#aaa', alignSelf: 'center', marginRight: 2 }}>Статус:</span>
+              <Link href={buildUrl(currentParams, { status: undefined })}       style={CHIP(!statusFilter)}>Все</Link>
+              <Link href={buildUrl(currentParams, { status: 'paid' })}          style={{ ...CHIP(statusFilter === 'paid'), ...(statusFilter === 'paid' ? { borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' } : {}) }}>Только оплаченные</Link>
+              <Link href={buildUrl(currentParams, { status: 'problem' })}       style={{ ...CHIP(statusFilter === 'problem'), ...(statusFilter === 'problem' ? { borderColor: '#dc2626', color: '#dc2626', background: '#fef2f2' } : {}) }}>Только проблемные</Link>
+            </div>
+          </div>
 
           <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {displayedOrders.length === 0 ? (
@@ -246,8 +335,10 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                             {s.label}
                           </span>
                           {order.cancellation_reason && (
-                            <div style={{ fontSize: 11, color: '#aaa', marginTop: 3, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                              title={CANCEL_REASON[order.cancellation_reason] ?? order.cancellation_reason}>
+                            <div
+                              style={{ fontSize: 11, color: '#aaa', marginTop: 3, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                              title={CANCEL_REASON[order.cancellation_reason] ?? order.cancellation_reason}
+                            >
                               {CANCEL_REASON[order.cancellation_reason] ?? order.cancellation_reason}
                             </div>
                           )}
@@ -299,45 +390,25 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                   const contactedAt = contactedMap.get(row.email) || null;
                   return (
                     <tr key={row.email} style={{ borderBottom: '1px solid #f0f0f0', background: contactedAt ? '#f0fdf4' : undefined }}>
-                      <td style={{ padding: '12px 14px', fontSize: 14, color: '#1a1a1a', fontWeight: 600 }}>
-                        {row.email}
-                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: 14, color: '#1a1a1a', fontWeight: 600 }}>{row.email}</td>
                       <td style={{ padding: '12px 14px' }}>
-                        <span style={{
-                          display: 'inline-block',
-                          background: '#fee2e2', color: '#dc2626',
-                          borderRadius: 100, padding: '2px 10px',
-                          fontSize: 12, fontWeight: 800,
-                        }}>
+                        <span style={{ display: 'inline-block', background: '#fee2e2', color: '#dc2626', borderRadius: 100, padding: '2px 10px', fontSize: 12, fontWeight: 800 }}>
                           {row.attempts}×
                         </span>
                       </td>
-                      <td style={{ padding: '12px 14px', fontSize: 13, color: '#888' }}>
-                        {formatDate(row.lastAttempt)}
-                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: 13, color: '#888' }}>{formatDate(row.lastAttempt)}</td>
                       <td style={{ padding: '12px 14px', fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>
                         {(row.totalAmount / 100).toLocaleString('ru-RU')} ₽
                       </td>
-                      {/* Contacted status */}
                       <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                        <MarkContactedButton
-                          email={row.email}
-                          isMarked={!!contactedAt}
-                          contactedAt={contactedAt}
-                        />
+                        <MarkContactedButton email={row.email} isMarked={!!contactedAt} contactedAt={contactedAt} />
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <CopyEmailButton email={row.email} />
                           <a
                             href={`/admin/orders?view=all&email=${encodeURIComponent(row.email)}`}
-                            style={{
-                              fontSize: 13, fontWeight: 600,
-                              color: '#FF7A3D',
-                              padding: '6px 14px', borderRadius: 8,
-                              textDecoration: 'none', whiteSpace: 'nowrap',
-                              border: '1px solid #FF7A3D',
-                            }}
+                            style={{ fontSize: 13, fontWeight: 600, color: '#FF7A3D', padding: '6px 14px', borderRadius: 8, textDecoration: 'none', whiteSpace: 'nowrap', border: '1px solid #FF7A3D' }}
                           >
                             Все заказы
                           </a>
