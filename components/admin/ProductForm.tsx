@@ -130,6 +130,7 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
 
   const [sortOrder, setSortOrder] = useState(product ? String(product.sort_order) : '0');
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
+  const [bumpPrice, setBumpPrice] = useState(product?.bump_price ? String(product.bump_price / 100) : '');
   const [demoUrl, setDemoUrl] = useState(product?.demo_url ?? '');
   const [boostyUrl, setBoostyUrl] = useState(product?.boosty_url ?? '');
   const [lavaUrl, setLavaUrl] = useState(product?.lava_url ?? '');
@@ -330,6 +331,7 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         cover_image: newCoverKey,
         recommended_product_ids: recommendedIds,
         letter_s3_key: letterS3Key || null,
+        bump_price: bumpPrice ? Number(bumpPrice) : null,
         _deleteKeys: deleteKeys,
       };
 
@@ -398,6 +400,13 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
           <div style={{ flex: 1 }}>
             <label style={LABEL}>Старая цена (₽)</label>
             <input type="number" value={priceOld} onChange={e => setPriceOld(e.target.value)} min={0} placeholder="Необязательно" style={INPUT} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={LABEL}>Цена в корзине — bump (₽)</label>
+            <input type="number" value={bumpPrice} onChange={e => setBumpPrice(e.target.value)} min={0} placeholder="Скидочная" style={INPUT} />
+            <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
+              Показывается в чекауте как спецпредложение. Если не задано — обычная цена.
+            </div>
           </div>
         </div>
 

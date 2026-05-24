@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { clearCart } from '@/lib/cart';
 
@@ -18,6 +18,16 @@ interface PromoData {
   applicable_to_all: boolean;
 }
 
+interface BumpProduct {
+  id: string;
+  title: string;
+  price: number; // kopecks
+  bump_price: number | null; // kopecks
+  cover_emoji: string | null;
+  cover_variant: string;
+  format: string | null;
+}
+
 type PaymentMethod = 'yookassa' | 'lava';
 
 export default function CheckoutForm({ total, items, onSuccess, onError }: CheckoutFormProps) {
@@ -31,8 +41,27 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
   const [promoData, setPromoData] = useState<PromoData | null>(null);
   const [promoError, setPromoError] = useState('');
 
+  const [bumpRecs, setBumpRecs] = useState<BumpProduct[]>([]);
+  const [bumpedItems, setBumpedItems] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (items.length === 0) return;
+    fetch(`/api/cart-recommendations?items=${encodeURIComponent(items.join(','))}`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => Array.isArray(data) && setBumpRecs(data))
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.join(',')]);
+
+  const visibleBumpRecs = bumpRecs.filter((r) => !bumpedItems.includes(r.id));
+  const bumpExtraKopecks = bumpedItems.reduce((sum, id) => {
+    const rec = bumpRecs.find((r) => r.id === id);
+    return sum + (rec ? (rec.bump_price ?? rec.price) : 0);
+  }, 0);
+  const effectiveTotal = total + Math.round(bumpExtraKopecks / 100);
+
   const discountAmount = promoData ? Math.round(promoData.discount_amount / 100) : 0;
-  const finalTotal = total - discountAmount;
+  const finalTotal = effectiveTotal - discountAmount;
 
   async function handleApplyPromo() {
     if (!promoInput.trim()) return;
@@ -86,7 +115,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
         const res = await fetch('/api/create-lava-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, email: trimmedEmail, promoCode: promoData?.code ?? null }),
+          body: JSON.stringify({ items: [...items, ...bumpedItems], email: trimmedEmail, promoCode: promoData?.code ?? null, bumpedItems }),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -106,7 +135,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
         const res = await fetch('/api/create-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, email: trimmedEmail, promoCode: promoData?.code ?? null }),
+          body: JSON.stringify({ items: [...items, ...bumpedItems], email: trimmedEmail, promoCode: promoData?.code ?? null, bumpedItems }),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -263,13 +292,106 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
         </div>
       )}
 
+      {/* Order Bump */}
+      {visibleBumpRecs.length > 0 && (
+        <div style={{
+          marginBottom: 14,
+          border: '1.5px dashed #FFD4B8',
+          borderRadius: 12,
+          padding: '12px 14px',
+          background: '#FFF8F3',
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--orange)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            🎁 Добавьте к заказу со скидкой
+          </div>
+          {visibleBumpRecs.map((rec) => {
+            const showPrice = rec.bump_price ?? rec.price;
+            const hasBumpDiscount = rec.bump_price && rec.bump_price < rec.price;
+            return (
+              <div key={rec.id} style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 0',
+                borderTop: '1px solid #FFE8D6',
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 8, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22,
+                  background: rec.cover_variant === 'lavender' ? 'linear-gradient(135deg,#E8E0F5,#D4C7ED)'
+                    : rec.cover_variant === 'green' ? 'linear-gradient(135deg,#E0F2E4,#C7E8CF)'
+                    : rec.cover_variant === 'blue' ? 'linear-gradient(135deg,#E0EBF5,#C7DAED)'
+                    : 'linear-gradient(135deg,#FFE4D1,#FFCBA8)',
+                }}>
+                  {rec.cover_emoji ?? '🎵'}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.3 }}>{rec.title}</div>
+                  <div style={{ fontSize: 12, marginTop: 2 }}>
+                    {hasBumpDiscount && (
+                      <span style={{ textDecoration: 'line-through', color: '#bbb', marginRight: 4 }}>
+                        {Math.round(rec.price / 100)} ₽
+                      </span>
+                    )}
+                    <span style={{ fontWeight: 800, color: hasBumpDiscount ? 'var(--orange)' : 'var(--ink)' }}>
+                      {Math.round(showPrice / 100)} ₽
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBumpedItems((prev) => [...prev, rec.id])}
+                  style={{
+                    background: 'var(--orange)', color: '#fff',
+                    border: 'none', borderRadius: 100,
+                    padding: '7px 14px', fontSize: 12, fontWeight: 700,
+                    cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  + Добавить
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Добавленные bump-товары */}
+      {bumpedItems.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          {bumpedItems.map((id) => {
+            const rec = bumpRecs.find((r) => r.id === id);
+            if (!rec) return null;
+            const price = rec.bump_price ?? rec.price;
+            return (
+              <div key={id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                fontSize: 13, color: '#16a34a', marginBottom: 4,
+              }}>
+                <span>✓ {rec.title}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 700 }}>+{Math.round(price / 100)} ₽</span>
+                  <button
+                    type="button"
+                    onClick={() => setBumpedItems((prev) => prev.filter((x) => x !== id))}
+                    style={{ background: 'none', border: 'none', color: '#aaa', cursor: 'pointer', fontSize: 16, padding: '0 2px', fontFamily: 'inherit' }}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Итого */}
       <div style={{ marginBottom: 14 }}>
-        {promoData && discountAmount > 0 && (
+        {(promoData && discountAmount > 0) && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--ink-soft)', marginBottom: 4 }}>
               <span>Сумма</span>
-              <span>{total} ₽</span>
+              <span>{effectiveTotal} ₽</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#16a34a', marginBottom: 6 }}>
               <span>Скидка {promoData.discount_percent}%</span>

@@ -7,11 +7,13 @@ import { Product } from '@/types/product';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items, email, promoCode } = body as {
+    const { items, email, promoCode, bumpedItems = [] } = body as {
       items: string[];
       email: string;
       promoCode?: string;
+      bumpedItems?: string[];
     };
+    const bumpedSet = new Set(Array.isArray(bumpedItems) ? bumpedItems : []);
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Корзина пуста' }, { status: 400 });
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const { data: products, error: productsError } = await supabaseAdmin
       .from('products')
-      .select('id, title, price, format')
+      .select('id, title, price, bump_price, format')
       .in('id', items)
       .eq('is_active', true);
 
@@ -42,8 +44,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Товары не найдены' }, { status: 400 });
     }
 
-    const foundProducts = products as Pick<Product, 'id' | 'title' | 'price' | 'format'>[];
-    const fullAmount = foundProducts.reduce((sum, p) => sum + p.price, 0);
+    const foundProducts = (products as Pick<Product, 'id' | 'title' | 'price' | 'bump_price' | 'format'>[]).map((p) => ({
+      ...p,
+      effectivePrice: bumpedSet.has(p.id) && p.bump_price ? p.bump_price : p.price,
+    }));
+    const fullAmount = foundProducts.reduce((sum, p) => sum + p.effectivePrice, 0);
 
     let discountPercent = 0;
     let validatedPromoCode: string | null = null;
@@ -74,7 +79,7 @@ export async function POST(request: NextRequest) {
     const applicableProducts = applicableProductIds
       ? foundProducts.filter((p) => applicableProductIds!.includes(p.id))
       : foundProducts;
-    const applicableAmount = applicableProducts.reduce((s, p) => s + p.price, 0);
+    const applicableAmount = applicableProducts.reduce((s, p) => s + p.effectivePrice, 0);
     const discountAmount = Math.round(applicableAmount * discountPercent / 100);
     const finalAmount = Math.max(fullAmount - discountAmount, 100);
 
