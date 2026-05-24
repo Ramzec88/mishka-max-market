@@ -98,9 +98,10 @@ interface NeedHelpRow {
   attempts: number;
   lastAttempt: string;
   totalAmount: number;
+  convertedAt: string | null; // paid_at of the order placed after the outreach letter
 }
 
-function buildNeedHelp(orders: Order[]): NeedHelpRow[] {
+function buildNeedHelp(orders: Order[], contactedMap: Map<string, string>): NeedHelpRow[] {
   const byEmail = new Map<string, Order[]>();
   for (const o of orders) {
     const list = byEmail.get(o.email) || [];
@@ -111,18 +112,39 @@ function buildNeedHelp(orders: Order[]): NeedHelpRow[] {
   const result: NeedHelpRow[] = [];
   for (const email of Array.from(byEmail.keys())) {
     const list = byEmail.get(email)!;
-    const hasPaid = list.some((o) => o.status === 'paid');
-    if (hasPaid) continue;
     const failed = list.filter((o) => o.status === 'canceled' || o.status === 'failed');
     if (failed.length === 0) continue;
+
+    const contactedAt = contactedMap.get(email) ?? null;
+
+    // Conversion: a paid order placed strictly after the outreach letter
+    let convertedAt: string | null = null;
+    if (contactedAt) {
+      const conversion = list.find(
+        (o) => o.status === 'paid' && o.paid_at && new Date(o.paid_at) > new Date(contactedAt),
+      );
+      if (conversion) convertedAt = conversion.paid_at;
+    }
+
+    // If they paid but NOT as a tracked conversion (paid before contact or without contact)
+    // they're already happy customers — skip them
+    const hasPaid = list.some((o) => o.status === 'paid');
+    if (hasPaid && !convertedAt) continue;
+
     result.push({
       email,
       attempts: failed.length,
       lastAttempt: failed[0].created_at,
       totalAmount: failed.reduce((s, o) => s + o.amount, 0),
+      convertedAt,
     });
   }
-  result.sort((a, b) => new Date(b.lastAttempt).getTime() - new Date(a.lastAttempt).getTime());
+
+  // Unconverted first (need attention), converted last; within each group sort by date desc
+  result.sort((a, b) => {
+    if (!!a.convertedAt !== !!b.convertedAt) return a.convertedAt ? 1 : -1;
+    return new Date(b.lastAttempt).getTime() - new Date(a.lastAttempt).getTime();
+  });
   return result;
 }
 
@@ -199,6 +221,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
 
   const needHelpRows = buildNeedHelp(
     view === 'needs-help' ? allForNeedsHelp : filteredOrders,
+    contactedMap,
   );
   const displayedOrders = view === 'all' ? filteredOrders : [];
 
@@ -217,11 +240,21 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               )}
             </div>
           )}
-          {view === 'needs-help' && (
-            <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-              Покупатели с незавершёнными попытками без успешной оплаты: {needHelpRows.length}
-            </div>
-          )}
+          {view === 'needs-help' && (() => {
+            const pending   = needHelpRows.filter(r => !r.convertedAt).length;
+            const converted = needHelpRows.filter(r => r.convertedAt).length;
+            const contacted = needHelpRows.filter(r => contactedMap.has(r.email)).length;
+            return (
+              <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+                Ждут: {pending}
+                {contacted > 0 && (
+                  <> · Написали: {contacted} · <span style={{ color: '#16a34a', fontWeight: 700 }}>Оплатили после письма: {converted}</span>
+                    {contacted > 0 && <> ({Math.round(converted / contacted * 100)}%)</>}
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -234,13 +267,13 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
           href="/admin/orders?view=needs-help"
           style={{ ...TAB_STYLE(view === 'needs-help'), display: 'inline-flex', alignItems: 'center', gap: 7 }}
         >
-          {needHelpRows.length > 0 && (
+          {needHelpRows.filter(r => !r.convertedAt).length > 0 && (
             <span style={{
               background: view === 'needs-help' ? 'rgba(255,255,255,0.3)' : '#FF7A3D',
               color: '#fff', borderRadius: 100, padding: '1px 7px',
               fontSize: 11, fontWeight: 800,
             }}>
-              {needHelpRows.length}
+              {needHelpRows.filter(r => !r.convertedAt).length}
             </span>
           )}
           Нужна помощь
@@ -388,9 +421,14 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               <tbody>
                 {needHelpRows.map((row) => {
                   const contactedAt = contactedMap.get(row.email) || null;
+                  const isConverted = !!row.convertedAt;
+                  const rowBg = isConverted ? '#fffbeb' : contactedAt ? '#f0fdf4' : undefined;
                   return (
-                    <tr key={row.email} style={{ borderBottom: '1px solid #f0f0f0', background: contactedAt ? '#f0fdf4' : undefined }}>
-                      <td style={{ padding: '12px 14px', fontSize: 14, color: '#1a1a1a', fontWeight: 600 }}>{row.email}</td>
+                    <tr key={row.email} style={{ borderBottom: '1px solid #f0f0f0', background: rowBg }}>
+                      <td style={{ padding: '12px 14px', fontSize: 14, color: '#1a1a1a', fontWeight: 600 }}>
+                        {isConverted && <span style={{ marginRight: 6 }}>🎉</span>}
+                        {row.email}
+                      </td>
                       <td style={{ padding: '12px 14px' }}>
                         <span style={{ display: 'inline-block', background: '#fee2e2', color: '#dc2626', borderRadius: 100, padding: '2px 10px', fontSize: 12, fontWeight: 800 }}>
                           {row.attempts}×
@@ -401,11 +439,24 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                         {(row.totalAmount / 100).toLocaleString('ru-RU')} ₽
                       </td>
                       <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                        <MarkContactedButton email={row.email} isMarked={!!contactedAt} contactedAt={contactedAt} />
+                        {isConverted ? (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            background: 'linear-gradient(135deg, #fef9c3, #fef08a)',
+                            color: '#92400e',
+                            border: '1px solid #fcd34d',
+                            borderRadius: 100, padding: '5px 14px',
+                            fontSize: 12, fontWeight: 800,
+                          }}>
+                            🎉 Оплачено {formatDate(row.convertedAt)}
+                          </span>
+                        ) : (
+                          <MarkContactedButton email={row.email} isMarked={!!contactedAt} contactedAt={contactedAt} />
+                        )}
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <CopyEmailButton email={row.email} />
+                          {!isConverted && <CopyEmailButton email={row.email} />}
                           <a
                             href={`/admin/orders?view=all&email=${encodeURIComponent(row.email)}`}
                             style={{ fontSize: 13, fontWeight: 600, color: '#FF7A3D', padding: '6px 14px', borderRadius: 8, textDecoration: 'none', whiteSpace: 'nowrap', border: '1px solid #FF7A3D' }}
