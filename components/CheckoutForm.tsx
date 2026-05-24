@@ -25,6 +25,7 @@ interface BumpProduct {
   bump_price: number | null; // kopecks
   cover_emoji: string | null;
   cover_variant: string;
+  cover_url: string | null;
   format: string | null;
 }
 
@@ -319,13 +320,15 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
                 <div style={{
                   width: 40, height: 40, borderRadius: 8, flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22,
+                  fontSize: 22, overflow: 'hidden',
                   background: rec.cover_variant === 'lavender' ? 'linear-gradient(135deg,#E8E0F5,#D4C7ED)'
                     : rec.cover_variant === 'green' ? 'linear-gradient(135deg,#E0F2E4,#C7E8CF)'
                     : rec.cover_variant === 'blue' ? 'linear-gradient(135deg,#E0EBF5,#C7DAED)'
                     : 'linear-gradient(135deg,#FFE4D1,#FFCBA8)',
                 }}>
-                  {rec.cover_emoji ?? '🎵'}
+                  {rec.cover_url
+                    ? <img src={rec.cover_url} alt={rec.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : (rec.cover_emoji ?? '🎵')}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.3 }}>{rec.title}</div>

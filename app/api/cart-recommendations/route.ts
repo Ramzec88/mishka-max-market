@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getRecommendations } from '@/lib/recommendations';
+import { getPublicUrl } from '@/lib/storage';
 import { Product } from '@/types/product';
 
 export async function GET(request: NextRequest) {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   const { data: allProducts } = await supabaseAdmin
     .from('products')
-    .select('id, title, price, bump_price, category, cover_emoji, cover_variant, format, recommended_product_ids, is_active, sort_order')
+    .select('id, title, price, bump_price, category, cover_emoji, cover_variant, cover_image, format, recommended_product_ids, is_active, sort_order')
     .eq('is_active', true)
     .order('sort_order');
 
@@ -29,6 +30,9 @@ export async function GET(request: NextRequest) {
       bump_price: p.bump_price,
       cover_emoji: p.cover_emoji,
       cover_variant: p.cover_variant,
+      cover_url: (p as unknown as { cover_image: string | null }).cover_image
+        ? getPublicUrl((p as unknown as { cover_image: string }).cover_image)
+        : null,
       format: p.format,
     })),
   );
