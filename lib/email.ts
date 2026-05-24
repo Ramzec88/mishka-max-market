@@ -194,6 +194,13 @@ export async function sendAbandonedCartEmail(params: SendAbandonedCartEmailParam
   });
 }
 
+export interface FollowupRecommendedItem {
+  title: string;
+  price: number; // kopecks
+  emoji: string;
+  url: string;
+}
+
 export interface SendFollowupEmailParams {
   to: string;
   letterBody: string;   // plain text из textarea — абзацы разделены \n\n
