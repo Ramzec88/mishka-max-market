@@ -68,22 +68,24 @@ export default function CartButton({ onClick }: CartButtonProps) {
           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
         </svg>
         Корзина
-        <span
-          style={{
-            background: '#fff',
-            color: 'var(--orange)',
-            borderRadius: 100,
-            minWidth: 22,
-            height: 22,
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: 13,
-            fontWeight: 800,
-            padding: '0 6px',
-          }}
-        >
-          {count}
-        </span>
+        {count > 0 && (
+          <span
+            style={{
+              background: '#fff',
+              color: 'var(--orange)',
+              borderRadius: 100,
+              minWidth: 22,
+              height: 22,
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 13,
+              fontWeight: 800,
+              padding: '0 6px',
+            }}
+          >
+            {count}
+          </span>
+        )}
       </button>
     </>
   );

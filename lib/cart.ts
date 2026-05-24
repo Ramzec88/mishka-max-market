@@ -33,3 +33,11 @@ export function removeFromCart(id: string): string[] {
 export function clearCart(): void {
   saveCart([]);
 }
+
+/** Remove IDs that don't match any known product and return the cleaned list. */
+export function purgeStaleCart(validIds: string[]): string[] {
+  const cart = getCart();
+  const cleaned = cart.filter((id) => validIds.includes(id));
+  if (cleaned.length !== cart.length) saveCart(cleaned);
+  return cleaned;
+}

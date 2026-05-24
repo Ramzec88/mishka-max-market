@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ProductDisplay } from '@/types/product';
-import { getCart, removeFromCart } from '@/lib/cart';
+import { getCart, removeFromCart, purgeStaleCart } from '@/lib/cart';
 import CheckoutForm from './CheckoutForm';
 import YooKassaWidget from './YooKassaWidget';
 
@@ -21,10 +21,18 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const validIds = products.map((p) => p.id);
+    const before = getCart();
+    const cleaned = purgeStaleCart(validIds);
+    setCartIds(cleaned);
+    if (cleaned.length !== before.length) {
+      window.dispatchEvent(new Event('cart-updated'));
+    }
+
     const sync = () => setCartIds(getCart());
-    sync();
     window.addEventListener('cart-updated', sync);
     return () => window.removeEventListener('cart-updated', sync);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
