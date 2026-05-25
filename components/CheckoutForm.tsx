@@ -29,7 +29,7 @@ interface BumpProduct {
   format: string | null;
 }
 
-type PaymentMethod = 'yookassa' | 'lava';
+type PaymentMethod = 'yookassa' | 'lava' | 'paypal';
 
 export default function CheckoutForm({ total, items, onSuccess, onError }: CheckoutFormProps) {
   const [email, setEmail] = useState('');
@@ -115,11 +115,12 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
     }
     setLoading(true);
     try {
-      if (paymentMethod === 'lava') {
+      if (paymentMethod === 'lava' || paymentMethod === 'paypal') {
+        const paymentProvider = paymentMethod === 'paypal' ? 'PAYPAL' : 'UNLIMINT';
         const res = await fetch('/api/create-lava-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: [...items, ...bumpedItems], email: trimmedEmail, promoCode: promoData?.code ?? null, bumpedItems }),
+          body: JSON.stringify({ items: [...items, ...bumpedItems], email: trimmedEmail, promoCode: promoData?.code ?? null, bumpedItems, paymentProvider }),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -162,47 +163,34 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 8 }}>
           Способ оплаты
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('yookassa')}
-            style={{
-              padding: '10px 8px',
-              borderRadius: 12,
-              border: `2px solid ${paymentMethod === 'yookassa' ? 'var(--orange)' : 'var(--border)'}`,
-              background: paymentMethod === 'yookassa' ? 'var(--orange-light)' : '#fff',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'all 0.15s',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontSize: 18, marginBottom: 2 }}>🏦</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: paymentMethod === 'yookassa' ? 'var(--orange)' : 'var(--ink)' }}>
-              Российская карта
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 1 }}>МИР, Visa, MC</div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('lava')}
-            style={{
-              padding: '10px 8px',
-              borderRadius: 12,
-              border: `2px solid ${paymentMethod === 'lava' ? 'var(--orange)' : 'var(--border)'}`,
-              background: paymentMethod === 'lava' ? 'var(--orange-light)' : '#fff',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'all 0.15s',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontSize: 18, marginBottom: 2 }}>🌍</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: paymentMethod === 'lava' ? 'var(--orange)' : 'var(--ink)' }}>
-              Иностранная карта
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 1 }}>Visa, Mastercard</div>
-          </button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          {([
+            { id: 'yookassa', icon: '🏦', label: 'Российская карта', sub: 'МИР, Visa, MC' },
+            { id: 'lava',     icon: '💳', label: 'Иностранная карта', sub: 'Visa, Mastercard' },
+            { id: 'paypal',   icon: '🅿️', label: 'PayPal',           sub: 'USD' },
+          ] as const).map(({ id, icon, label, sub }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setPaymentMethod(id)}
+              style={{
+                padding: '10px 6px',
+                borderRadius: 12,
+                border: `2px solid ${paymentMethod === id ? 'var(--orange)' : 'var(--border)'}`,
+                background: paymentMethod === id ? 'var(--orange-light)' : '#fff',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 0.15s',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: 18, marginBottom: 2 }}>{icon}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: paymentMethod === id ? 'var(--orange)' : 'var(--ink)', lineHeight: 1.2 }}>
+                {label}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--ink-soft)', marginTop: 2 }}>{sub}</div>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -432,7 +420,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
         }}
       >
         {loading
-          ? (paymentMethod === 'lava' ? 'Переходим к оплате...' : 'Создаём платёж...')
+          ? (paymentMethod !== 'yookassa' ? 'Переходим к оплате...' : 'Создаём платёж...')
           : 'Перейти к оплате'}
       </button>
       <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 10, textAlign: 'center', lineHeight: 1.4 }}>

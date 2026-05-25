@@ -1,15 +1,15 @@
 const LAVA_BASE = 'https://gate.lava.top';
 
 export type LavaCurrency = 'RUB' | 'USD' | 'EUR';
+export type LavaProvider = 'SMART_GLOCAL' | 'PAY2ME' | 'UNLIMINT' | 'PAYPAL';
 
 export interface LavaInvoiceParams {
   email: string;
   offerId: string;
   currency: LavaCurrency;
-  /** Сумма в валюте оффера — только для динамической цены на lava.top */
   amount?: number;
+  paymentProvider?: LavaProvider;
   periodicity?: 'ONE_TIME' | 'MONTHLY';
-  /** Куда вернуть покупателя после успешной / неуспешной оплаты */
   successUrl?: string;
   failUrl?: string;
   buyerLanguage?: 'RU' | 'EN' | 'ES';
@@ -39,9 +39,8 @@ export async function createLavaInvoice(params: LavaInvoiceParams): Promise<Lava
     currency: params.currency,
   };
 
-  if (params.amount != null && process.env.LAVA_DYNAMIC_PRICE === 'true') {
-    body.amount = params.amount;
-  }
+  if (params.amount != null) body.amount = params.amount;
+  if (params.paymentProvider) body.paymentProvider = params.paymentProvider;
   if (params.periodicity) body.periodicity = params.periodicity;
   if (params.successUrl) body.successUrl = params.successUrl;
   if (params.failUrl) body.failUrl = params.failUrl;

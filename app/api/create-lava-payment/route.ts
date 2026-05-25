@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { createLavaInvoice } from '@/lib/lava';
+import { createLavaInvoice, LavaProvider } from '@/lib/lava';
 import { isValidLavaEmail, lavaErrorMessage, normalizeLavaEmail } from '@/lib/lava-email';
 import { Product } from '@/types/product';
+
+// Провайдеры для иностранных карт и PayPal — работают с USD/EUR
+const FOREIGN_PROVIDERS: LavaProvider[] = ['UNLIMINT', 'PAYPAL'];
+
+function rubToUsd(kopecks: number): number {
+  const rate = Number(process.env.LAVA_RUB_PER_USD || '95');
+  const usd = Math.round(kopecks / 100 / (Number.isFinite(rate) && rate > 0 ? rate : 95));
+  return Math.max(5, usd); // Минимум $5 по условиям Lava
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items, email, promoCode, bumpedItems = [] } = body as {
+    const { items, email, promoCode, bumpedItems = [], paymentProvider } = body as {
       items: string[];
       email: string;
       promoCode?: string;
       bumpedItems?: string[];
+      paymentProvider?: LavaProvider;
     };
     const bumpedSet = new Set(Array.isArray(bumpedItems) ? bumpedItems : []);
 
@@ -107,11 +117,16 @@ export async function POST(request: NextRequest) {
       `https://${request.headers.get('host')}`;
     const thankYouUrl = `${origin}/thank-you?order=${order.id}`;
 
+    const isForeign = paymentProvider && FOREIGN_PROVIDERS.includes(paymentProvider);
+    const currency = isForeign ? 'USD' : 'RUB';
+    const amount = isForeign ? rubToUsd(finalAmount) : Math.round(finalAmount / 100);
+
     const invoice = await createLavaInvoice({
       email: buyerEmail,
       offerId,
-      currency: 'RUB',
-      amount: Math.round(finalAmount / 100),
+      currency,
+      amount,
+      paymentProvider: paymentProvider || undefined,
       buyerLanguage: 'RU',
       successUrl: thankYouUrl,
       failUrl: thankYouUrl,
