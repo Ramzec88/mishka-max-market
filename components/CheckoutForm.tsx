@@ -29,7 +29,7 @@ interface BumpProduct {
   format: string | null;
 }
 
-type PaymentMethod = 'yookassa' | 'lava' | 'paypal';
+type PaymentMethod = 'yookassa' | 'lava';
 
 export default function CheckoutForm({ total, items, onSuccess, onError }: CheckoutFormProps) {
   const [email, setEmail] = useState('');
@@ -115,8 +115,8 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
     }
     setLoading(true);
     try {
-      if (paymentMethod === 'lava' || paymentMethod === 'paypal') {
-        const paymentProvider = paymentMethod === 'paypal' ? 'PAYPAL' : 'UNLIMINT';
+      if (paymentMethod === 'lava') {
+        const paymentProvider = 'UNLIMINT';
         const res = await fetch('/api/create-lava-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -163,11 +163,10 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 8 }}>
           Способ оплаты
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {([
             { id: 'yookassa', icon: '🏦', label: 'Российская карта', sub: 'МИР, Visa, MC' },
-            { id: 'lava',     icon: '💳', label: 'Иностранная карта', sub: 'Visa, Mastercard' },
-            { id: 'paypal',   icon: '🅿️', label: 'PayPal',           sub: 'USD' },
+            { id: 'lava',     icon: '💳', label: 'Иностранная карта', sub: 'Visa, Mastercard · USD' },
           ] as const).map(({ id, icon, label, sub }) => (
             <button
               key={id}

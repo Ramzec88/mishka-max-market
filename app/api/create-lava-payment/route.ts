@@ -4,13 +4,10 @@ import { createLavaInvoice, LavaProvider } from '@/lib/lava';
 import { isValidLavaEmail, lavaErrorMessage, normalizeLavaEmail } from '@/lib/lava-email';
 import { Product } from '@/types/product';
 
-// Провайдеры для иностранных карт и PayPal — работают с USD/EUR
-const FOREIGN_PROVIDERS: LavaProvider[] = ['UNLIMINT', 'PAYPAL'];
+const RUB_PER_USD = 76;
 
 function rubToUsd(kopecks: number): number {
-  const rate = Number(process.env.LAVA_RUB_PER_USD || '95');
-  const usd = Math.round(kopecks / 100 / (Number.isFinite(rate) && rate > 0 ? rate : 95));
-  return Math.max(5, usd); // Минимум $5 по условиям Lava
+  return Math.max(5, Math.round(kopecks / 100 / RUB_PER_USD));
 }
 
 export async function POST(request: NextRequest) {
@@ -117,7 +114,7 @@ export async function POST(request: NextRequest) {
       `https://${request.headers.get('host')}`;
     const thankYouUrl = `${origin}/thank-you?order=${order.id}`;
 
-    const isForeign = paymentProvider && FOREIGN_PROVIDERS.includes(paymentProvider);
+    const isForeign = paymentProvider === 'UNLIMINT';
     const currency = isForeign ? 'USD' : 'RUB';
     const amount = isForeign ? rubToUsd(finalAmount) : Math.round(finalAmount / 100);
 
