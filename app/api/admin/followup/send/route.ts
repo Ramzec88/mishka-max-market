@@ -9,12 +9,13 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { productId, letterBody, subject, skipAttachment, includeAlreadySent } = await req.json() as {
+    const { productId, letterBody, subject, skipAttachment, includeAlreadySent, require7Days = true } = await req.json() as {
       productId: string;
       letterBody: string;
       subject: string;
       skipAttachment?: boolean;
       includeAlreadySent?: boolean;
+      require7Days?: boolean;
     };
 
     if (!productId || !letterBody) {
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mishka-max.ru';
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: productData } = await supabaseAdmin
       .from('products')
@@ -39,10 +41,14 @@ export async function POST(req: NextRequest) {
     const allProducts = (allProductsData || []) as Product[];
     const productMap = new Map(allProducts.map((p) => [p.id, p]));
 
-    const { data: orders } = await supabaseAdmin
+    let ordersQuery = supabaseAdmin
       .from('orders')
       .select('id, email, items')
       .eq('status', 'paid');
+
+    if (require7Days) ordersQuery = ordersQuery.lte('paid_at', cutoff);
+
+    const { data: orders } = await ordersQuery;
 
     const matching = (orders || []).filter((o) =>
       Array.isArray(o.items) && o.items.includes(productId),

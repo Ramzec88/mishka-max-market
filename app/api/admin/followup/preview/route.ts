@@ -5,15 +5,22 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { productId } = await req.json() as { productId: string };
+    const { productId, require7Days = true } = await req.json() as {
+      productId: string;
+      require7Days?: boolean;
+    };
     if (!productId) return NextResponse.json({ error: 'productId обязателен' }, { status: 400 });
 
-    // All paid orders containing this product
-    const { data: orders, error } = await supabaseAdmin
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    let query = supabaseAdmin
       .from('orders')
       .select('id, email, items, paid_at')
       .eq('status', 'paid');
 
+    if (require7Days) query = query.lte('paid_at', cutoff);
+
+    const { data: orders, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     const matching = (orders || []).filter((o) =>
@@ -26,7 +33,6 @@ export async function POST(req: NextRequest) {
 
     const orderIds = matching.map((o) => o.id);
 
-    // Which ones already got a follow-up for this product?
     const { data: alreadySent } = await supabaseAdmin
       .from('followup_emails')
       .select('order_id, sent_at')
@@ -37,7 +43,6 @@ export async function POST(req: NextRequest) {
       (alreadySent || []).map((r: { order_id: string; sent_at: string }) => [r.order_id, r.sent_at]),
     );
 
-    // Deduplicate by email within each group
     const newEmailSet = new Set<string>();
     const repeatEmailSet = new Set<string>();
     const newRecipients: { orderId: string; email: string; paidAt: string }[] = [];

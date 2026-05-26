@@ -71,6 +71,8 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
   const [letterBody, setLetterBody] = useState('');
   const [skipAttachment, setSkipAttachment] = useState(false);
 
+  const [require7Days, setRequire7Days] = useState(true);
+
   const [collecting, setCollecting] = useState(false);
   const [collectError, setCollectError] = useState('');
 
@@ -95,7 +97,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       const res = await fetch('/api/admin/followup/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({ productId, require7Days }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка');
@@ -121,7 +123,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       const res = await fetch('/api/admin/followup/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, letterBody, subject, skipAttachment, includeAlreadySent }),
+        body: JSON.stringify({ productId, letterBody, subject, skipAttachment, includeAlreadySent, require7Days }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка');
@@ -189,6 +191,35 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
           >
             {collecting ? 'Собираем...' : 'Собрать данные'}
           </button>
+        </div>
+
+        {/* Фильтр по дате */}
+        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 14px', borderRadius: 8, cursor: step === 'sending' ? 'default' : 'pointer',
+            border: `1px solid ${require7Days ? '#bbf7d0' : '#fed7aa'}`,
+            background: require7Days ? '#f0fdf4' : '#fff7ed',
+            fontSize: 13, fontWeight: 600,
+            color: require7Days ? '#166534' : '#92400E',
+            userSelect: 'none',
+          }}>
+            <input
+              type="checkbox"
+              checked={require7Days}
+              onChange={(e) => { setRequire7Days(e.target.checked); setStep('select'); setNewRecipients([]); setRepeatRecipients([]); }}
+              disabled={step === 'sending'}
+              style={{ width: 15, height: 15 }}
+            />
+            {require7Days
+              ? '📅 Только покупки 7+ дней назад'
+              : '📋 Все покупатели серии (без фильтра по дате)'}
+          </label>
+          <span style={{ fontSize: 12, color: '#aaa' }}>
+            {require7Days
+              ? 'Стандартный follow-up через неделю после покупки'
+              : 'Рассылка по всей базе этой серии'}
+          </span>
         </div>
 
         {collectError && (
