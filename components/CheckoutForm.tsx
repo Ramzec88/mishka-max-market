@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { clearCart } from '@/lib/cart';
 
@@ -49,6 +49,8 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
   const [bumpRecs, setBumpRecs] = useState<BumpProduct[]>([]);
   const [bumpedItems, setBumpedItems] = useState<string[]>([]);
   const [showMinModal, setShowMinModal] = useState(false);
+  const [bypassMinCheck, setBypassMinCheck] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -118,7 +120,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
       handleError('Укажите email латиницей (например name@gmail.com) — на него придут файлы');
       return;
     }
-    if (paymentMethod === 'lava' && finalTotal < MIN_RUB) {
+    if (paymentMethod === 'lava' && finalTotal < MIN_RUB && !bypassMinCheck) {
       setShowMinModal(true);
       return;
     }
@@ -162,6 +164,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
       handleError(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {
       setLoading(false);
+      setBypassMinCheck(false);
     }
   }
 
@@ -215,7 +218,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
               </button>
               <button
                 type="button"
-                onClick={() => { setShowMinModal(false); setPaymentMethod('yookassa'); }}
+                onClick={() => { setShowMinModal(false); setBypassMinCheck(true); setTimeout(() => { formRef.current?.requestSubmit(); }, 0); }}
                 style={{
                   background: '#f3f4f6', color: '#555',
                   border: 'none', borderRadius: 100,
@@ -223,14 +226,14 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}
               >
-                Переключиться на российскую карту
+                Всё равно оплатить
               </button>
             </div>
           </div>
         </div>
       )}
 
-    <form onSubmit={handleSubmit}>
+    <form ref={formRef} onSubmit={handleSubmit}>
       {/* Способ оплаты */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 8 }}>
