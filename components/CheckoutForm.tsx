@@ -29,6 +29,10 @@ interface BumpProduct {
   format: string | null;
 }
 
+const RUB_PER_USD = 76;
+const MIN_USD = 5;
+const MIN_RUB = RUB_PER_USD * MIN_USD; // 380 ₽
+
 type PaymentMethod = 'yookassa' | 'lava';
 
 export default function CheckoutForm({ total, items, onSuccess, onError }: CheckoutFormProps) {
@@ -44,6 +48,7 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
 
   const [bumpRecs, setBumpRecs] = useState<BumpProduct[]>([]);
   const [bumpedItems, setBumpedItems] = useState<string[]>([]);
+  const [showMinModal, setShowMinModal] = useState(false);
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -113,6 +118,10 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
       handleError('Укажите email латиницей (например name@gmail.com) — на него придут файлы');
       return;
     }
+    if (paymentMethod === 'lava' && finalTotal < MIN_RUB) {
+      setShowMinModal(true);
+      return;
+    }
     setLoading(true);
     try {
       if (paymentMethod === 'lava') {
@@ -156,7 +165,71 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
     }
   }
 
+  const usdAmount = Math.max(MIN_USD, Math.round(finalTotal / RUB_PER_USD));
+  const shortfall = MIN_RUB - finalTotal;
+
   return (
+    <>
+      {/* Модальное окно: минимальный платёж $5 */}
+      {showMinModal && (
+        <div
+          onClick={() => setShowMinModal(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff', borderRadius: 20, padding: 28,
+              maxWidth: 360, width: '100%',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+            }}
+          >
+            <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 12 }}>💳</div>
+            <h3 style={{ fontSize: 18, fontWeight: 900, textAlign: 'center', marginBottom: 8 }}>
+              Минимальный платёж — $5
+            </h3>
+            <p style={{ fontSize: 14, color: 'var(--ink-soft)', textAlign: 'center', lineHeight: 1.6, marginBottom: 8 }}>
+              Иностранные карты принимают платежи от <strong>$5</strong>.
+              Ваша сумма — <strong>${Math.round(finalTotal / RUB_PER_USD)} ({finalTotal} ₽)</strong>.
+            </p>
+            <p style={{ fontSize: 13, color: 'var(--ink-soft)', textAlign: 'center', lineHeight: 1.5, marginBottom: 20 }}>
+              Добавьте товаров ещё на <strong style={{ color: 'var(--orange)' }}>{shortfall} ₽</strong> — или оплатите через российскую карту.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setShowMinModal(false)}
+                style={{
+                  background: 'var(--orange)', color: '#fff',
+                  border: 'none', borderRadius: 100,
+                  padding: '13px 20px', fontWeight: 800, fontSize: 15,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Добавить товары
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowMinModal(false); setPaymentMethod('yookassa'); }}
+                style={{
+                  background: '#f3f4f6', color: '#555',
+                  border: 'none', borderRadius: 100,
+                  padding: '13px 20px', fontWeight: 700, fontSize: 14,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Переключиться на российскую карту
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     <form onSubmit={handleSubmit}>
       {/* Способ оплаты */}
       <div style={{ marginBottom: 16 }}>
@@ -191,6 +264,15 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
             </button>
           ))}
         </div>
+        {paymentMethod === 'lava' && finalTotal < MIN_RUB && (
+          <div style={{
+            marginTop: 8, padding: '8px 12px',
+            background: '#FFF7ED', border: '1px solid #FED7AA',
+            borderRadius: 10, fontSize: 12, color: '#92400E', lineHeight: 1.5,
+          }}>
+            ⚠️ Минимум $5 — добавьте товаров ещё на <strong>{MIN_RUB - finalTotal} ₽</strong>
+          </div>
+        )}
       </div>
 
       {/* Email */}
@@ -428,5 +510,6 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
         и соглашаетесь на обработку персоналэнных данных
       </p>
     </form>
+    </>
   );
 }
