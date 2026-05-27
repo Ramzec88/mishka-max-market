@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export interface AbandonedCartTarget {
   email: string;
-  totalAmount: number; // kopecks — sum of failed order amounts
+  totalAmount: number; // kopecks — amount of the most recent failed order
   attempts: number;
   lastAttempt: string;
   itemIds: string[]; // product IDs from the most recent failed order
@@ -58,7 +58,7 @@ export async function getAbandonedCartTargets(): Promise<AbandonedCartTarget[]> 
 
     targets.push({
       email,
-      totalAmount: failed.reduce((s, o) => s + o.amount, 0),
+      totalAmount: latestFailed.amount, // use latest order amount, not sum of all attempts
       attempts: failed.length,
       lastAttempt: latestFailed.created_at,
       itemIds: latestFailed.items ?? [],
