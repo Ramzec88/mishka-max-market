@@ -90,6 +90,14 @@ export async function POST(request: NextRequest) {
     const discountAmount = Math.round(applicableAmount * discountPercent / 100);
     const finalAmount = Math.max(fullAmount - discountAmount, 100);
 
+    const lineItems = foundProducts.map((p) => ({
+      product_id: p.id,
+      title: p.title,
+      regular_price: p.price,
+      paid_price: p.effectivePrice,
+      is_bump: bumpedSet.has(p.id),
+    }));
+
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -100,6 +108,7 @@ export async function POST(request: NextRequest) {
         payment_provider: 'lava',
         promo_code: validatedPromoCode,
         discount_amount: discountAmount,
+        line_items: lineItems,
       })
       .select('id')
       .single();

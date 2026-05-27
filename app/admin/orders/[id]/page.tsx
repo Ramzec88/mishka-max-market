@@ -104,6 +104,62 @@ export default async function OrderDetailPage({ params }: Props) {
         <OrderActions orderId={order.id} isPaid={order.status === 'paid'} />
       </div>
 
+      {/* Line items breakdown */}
+      {order.line_items && Array.isArray(order.line_items) && order.line_items.length > 0 && (
+        <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 16 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, color: '#1a1a1a' }}>Состав заказа</h2>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 480 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  {['Товар', 'Обычная цена', 'Оплачено', 'Скидка', 'Тип'].map(h => (
+                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(order.line_items as { product_id: string; title: string; regular_price: number; paid_price: number; is_bump: boolean }[]).map((li) => {
+                  const discount = li.regular_price - li.paid_price;
+                  return (
+                    <tr key={li.product_id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                      <td style={{ padding: '10px 10px', fontWeight: 600, color: '#1a1a1a' }}>{li.title}</td>
+                      <td style={{ padding: '10px 10px', color: discount > 0 ? '#aaa' : '#1a1a1a', textDecoration: discount > 0 ? 'line-through' : 'none', whiteSpace: 'nowrap' }}>
+                        {(li.regular_price / 100).toLocaleString('ru-RU')} ₽
+                      </td>
+                      <td style={{ padding: '10px 10px', fontWeight: 700, color: '#1a1a1a', whiteSpace: 'nowrap' }}>
+                        {(li.paid_price / 100).toLocaleString('ru-RU')} ₽
+                      </td>
+                      <td style={{ padding: '10px 10px', color: '#16a34a', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        {discount > 0 ? `−${(discount / 100).toLocaleString('ru-RU')} ₽` : '—'}
+                      </td>
+                      <td style={{ padding: '10px 10px' }}>
+                        {li.is_bump ? (
+                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: '#fff7ed', color: '#ea580c' }}>
+                            Допродажа
+                          </span>
+                        ) : (
+                          <span style={{ color: '#aaa', fontSize: 12 }}>Основной</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: '2px solid #e5e7eb' }}>
+                  <td colSpan={2} style={{ padding: '10px 10px', fontSize: 12, color: '#aaa' }}>
+                    {order.discount_amount > 0 && `Промокод ${order.promo_code}: −${(order.discount_amount / 100).toLocaleString('ru-RU')} ₽`}
+                  </td>
+                  <td colSpan={3} style={{ padding: '10px 10px', fontWeight: 800, color: '#1a1a1a', whiteSpace: 'nowrap' }}>
+                    Итого: {(order.amount / 100).toLocaleString('ru-RU')} ₽
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Download tokens */}
       <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
         <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, color: '#1a1a1a' }}>

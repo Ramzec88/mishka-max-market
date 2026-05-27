@@ -91,6 +91,15 @@ export async function POST(request: NextRequest) {
     const discountAmount = Math.round(applicableAmount * discountPercent / 100);
     const finalAmount = Math.max(fullAmount - discountAmount, 100); // минимум 1 рубль
 
+    // Строим line_items для хранения разбивки по товарам
+    const lineItems = foundProducts.map((p) => ({
+      product_id: p.id,
+      title: p.title,
+      regular_price: p.price,        // kopecks, original price
+      paid_price: p.effectivePrice,  // kopecks, after bump discount (if any)
+      is_bump: bumpedSet.has(p.id),
+    }));
+
     // Создаём заказ
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
@@ -101,6 +110,7 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         promo_code: validatedPromoCode,
         discount_amount: discountAmount,
+        line_items: lineItems,
       })
       .select('id')
       .single();
