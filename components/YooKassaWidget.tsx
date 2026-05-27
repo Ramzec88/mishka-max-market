@@ -24,16 +24,15 @@ interface YooKassaWidgetProps {
 export default function YooKassaWidget({ confirmationToken, orderId }: YooKassaWidgetProps) {
   type WidgetInstance = { render: (containerId: string) => void; destroy: () => void };
   const widgetRef = useRef<WidgetInstance | null>(null);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
-
   function initWidget() {
     if (!window.YooMoneyCheckoutWidget || !confirmationToken) return;
 
     widgetRef.current?.destroy();
 
+    const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || window.location.origin;
     widgetRef.current = new window.YooMoneyCheckoutWidget({
       confirmation_token: confirmationToken,
-      return_url: `${siteUrl}/thank-you?order=${orderId}`,
+      return_url: `${origin}/thank-you?order=${orderId}`,
       error_callback: (err) => console.error('YooKassa widget error:', err),
     });
     widgetRef.current.render('yookassa-widget-container');

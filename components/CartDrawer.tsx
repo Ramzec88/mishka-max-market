@@ -70,9 +70,9 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay — отключаем клик пока открыт виджет оплаты */}
       <div
-        onClick={onClose}
+        onClick={checkoutState ? undefined : onClose}
         style={{
           position: 'fixed',
           inset: 0,
@@ -81,6 +81,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'all' : 'none',
           transition: 'opacity 0.25s',
+          cursor: checkoutState ? 'default' : 'pointer',
         }}
       />
 
@@ -112,26 +113,27 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
             background: '#fff',
           }}
         >
-          <div style={{ fontSize: 20, fontWeight: 900 }}>Ваш заказ</div>
-          <button
-            onClick={onClose}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              background: 'var(--border)',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 18,
-              fontWeight: 700,
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              fontFamily: 'inherit',
-            }}
-          >
-            ✕
-          </button>
+          <div style={{ fontSize: 20, fontWeight: 900 }}>
+            {checkoutState ? 'Оплата' : 'Ваш заказ'}
+          </div>
+          {checkoutState ? (
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 180, textAlign: 'right', lineHeight: 1.4 }}>
+              Завершите оплату в форме ниже
+            </div>
+          ) : (
+            <button
+              onClick={onClose}
+              style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'var(--border)', display: 'grid',
+                placeItems: 'center', fontSize: 18, fontWeight: 700,
+                border: 'none', cursor: 'pointer',
+                transition: 'all 0.2s', fontFamily: 'inherit',
+              }}
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {/* Body — единая скроллируемая зона */}
