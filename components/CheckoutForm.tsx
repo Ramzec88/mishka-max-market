@@ -96,7 +96,8 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
       return rec ? { id: rec.id, price: Math.round(effectiveBumpPrice(rec) / 100), category: rec.category ?? 'songs' } : null;
     }).filter((x): x is { id: string; price: number; category: string } => x !== null),
   ];
-  const volumeInfo = calcDiscount(allItemsForDiscount);
+  // Anchor from main cart items only — bumps contribute to total but don't raise the tier
+  const volumeInfo = calcDiscount(allItemsForDiscount, cartItemsForDiscount);
   const volumeDiscountAmount = volumeInfo?.discountAmount ?? 0;
   const volumeDiscountRate = volumeInfo?.discountRate ?? 0;
 

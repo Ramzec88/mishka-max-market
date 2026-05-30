@@ -17,12 +17,24 @@ export interface DiscountInfo {
   nextLabel: string;      // '−15%' | '−25%' | ''
 }
 
-export function calcDiscount(items: CartItemForDiscount[]): DiscountInfo | null {
+/**
+ * @param items       All items (main + bumps) — determines cartTotal and status
+ * @param anchorItems Main cart items only — determines tier1 threshold.
+ *                    Defaults to `items` when omitted.
+ *
+ * Anchor is fixed to main cart items so that adding an expensive bump/
+ * recommendation never raises the discount threshold mid-session.
+ */
+export function calcDiscount(
+  items: CartItemForDiscount[],
+  anchorItems?: CartItemForDiscount[],
+): DiscountInfo | null {
   if (items.length === 0) return null;
 
   const cartTotal = items.reduce((s, i) => s + i.price, 0);
 
-  const anchor = [...items].sort((a, b) => b.price - a.price)[0];
+  const forAnchor = anchorItems && anchorItems.length > 0 ? anchorItems : items;
+  const anchor = [...forAnchor].sort((a, b) => b.price - a.price)[0];
   const k = anchor.category === 'scenarios' ? 1.55 : 1.40;
   const tier1 = Math.round(anchor.price * k);
   const tier2 = 1000;
@@ -41,7 +53,6 @@ export function calcDiscount(items: CartItemForDiscount[]): DiscountInfo | null 
   const discountAmount = Math.round(cartTotal * discountRate);
   const finalTotal = cartTotal - discountAmount;
 
-  // progress = fill width as % of total range (0 to tier2)
   const progress = Math.min(100, Math.max(0, (cartTotal / tier2) * 100));
 
   let remaining = 0;

@@ -73,7 +73,8 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
   const total = cartItems.reduce((sum, p) => sum + Math.round(p.price / 100), 0);
 
   const cartItemsForDiscount = cartItems.map(p => ({ id: p.id, price: Math.round(p.price / 100), category: p.category }));
-  const discountInfo = calcDiscount([...cartItemsForDiscount, ...bumpedItemsForDiscount]);
+  // Pass cartItemsForDiscount as anchorItems so bump items never raise the tier1 threshold
+  const discountInfo = calcDiscount([...cartItemsForDiscount, ...bumpedItemsForDiscount], cartItemsForDiscount);
 
   function handleAddToCart(id: string) {
     const updated = addToCart(id);

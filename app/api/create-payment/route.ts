@@ -57,8 +57,10 @@ export async function POST(request: NextRequest) {
     }));
     const fullAmount = foundProducts.reduce((sum, p) => sum + p.effectivePrice, 0);
 
-    // Volume discount (progress-bar tiers)
-    const volumeInfo = calcDiscount(foundProducts.map(p => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category })));
+    // Volume discount: all items for total, non-bumped items for anchor (bumps never raise tier1)
+    const allForDiscount = foundProducts.map(p => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category }));
+    const mainForAnchor = foundProducts.filter(p => !bumpedSet.has(p.id)).map(p => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category }));
+    const volumeInfo = calcDiscount(allForDiscount, mainForAnchor.length > 0 ? mainForAnchor : allForDiscount);
     const volumeDiscountAmount = volumeInfo ? Math.round(volumeInfo.discountAmount * 100) : 0; // back to kopecks
 
     // Валидируем промокод на сервере
