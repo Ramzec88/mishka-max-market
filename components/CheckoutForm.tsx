@@ -12,6 +12,7 @@ interface CheckoutFormProps {
   onSuccess: (confirmationToken: string, orderId: string) => void;
   onError: (msg: string) => void;
   onBumpedItemsChange?: (items: { id: string; price: number; category: string }[]) => void;
+  onBumpRecsLoaded?: (ids: string[]) => void;
 }
 
 interface PromoData {
@@ -39,7 +40,7 @@ const MIN_RUB = RUB_PER_USD * MIN_USD; // 380 ₽
 
 type PaymentMethod = 'yookassa' | 'lava';
 
-export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuccess, onError, onBumpedItemsChange }: CheckoutFormProps) {
+export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuccess, onError, onBumpedItemsChange, onBumpRecsLoaded }: CheckoutFormProps) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('yookassa');
@@ -60,7 +61,11 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
     if (items.length === 0) return;
     fetch(`/api/cart-recommendations?items=${encodeURIComponent(items.join(','))}`)
       .then((r) => r.ok ? r.json() : [])
-      .then((data) => Array.isArray(data) && setBumpRecs(data))
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        setBumpRecs(data);
+        onBumpRecsLoaded?.(data.map((r: BumpProduct) => r.id));
+      })
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.join(',')]);

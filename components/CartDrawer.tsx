@@ -22,6 +22,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bumpedItemsForDiscount, setBumpedItemsForDiscount] = useState<{ id: string; price: number; category: string }[]>([]);
+  const [bumpRecIds, setBumpRecIds] = useState<string[]>([]);
 
   useEffect(() => {
     const validIds = products.map((p) => p.id);
@@ -44,6 +45,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
       setCheckoutState(null);
       setError(null);
       setBumpedItemsForDiscount([]);
+      setBumpRecIds([]);
     }
   }, [isOpen]);
 
@@ -244,6 +246,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
                     discountInfo={discountInfo}
                     allProducts={products}
                     cartItemIds={cartIds}
+                    excludeProductIds={bumpRecIds}
                     onAddToCart={handleAddToCart}
                   />
                 </div>
@@ -273,6 +276,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
                   onSuccess={handleCheckoutSuccess}
                   onError={setError}
                   onBumpedItemsChange={setBumpedItemsForDiscount}
+                  onBumpRecsLoaded={setBumpRecIds}
                 />
               </div>
             </>

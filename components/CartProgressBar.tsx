@@ -8,6 +8,7 @@ interface CartProgressBarProps {
   discountInfo: DiscountInfo;
   allProducts: ProductDisplay[];
   cartItemIds: string[];
+  excludeProductIds?: string[]; // bump-rec IDs already shown in CheckoutForm
   onAddToCart: (id: string) => void;
 }
 
@@ -54,7 +55,7 @@ const THEME = {
   max:  { bg: '#E8EAF6', bar: 'linear-gradient(90deg,#7986CB,#283593)',  icon: '🏆', badgeBg: '#283593', badgeTxt: '#fff', badge: '−25%' },
 };
 
-export default function CartProgressBar({ discountInfo: d, allProducts, cartItemIds, onAddToCart }: CartProgressBarProps) {
+export default function CartProgressBar({ discountInfo: d, allProducts, cartItemIds, excludeProductIds = [], onAddToCart }: CartProgressBarProps) {
   const prevStatus = useRef<string>(d.status);
   const confettiFired = useRef(false);
 
@@ -81,7 +82,7 @@ export default function CartProgressBar({ discountInfo: d, allProducts, cartItem
   const recs = useMemo(() => {
     if (d.remaining <= 0 || d.remaining > 300) return [];
     return allProducts
-      .filter(p => !cartItemIds.includes(p.id) && Math.round(p.price / 100) <= d.remaining * 1.5)
+      .filter(p => !cartItemIds.includes(p.id) && !excludeProductIds.includes(p.id) && Math.round(p.price / 100) <= d.remaining * 1.5)
       .sort((a, b) => {
         const da = Math.abs(Math.round(a.price / 100) - d.remaining);
         const db = Math.abs(Math.round(b.price / 100) - d.remaining);
