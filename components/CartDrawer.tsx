@@ -21,6 +21,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
     orderId: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bumpedItemsForDiscount, setBumpedItemsForDiscount] = useState<{ id: string; price: number; category: string }[]>([]);
 
   useEffect(() => {
     const validIds = products.map((p) => p.id);
@@ -42,6 +43,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
       setCartIds(getCart());
       setCheckoutState(null);
       setError(null);
+      setBumpedItemsForDiscount([]);
     }
   }, [isOpen]);
 
@@ -71,7 +73,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
   const total = cartItems.reduce((sum, p) => sum + Math.round(p.price / 100), 0);
 
   const cartItemsForDiscount = cartItems.map(p => ({ id: p.id, price: Math.round(p.price / 100), category: p.category }));
-  const discountInfo = calcDiscount(cartItemsForDiscount);
+  const discountInfo = calcDiscount([...cartItemsForDiscount, ...bumpedItemsForDiscount]);
 
   function handleAddToCart(id: string) {
     const updated = addToCart(id);
@@ -269,6 +271,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
                   cartItemsForDiscount={cartItemsForDiscount}
                   onSuccess={handleCheckoutSuccess}
                   onError={setError}
+                  onBumpedItemsChange={setBumpedItemsForDiscount}
                 />
               </div>
             </>

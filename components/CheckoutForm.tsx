@@ -11,6 +11,7 @@ interface CheckoutFormProps {
   cartItemsForDiscount: { id: string; price: number; category: string }[];
   onSuccess: (confirmationToken: string, orderId: string) => void;
   onError: (msg: string) => void;
+  onBumpedItemsChange?: (items: { id: string; price: number; category: string }[]) => void;
 }
 
 interface PromoData {
@@ -38,7 +39,7 @@ const MIN_RUB = RUB_PER_USD * MIN_USD; // 380 ₽
 
 type PaymentMethod = 'yookassa' | 'lava';
 
-export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuccess, onError }: CheckoutFormProps) {
+export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuccess, onError, onBumpedItemsChange }: CheckoutFormProps) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('yookassa');
@@ -63,6 +64,19 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.join(',')]);
+
+  // Notify CartDrawer about bumped items so it can update the progress bar
+  useEffect(() => {
+    if (!onBumpedItemsChange) return;
+    const bumped = bumpedItems.map(id => {
+      const rec = bumpRecs.find(r => r.id === id);
+      if (!rec) return null;
+      const price = rec.bump_price ?? Math.round(rec.price * 0.85);
+      return { id: rec.id, price: Math.round(price / 100), category: rec.category ?? 'songs' };
+    }).filter((x): x is { id: string; price: number; category: string } => x !== null);
+    onBumpedItemsChange(bumped);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bumpedItems.join(','), bumpRecs.map(r => r.id).join(',')]);
 
   const effectiveBumpPrice = (rec: BumpProduct) =>
     rec.bump_price ?? Math.round(rec.price * 0.85);
