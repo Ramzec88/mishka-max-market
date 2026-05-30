@@ -17,19 +17,30 @@ export interface DiscountInfo {
   nextLabel: string;      // '−15%' | '−25%' | ''
 }
 
+// Products below this price are "micro" add-ons — they contribute to cartTotal
+// but must never be the anchor that sets the discount threshold.
+// If the cart contains only micro-products, no discount tier is offered.
+export const MICRO_MAX_PRICE_RUB = 80;
+
 /**
  * @param items       All items (main + bumps) — determines cartTotal and status
  * @param anchorItems Main cart items only — determines tier1 threshold.
  *                    Defaults to `items` when omitted.
+ *                    Pass an empty array to signal "no anchor available" → returns null.
  *
  * Anchor is fixed to main cart items so that adding an expensive bump/
  * recommendation never raises the discount threshold mid-session.
+ * Micro-products (price < MICRO_MAX_PRICE_RUB) are excluded from anchor
+ * so a cart of only cheap add-ons never triggers the discount mechanic.
  */
 export function calcDiscount(
   items: CartItemForDiscount[],
   anchorItems?: CartItemForDiscount[],
 ): DiscountInfo | null {
   if (items.length === 0) return null;
+
+  // Explicit empty anchorItems means no qualifying main product in cart
+  if (anchorItems !== undefined && anchorItems.length === 0) return null;
 
   const cartTotal = items.reduce((s, i) => s + i.price, 0);
 

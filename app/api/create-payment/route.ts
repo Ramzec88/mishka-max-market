@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createPayment } from '@/lib/yookassa';
 import { Product } from '@/types/product';
-import { calcDiscount } from '@/lib/discount';
+import { calcDiscount, MICRO_MAX_PRICE_RUB } from '@/lib/discount';
 
 function applyDiscount(
   items: { description: string; amount: number; quantity: number }[],
@@ -59,8 +59,11 @@ export async function POST(request: NextRequest) {
 
     // Volume discount: all items for total, non-bumped items for anchor (bumps never raise tier1)
     const allForDiscount = foundProducts.map(p => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category }));
-    const mainForAnchor = foundProducts.filter(p => !bumpedSet.has(p.id)).map(p => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category }));
-    const volumeInfo = calcDiscount(allForDiscount, mainForAnchor.length > 0 ? mainForAnchor : allForDiscount);
+    // Anchor = main (non-bump) items that are not micro-products; micro-only cart → no discount
+    const mainForAnchor = foundProducts
+      .filter(p => !bumpedSet.has(p.id) && Math.round(p.effectivePrice / 100) >= MICRO_MAX_PRICE_RUB)
+      .map(p => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category }));
+    const volumeInfo = calcDiscount(allForDiscount, mainForAnchor);
     const volumeDiscountAmount = volumeInfo ? Math.round(volumeInfo.discountAmount * 100) : 0; // back to kopecks
 
     // Валидируем промокод на сервере

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { clearCart, getBumpedItems, saveBumpedItems } from '@/lib/cart';
-import { calcDiscount } from '@/lib/discount';
+import { calcDiscount, MICRO_MAX_PRICE_RUB } from '@/lib/discount';
 
 interface CheckoutFormProps {
   total: number;
@@ -108,8 +108,9 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
       return rec ? { id: rec.id, price: Math.round(effectiveBumpPrice(rec) / 100), category: rec.category ?? 'songs' } : null;
     }).filter((x): x is { id: string; price: number; category: string } => x !== null),
   ];
-  // Anchor from main cart items only — bumps contribute to total but don't raise the tier
-  const volumeInfo = calcDiscount(allItemsForDiscount, cartItemsForDiscount);
+  // Anchor = main items that are not micro-products; micro-only cart → no discount
+  const anchorItems = cartItemsForDiscount.filter(p => p.price >= MICRO_MAX_PRICE_RUB);
+  const volumeInfo = calcDiscount(allItemsForDiscount, anchorItems);
   const volumeDiscountAmount = volumeInfo?.discountAmount ?? 0;
   const volumeDiscountRate = volumeInfo?.discountRate ?? 0;
 

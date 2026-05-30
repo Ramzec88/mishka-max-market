@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ProductDisplay } from '@/types/product';
 import { getCart, addToCart, removeFromCart, purgeStaleCart } from '@/lib/cart';
-import { calcDiscount } from '@/lib/discount';
+import { calcDiscount, MICRO_MAX_PRICE_RUB } from '@/lib/discount';
 import CheckoutForm from './CheckoutForm';
 import CartProgressBar from './CartProgressBar';
 import YooKassaWidget from './YooKassaWidget';
@@ -74,8 +74,9 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
   const total = cartItems.reduce((sum, p) => sum + Math.round(p.price / 100), 0);
 
   const cartItemsForDiscount = cartItems.map(p => ({ id: p.id, price: Math.round(p.price / 100), category: p.category }));
-  // Pass cartItemsForDiscount as anchorItems so bump items never raise the tier1 threshold
-  const discountInfo = calcDiscount([...cartItemsForDiscount, ...bumpedItemsForDiscount], cartItemsForDiscount);
+  // Anchor = main items that are not micro-products; micro-only cart → no discount tier
+  const anchorItems = cartItemsForDiscount.filter(p => p.price >= MICRO_MAX_PRICE_RUB);
+  const discountInfo = calcDiscount([...cartItemsForDiscount, ...bumpedItemsForDiscount], anchorItems);
 
   function handleAddToCart(id: string) {
     const updated = addToCart(id);
