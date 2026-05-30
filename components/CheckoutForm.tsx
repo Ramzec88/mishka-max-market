@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { clearCart } from '@/lib/cart';
+import { clearCart, getBumpedItems, saveBumpedItems } from '@/lib/cart';
 import { calcDiscount } from '@/lib/discount';
 
 interface CheckoutFormProps {
@@ -70,8 +70,15 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.join(',')]);
 
-  // Notify CartDrawer about bumped items so it can update the progress bar
+  // Restore bumped items from sessionStorage on mount
   useEffect(() => {
+    const saved = getBumpedItems();
+    if (saved.length > 0) setBumpedItems(saved);
+  }, []);
+
+  // Persist to sessionStorage and notify CartDrawer about bumped items
+  useEffect(() => {
+    saveBumpedItems(bumpedItems);
     if (!onBumpedItemsChange) return;
     const bumped = bumpedItems.map(id => {
       const rec = bumpRecs.find(r => r.id === id);

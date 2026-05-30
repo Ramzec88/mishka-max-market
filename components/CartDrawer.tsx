@@ -44,8 +44,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
       setCartIds(getCart());
       setCheckoutState(null);
       setError(null);
-      setBumpedItemsForDiscount([]);
-      setBumpRecIds([]);
+      // Don't reset bumpedItemsForDiscount — CheckoutForm restores from sessionStorage on mount
     }
   }, [isOpen]);
 
