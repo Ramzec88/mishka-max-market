@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createLavaInvoice, LavaProvider } from '@/lib/lava';
 import { isValidLavaEmail, lavaErrorMessage, normalizeLavaEmail } from '@/lib/lava-email';
 import { Product } from '@/types/product';
+import { calcDiscount } from '@/lib/discount';
 
 const RUB_PER_USD = 76;
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     const { data: products, error: productsError } = await supabaseAdmin
       .from('products')
-      .select('id, title, price, bump_price, format')
+      .select('id, title, price, bump_price, format, category')
       .in('id', items)
       .eq('is_active', true);
 
@@ -51,11 +52,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Товары не найдены' }, { status: 400 });
     }
 
-    const foundProducts = (products as Pick<Product, 'id' | 'title' | 'price' | 'bump_price' | 'format'>[]).map((p) => ({
+    const foundProducts = (products as (Pick<Product, 'id' | 'title' | 'price' | 'bump_price' | 'format'> & { category: string })[]).map((p) => ({
       ...p,
       effectivePrice: bumpedSet.has(p.id) ? (p.bump_price ?? Math.round(p.price * 0.85)) : p.price,
     }));
     const fullAmount = foundProducts.reduce((sum, p) => sum + p.effectivePrice, 0);
+
+    // Volume discount (progress-bar tiers)
+    const volumeInfo = calcDiscount(foundProducts.map(p => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category })));
+    const volumeDiscountAmount = volumeInfo ? Math.round(volumeInfo.discountAmount * 100) : 0;
+    const volumeDiscountRate = volumeInfo?.discountRate ?? 0;
 
     let discountPercent = 0;
     let validatedPromoCode: string | null = null;
@@ -88,13 +94,13 @@ export async function POST(request: NextRequest) {
       : foundProducts;
     const applicableAmount = applicableProducts.reduce((s, p) => s + p.effectivePrice, 0);
     const discountAmount = Math.round(applicableAmount * discountPercent / 100);
-    const finalAmount = Math.max(fullAmount - discountAmount, 100);
+    const finalAmount = Math.max(fullAmount - volumeDiscountAmount - discountAmount, 100);
 
     const lineItems = foundProducts.map((p) => ({
       product_id: p.id,
       title: p.title,
       regular_price: p.price,
-      paid_price: p.effectivePrice,
+      paid_price: Math.round(p.effectivePrice * (1 - volumeDiscountRate)),
       is_bump: bumpedSet.has(p.id),
     }));
 
@@ -107,7 +113,7 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         payment_provider: 'lava',
         promo_code: validatedPromoCode,
-        discount_amount: discountAmount,
+        discount_amount: discountAmount + volumeDiscountAmount,
         line_items: lineItems,
       })
       .select('id')

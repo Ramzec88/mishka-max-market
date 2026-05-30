@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { ProductDisplay } from '@/types/product';
-import { getCart, removeFromCart, purgeStaleCart } from '@/lib/cart';
+import { getCart, addToCart, removeFromCart, purgeStaleCart } from '@/lib/cart';
+import { calcDiscount } from '@/lib/discount';
 import CheckoutForm from './CheckoutForm';
+import CartProgressBar from './CartProgressBar';
 import YooKassaWidget from './YooKassaWidget';
 
 interface CartDrawerProps {
@@ -67,6 +69,15 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
 
   const cartItems = cartIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as ProductDisplay[];
   const total = cartItems.reduce((sum, p) => sum + Math.round(p.price / 100), 0);
+
+  const cartItemsForDiscount = cartItems.map(p => ({ id: p.id, price: Math.round(p.price / 100), category: p.category }));
+  const discountInfo = calcDiscount(cartItemsForDiscount);
+
+  function handleAddToCart(id: string) {
+    const updated = addToCart(id);
+    setCartIds(updated);
+    window.dispatchEvent(new Event('cart-updated'));
+  }
 
   return (
     <>
@@ -155,63 +166,88 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
                 В корзине
               </div>
-              {cartItems.map((product) => (
-                <div
-                  key={product.id}
-                  style={{
-                    display: 'flex',
-                    gap: 14,
-                    padding: '14px 0',
-                    borderBottom: '1px solid var(--border)',
-                  }}
-                >
+              {cartItems.map((product) => {
+                const priceRub = Math.round(product.price / 100);
+                const discountedPrice = discountInfo && discountInfo.discountRate > 0
+                  ? Math.round(priceRub * (1 - discountInfo.discountRate))
+                  : null;
+                return (
                   <div
+                    key={product.id}
                     style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 10,
-                      flexShrink: 0,
-                      overflow: 'hidden',
-                      background: 'var(--orange-light)',
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontSize: 26,
+                      display: 'flex',
+                      gap: 14,
+                      padding: '14px 0',
+                      borderBottom: '1px solid var(--border)',
                     }}
                   >
-                    {product.cover_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={product.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      product.cover_emoji || '📦'
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 3, lineHeight: 1.3 }}>{product.title}</div>
-                    <div style={{ fontWeight: 800, color: 'var(--orange)', fontSize: 14 }}>
-                      {Math.round(product.price / 100)} ₽
-                    </div>
-                    <button
-                      onClick={() => handleRemove(product.id)}
+                    <div
                       style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--ink-soft)',
-                        fontSize: 12,
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                        padding: 0,
-                        marginTop: 3,
+                        width: 56,
+                        height: 56,
+                        borderRadius: 10,
+                        flexShrink: 0,
+                        overflow: 'hidden',
+                        background: 'var(--orange-light)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        fontSize: 26,
                       }}
                     >
-                      удалить
-                    </button>
+                      {product.cover_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={product.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        product.cover_emoji || '📦'
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 3, lineHeight: 1.3 }}>{product.title}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {discountedPrice !== null ? (
+                          <>
+                            <span style={{ fontWeight: 800, color: '#2E7D32', fontSize: 14 }}>{discountedPrice} ₽</span>
+                            <span style={{ fontSize: 12, color: '#aaa', textDecoration: 'line-through' }}>{priceRub} ₽</span>
+                          </>
+                        ) : (
+                          <span style={{ fontWeight: 800, color: 'var(--orange)', fontSize: 14 }}>{priceRub} ₽</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRemove(product.id)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--ink-soft)',
+                          fontSize: 12,
+                          textDecoration: 'underline',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          padding: 0,
+                          marginTop: 3,
+                        }}
+                      >
+                        удалить
+                      </button>
+                    </div>
                   </div>
+                );
+              })}
+
+              {/* Прогресс-бар скидок */}
+              {discountInfo && (
+                <div style={{ marginTop: 16 }}>
+                  <CartProgressBar
+                    discountInfo={discountInfo}
+                    allProducts={products}
+                    cartItemIds={cartIds}
+                    onAddToCart={handleAddToCart}
+                  />
                 </div>
-              ))}
+              )}
 
               {/* Форма оформления */}
-              <div style={{ marginTop: 20 }}>
+              <div style={{ marginTop: 8 }}>
                 {error && (
                   <div
                     style={{
@@ -230,6 +266,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
                 <CheckoutForm
                   total={total}
                   items={cartIds}
+                  cartItemsForDiscount={cartItemsForDiscount}
                   onSuccess={handleCheckoutSuccess}
                   onError={setError}
                 />

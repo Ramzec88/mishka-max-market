@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { clearCart } from '@/lib/cart';
+import { calcDiscount } from '@/lib/discount';
 
 interface CheckoutFormProps {
   total: number;
   items: string[];
+  cartItemsForDiscount: { id: string; price: number; category: string }[];
   onSuccess: (confirmationToken: string, orderId: string) => void;
   onError: (msg: string) => void;
 }
@@ -23,6 +25,7 @@ interface BumpProduct {
   title: string;
   price: number; // kopecks
   bump_price: number | null; // kopecks
+  category: string;
   cover_emoji: string | null;
   cover_variant: string;
   cover_url: string | null;
@@ -35,7 +38,7 @@ const MIN_RUB = RUB_PER_USD * MIN_USD; // 380 ₽
 
 type PaymentMethod = 'yookassa' | 'lava';
 
-export default function CheckoutForm({ total, items, onSuccess, onError }: CheckoutFormProps) {
+export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuccess, onError }: CheckoutFormProps) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('yookassa');
@@ -71,8 +74,20 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
   }, 0);
   const effectiveTotal = total + Math.round(bumpExtraKopecks / 100);
 
+  // Volume discount from progress-bar tiers (recomputed when bumps change)
+  const allItemsForDiscount = [
+    ...cartItemsForDiscount,
+    ...bumpedItems.map(id => {
+      const rec = bumpRecs.find(r => r.id === id);
+      return rec ? { id: rec.id, price: Math.round(effectiveBumpPrice(rec) / 100), category: rec.category ?? 'songs' } : null;
+    }).filter((x): x is { id: string; price: number; category: string } => x !== null),
+  ];
+  const volumeInfo = calcDiscount(allItemsForDiscount);
+  const volumeDiscountAmount = volumeInfo?.discountAmount ?? 0;
+  const volumeDiscountRate = volumeInfo?.discountRate ?? 0;
+
   const discountAmount = promoData ? Math.round(promoData.discount_amount / 100) : 0;
-  const finalTotal = effectiveTotal - discountAmount;
+  const finalTotal = effectiveTotal - volumeDiscountAmount - discountAmount;
 
   async function handleApplyPromo() {
     if (!promoInput.trim()) return;
@@ -465,21 +480,27 @@ export default function CheckoutForm({ total, items, onSuccess, onError }: Check
 
       {/* Итого */}
       <div style={{ marginBottom: 14 }}>
+        {(volumeDiscountAmount > 0 || (promoData && discountAmount > 0)) && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--ink-soft)', marginBottom: 4 }}>
+            <span>Сумма</span>
+            <span>{effectiveTotal} ₽</span>
+          </div>
+        )}
+        {volumeDiscountAmount > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#2E7D32', fontWeight: 700, marginBottom: 4 }}>
+            <span>Скидка {Math.round(volumeDiscountRate * 100)}% 🎉</span>
+            <span>−{volumeDiscountAmount} ₽</span>
+          </div>
+        )}
         {(promoData && discountAmount > 0) && (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--ink-soft)', marginBottom: 4 }}>
-              <span>Сумма</span>
-              <span>{effectiveTotal} ₽</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#16a34a', marginBottom: 6 }}>
-              <span>Скидка {promoData.discount_percent}%</span>
-              <span>−{discountAmount} ₽</span>
-            </div>
-          </>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#16a34a', marginBottom: 4 }}>
+            <span>Промокод {promoData.discount_percent}%</span>
+            <span>−{discountAmount} ₽</span>
+          </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 18, fontWeight: 900 }}>
           <span>Итого:</span>
-          <span>{finalTotal} ₽</span>
+          <span style={{ color: volumeDiscountAmount > 0 ? '#2E7D32' : 'inherit' }}>{finalTotal} ₽</span>
         </div>
       </div>
 
