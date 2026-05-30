@@ -1,4 +1,5 @@
 const CART_KEY = 'mishkaCart';
+const BUMPED_KEY = 'mishkaBumpedItems';
 
 export function getCart(): string[] {
   if (typeof window === 'undefined') return [];
@@ -32,6 +33,7 @@ export function removeFromCart(id: string): string[] {
 
 export function clearCart(): void {
   saveCart([]);
+  clearBumpedItems();
 }
 
 /** Remove IDs that don't match any known product and return the cleaned list. */
@@ -40,4 +42,25 @@ export function purgeStaleCart(validIds: string[]): string[] {
   const cleaned = cart.filter((id) => validIds.includes(id));
   if (cleaned.length !== cart.length) saveCart(cleaned);
   return cleaned;
+}
+
+// --- Bumped items: persisted in sessionStorage so they survive cart close/reopen ---
+
+export function getBumpedItems(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    return JSON.parse(sessionStorage.getItem(BUMPED_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+export function saveBumpedItems(ids: string[]): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(BUMPED_KEY, JSON.stringify(ids));
+}
+
+export function clearBumpedItems(): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(BUMPED_KEY);
 }
