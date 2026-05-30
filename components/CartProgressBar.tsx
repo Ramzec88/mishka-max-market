@@ -39,9 +39,9 @@ function launchConfetti() {
 function statusText(d: DiscountInfo): string {
   if (d.status === 'max') return 'Максимальная скидка −25% — поздравляем!';
   if (d.status === 'mid') {
-    if (d.remaining < 50) return 'Один товар — и скидка −25%!';
-    if (d.remaining < 100) return `Почти максимум! Осталось ${d.remaining} ₽ до скидки −25%`;
-    return `Скидка −15% активирована! До −25% осталось ${d.remaining} ₽`;
+    if (d.remaining < 50) return `−15% активна! Добавьте ещё на ${d.remaining} ₽ — и будет −25%`;
+    if (d.remaining < 100) return `−15% активна! До −25% осталось всего ${d.remaining} ₽`;
+    return `−15% активирована! До −25% осталось ${d.remaining} ₽`;
   }
   if (d.remaining < 50) return 'Следующий товар откроет скидку −15%!';
   if (d.remaining < 100) return `Совсем чуть-чуть! Осталось ${d.remaining} ₽`;
