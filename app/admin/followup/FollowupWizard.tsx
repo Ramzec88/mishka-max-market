@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Product } from '@/types/product';
 
 type ProductOption = Pick<Product, 'id' | 'title' | 'cover_emoji' | 'letter_s3_key'>;
@@ -10,6 +10,26 @@ interface Recipient {
   email: string;
   paidAt: string;
   sentAt?: string;
+}
+
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  savedAt: string;
+}
+
+const TEMPLATES_KEY = 'mishka_email_templates';
+
+function loadTemplates(): EmailTemplate[] {
+  try {
+    return JSON.parse(localStorage.getItem(TEMPLATES_KEY) || '[]');
+  } catch { return []; }
+}
+
+function saveTemplates(tpls: EmailTemplate[]) {
+  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(tpls));
 }
 
 type Step = 'select' | 'preview' | 'sending' | 'done';
@@ -79,6 +99,47 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
   const [sendProgress, setSendProgress] = useState(0);
   const [sendTotal, setSendTotal] = useState(0);
   const [sendErrors, setSendErrors] = useState<string[]>([]);
+
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [saveTemplateName, setSaveTemplateName] = useState('');
+  const [showSaveForm, setShowSaveForm] = useState(false);
+
+  useEffect(() => {
+    setTemplates(loadTemplates());
+  }, []);
+
+  function handleLoadTemplate(id: string) {
+    setSelectedTemplateId(id);
+    const tpl = templates.find(t => t.id === id);
+    if (!tpl) return;
+    setSubject(tpl.subject);
+    setLetterBody(tpl.body);
+  }
+
+  function handleSaveTemplate() {
+    if (!saveTemplateName.trim()) return;
+    const tpl: EmailTemplate = {
+      id: Date.now().toString(),
+      name: saveTemplateName.trim(),
+      subject,
+      body: letterBody,
+      savedAt: new Date().toISOString(),
+    };
+    const updated = [tpl, ...templates];
+    saveTemplates(updated);
+    setTemplates(updated);
+    setSaveTemplateName('');
+    setShowSaveForm(false);
+    setSelectedTemplateId(tpl.id);
+  }
+
+  function handleDeleteTemplate(id: string) {
+    const updated = templates.filter(t => t.id !== id);
+    saveTemplates(updated);
+    setTemplates(updated);
+    if (selectedTemplateId === id) setSelectedTemplateId('');
+  }
 
   const selectedProduct = products.find((p) => p.id === productId) ?? null;
 
@@ -342,6 +403,73 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
           <div style={CARD}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Шаг 2 — Письмо
+            </div>
+
+            {/* Шаблоны */}
+            <div style={{ marginBottom: 20, background: '#f9fafb', borderRadius: 10, padding: '12px 14px', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+                📋 Шаблоны писем
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select
+                  value={selectedTemplateId}
+                  onChange={e => handleLoadTemplate(e.target.value)}
+                  disabled={step !== 'preview' || templates.length === 0}
+                  style={{ ...INPUT, flex: 1, minWidth: 180, background: '#fff', fontSize: 13 }}
+                >
+                  <option value="">{templates.length === 0 ? '— нет сохранённых шаблонов —' : '— выбрать шаблон —'}</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                {selectedTemplateId && step === 'preview' && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTemplate(selectedTemplateId)}
+                    title="Удалить шаблон"
+                    style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '7px 12px', fontSize: 13, color: '#dc2626', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+                  >
+                    🗑 Удалить
+                  </button>
+                )}
+                {step === 'preview' && !showSaveForm && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSaveForm(true)}
+                    style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 12px', fontSize: 13, color: '#555', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+                  >
+                    💾 Сохранить как шаблон
+                  </button>
+                )}
+              </div>
+              {showSaveForm && step === 'preview' && (
+                <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    value={saveTemplateName}
+                    onChange={e => setSaveTemplateName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
+                    placeholder="Название шаблона, например: Серия 1 — follow-up"
+                    autoFocus
+                    style={{ ...INPUT, flex: 1, fontSize: 13 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveTemplate}
+                    disabled={!saveTemplateName.trim()}
+                    style={{ background: saveTemplateName.trim() ? '#FF7A3D' : '#ffb899', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: saveTemplateName.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}
+                  >
+                    Сохранить
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowSaveForm(false); setSaveTemplateName(''); }}
+                    style={{ background: 'none', border: 'none', color: '#aaa', cursor: 'pointer', fontSize: 20, padding: '0 4px' }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Тема */}
