@@ -91,7 +91,6 @@ export default async function OrderDetailPage({ params }: Props) {
             ['Письмо отправлено', fmt(order.email_sent_at)],
             ['YooKassa ID', order.yookassa_payment_id || '—'],
             ...(order.promo_code ? [['Промокод', order.promo_code]] : []),
-            ...(order.discount_amount > 0 ? [['Скидка', `−${(order.discount_amount / 100).toLocaleString('ru-RU')} ₽`]] : []),
             ...(order.cancellation_reason ? [['Причина отмены', CANCEL_REASON[order.cancellation_reason] ?? order.cancellation_reason]] : []),
           ].map(([label, value]) => (
             <div key={label}>
@@ -148,7 +147,9 @@ export default async function OrderDetailPage({ params }: Props) {
               <tfoot>
                 <tr style={{ borderTop: '2px solid #e5e7eb' }}>
                   <td colSpan={2} style={{ padding: '10px 10px', fontSize: 12, color: '#aaa' }}>
-                    {order.discount_amount > 0 && `Промокод ${order.promo_code}: −${(order.discount_amount / 100).toLocaleString('ru-RU')} ₽`}
+                    {order.promo_code && order.discount_amount > 0 && (
+                      `Промокод ${order.promo_code}: −${(order.discount_amount / 100).toLocaleString('ru-RU')} ₽`
+                    )}
                   </td>
                   <td colSpan={3} style={{ padding: '10px 10px', fontWeight: 800, color: '#1a1a1a', whiteSpace: 'nowrap' }}>
                     Итого: {(order.amount / 100).toLocaleString('ru-RU')} ₽
