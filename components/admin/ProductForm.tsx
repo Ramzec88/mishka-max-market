@@ -75,24 +75,31 @@ async function uploadViaProxy(
   key: string,
   onProgress: (pct: number) => void,
 ): Promise<void> {
+  // Get presigned S3 URL — file goes directly browser → S3, never through the server
+  const res = await fetch('/api/admin/upload-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, contentType: file.type || 'application/octet-stream' }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Ошибка получения URL загрузки (${res.status})`);
+  }
+  const { url } = await res.json();
+
   return new Promise((resolve, reject) => {
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('key', key);
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/admin/upload-proxy');
+    xhr.open('PUT', url);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
     };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) { onProgress(100); resolve(); }
-      else {
-        try { reject(new Error(JSON.parse(xhr.responseText).error || `Ошибка ${xhr.status}`)); }
-        catch { reject(new Error(`Ошибка загрузки: ${xhr.status}`)); }
-      }
+      else reject(new Error(`Ошибка загрузки в хранилище: ${xhr.status}`));
     };
     xhr.onerror = () => reject(new Error('Сетевая ошибка при загрузке файла'));
-    xhr.send(fd);
+    xhr.send(file);
   });
 }
 
