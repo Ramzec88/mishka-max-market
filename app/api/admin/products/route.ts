@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       badge: body.badge && body.badge !== '' ? body.badge : null,
       format: body.format || null,
       storage_paths: body.storage_paths || [],
+      bundle_product_ids: Array.isArray(body.bundle_product_ids) ? body.bundle_product_ids : [],
       demo_url: body.demo_url || null,
       boosty_url: body.boosty_url || null,
       lava_url: body.lava_url || null,

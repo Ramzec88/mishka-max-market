@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { generateToken, getTokenExpiry } from '@/lib/tokens';
-import { sendOrderEmail, DownloadItem } from '@/lib/email';
-import { getFileSizeBytes } from '@/lib/storage';
+import { sendOrderEmail } from '@/lib/email';
 import { YooKassaWebhookPayload } from '@/types/yookassa';
 import { Product } from '@/types/product';
 import { getRecommendations } from '@/lib/recommendations';
+import { resolveProductsForOrder, createTokensForProducts } from '@/lib/order-tokens';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,63 +33,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (event === 'payment.succeeded') {
-      // Загружаем продукты
-      const itemIds: string[] = order.items;
-      const { data: products } = await supabaseAdmin
-        .from('products')
-        .select('id, title, format, storage_paths')
-        .in('id', itemIds);
-
-      const productList = (products || []) as Pick<Product, 'id' | 'title' | 'format' | 'storage_paths'>[];
-
-      // Загружаем все активные продукты для рекомендаций
-      const { data: allProducts } = await supabaseAdmin
-        .from('products')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order');
-      const recommendations = getRecommendations(itemIds, (allProducts ?? []) as Product[]);
-
-      // Создаём токены скачивания (один токен на файл)
-      const downloadItems: DownloadItem[] = [];
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+      const itemIds: string[] = order.items;
 
-      for (const product of productList) {
-        const filePaths =
-          product.storage_paths.length > 0
-            ? product.storage_paths
-            : [`products/${product.id}/placeholder`];
+      // Resolve purchased products + expand bundle_product_ids into included products
+      const products = await resolveProductsForOrder(itemIds);
 
-        for (const filePath of filePaths) {
-          const token = generateToken();
-          const expiresAt = getTokenExpiry();
+      // Create download tokens (idempotent — skips already-existing file paths)
+      const downloadItems = await createTokensForProducts(order.id, products, siteUrl);
 
-          const { error: tokenError } = await supabaseAdmin.from('download_tokens').insert({
-            token,
-            order_id: order.id,
-            product_id: product.id,
-            file_path: filePath,
-            expires_at: expiresAt.toISOString(),
-            downloads_count: 0,
-            max_downloads: 5,
-          });
-          if (tokenError) {
-            console.error('download_tokens insert error:', tokenError);
-          }
-
-          const fileName = filePath.split('/').pop() || filePath;
-          const fileSizeBytes = await getFileSizeBytes(filePath) ?? undefined;
-          downloadItems.push({
-            title: product.title,
-            format: product.format,
-            fileName,
-            downloadUrl: `${siteUrl}/api/download/${token}`,
-            fileSizeBytes,
-          });
-        }
-      }
-
-      // Все токены созданы — теперь помечаем заказ как оплаченный
       await supabaseAdmin
         .from('orders')
         .update({
@@ -100,12 +51,17 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', order.id);
 
-      // Инкрементируем счётчик промокода
       if (order.promo_code) {
         await supabaseAdmin.rpc('increment_promo_uses', { promo_code_val: order.promo_code });
       }
 
-      // Отправляем email с ссылками
+      const { data: allProducts } = await supabaseAdmin
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+      const recommendations = getRecommendations(itemIds, (allProducts ?? []) as Product[]);
+
       try {
         await sendOrderEmail({
           to: order.email,
@@ -119,7 +75,6 @@ export async function POST(request: NextRequest) {
             url: `${siteUrl}/?product=${p.id}`,
           })),
         });
-
         await supabaseAdmin
           .from('orders')
           .update({ email_sent_at: new Date().toISOString() })

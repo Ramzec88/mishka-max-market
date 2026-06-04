@@ -155,6 +155,10 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
   const [uploadProgress, setUploadProgress] = useState(0);
   const [recommendedIds, setRecommendedIds] = useState<string[]>(product?.recommended_product_ids ?? []);
   const [recsOpen, setRecsOpen] = useState((product?.recommended_product_ids ?? []).length > 0);
+  const [bundleIds, setBundleIds] = useState<string[]>(product?.bundle_product_ids ?? []);
+  const [bundleOpen, setBundleOpen] = useState((product?.bundle_product_ids ?? []).length > 0);
+  const [notifying, setNotifying] = useState(false);
+  const [notifyResult, setNotifyResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -324,6 +328,7 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         sort_order: Number(sortOrder) || 0,
         cover_image: newCoverKey,
         recommended_product_ids: recommendedIds,
+        bundle_product_ids: bundleIds,
         letter_s3_key: letterS3Key || null,
         bump_price: bumpPrice ? Number(bumpPrice) : null,
         _deleteKeys: deleteKeys,
@@ -833,6 +838,138 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
               {recommendedIds.length >= MAX_RECOMMENDATIONS && (
                 <div style={{ fontSize: 12, color: '#aaa', marginTop: 8 }}>
                   Выбрано максимум ({MAX_RECOMMENDATIONS}). Выключите один, чтобы выбрать другой.
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Состав комплекта — только для category = bundles */}
+      {category === 'bundles' && allProducts.length > 0 && (
+        <div style={CARD}>
+          <div
+            onClick={() => setBundleOpen(o => !o)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+          >
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: '#1a1a1a' }}>📦 Состав комплекта</h2>
+              {bundleIds.length > 0 ? (
+                <div style={{ marginTop: 6, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                  {bundleIds.map(id => {
+                    const p = allProducts.find(x => x.id === id);
+                    if (!p) return null;
+                    return (
+                      <span key={id} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        background: '#EFF6FF', border: '1px solid #BFDBFE',
+                        borderRadius: 100, padding: '2px 8px 2px 5px',
+                        fontSize: 11, fontWeight: 600, color: '#1D4ED8',
+                      }}>
+                        {p.cover_emoji ?? '📦'} {p.title}
+                        <span
+                          onClick={(e) => { e.stopPropagation(); setBundleIds(prev => prev.filter(x => x !== id)); }}
+                          style={{ cursor: 'pointer', color: '#93C5FD', marginLeft: 1, fontWeight: 900, fontSize: 13, lineHeight: 1 }}>×</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: '#aaa', margin: '4px 0 0' }}>Товары не выбраны</p>
+              )}
+            </div>
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%', background: '#f3f4f6',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, marginLeft: 12, fontSize: 13, color: '#888',
+              transform: bundleOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s',
+            }}>▾</div>
+          </div>
+
+          {bundleOpen && (
+            <>
+              <p style={{ fontSize: 13, color: '#888', margin: '12px 0', lineHeight: 1.5 }}>
+                При покупке комплекта покупатель автоматически получает доступ к файлам всех выбранных товаров. Файлы не дублируются.
+              </p>
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+                {allProducts
+                  .filter(p => p.id !== (product?.id ?? ''))
+                  .map((p, idx, arr) => {
+                    const checked = bundleIds.includes(p.id);
+                    const isLast = idx === arr.length - 1;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          if (checked) setBundleIds(prev => prev.filter(id => id !== p.id));
+                          else setBundleIds(prev => [...prev, p.id]);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '10px 14px',
+                          borderBottom: isLast ? 'none' : '1px solid #f0f0f0',
+                          background: checked ? '#EFF6FF' : '#fff',
+                          cursor: 'pointer', transition: 'background 0.15s',
+                        }}
+                      >
+                        <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{p.cover_emoji ?? '📦'}</span>
+                        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#1a1a1a', lineHeight: 1.3 }}>{p.title}</span>
+                        <span style={{ fontSize: 11, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 8 }}>{p.category}</span>
+                        <div style={{
+                          width: 36, height: 20, borderRadius: 100, flexShrink: 0,
+                          background: checked ? '#3B82F6' : '#e5e7eb',
+                          position: 'relative', transition: 'background 0.2s',
+                        }}>
+                          <div style={{
+                            position: 'absolute', top: 2,
+                            left: checked ? 18 : 2,
+                            width: 16, height: 16, borderRadius: '50%',
+                            background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                            transition: 'left 0.2s',
+                          }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* Notify buyers button — only for existing (edit) bundle */}
+              {isEdit && bundleIds.length > 0 && (
+                <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 14 }}>
+                  <div style={{ fontSize: 13, color: '#555', marginBottom: 10, lineHeight: 1.5 }}>
+                    Добавили новую серию в комплект? Нажмите кнопку — покупатели получат письмо с новыми ссылками для скачивания.
+                  </div>
+                  <button
+                    type="button"
+                    disabled={notifying}
+                    onClick={async () => {
+                      setNotifying(true);
+                      setNotifyResult(null);
+                      try {
+                        const res = await fetch(`/api/admin/products/${product!.id}/notify-bundle`, { method: 'POST' });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Ошибка');
+                        setNotifyResult(data.notified > 0
+                          ? `✅ Уведомлено ${data.notified} из ${data.total} покупателей`
+                          : `ℹ️ ${data.message || 'Новых файлов для отправки нет'}`);
+                      } catch (err) {
+                        setNotifyResult(`❌ ${err instanceof Error ? err.message : String(err)}`);
+                      } finally {
+                        setNotifying(false);
+                      }
+                    }}
+                    style={{
+                      background: notifying ? '#93C5FD' : '#3B82F6',
+                      color: '#fff', border: 'none', borderRadius: 8,
+                      padding: '10px 20px', fontSize: 13, fontWeight: 700,
+                      cursor: notifying ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    {notifying ? 'Отправляем...' : '📨 Уведомить покупателей о новой серии'}
+                  </button>
+                  {notifyResult && (
+                    <div style={{ marginTop: 10, fontSize: 13, color: '#555' }}>{notifyResult}</div>
+                  )}
                 </div>
               )}
             </>

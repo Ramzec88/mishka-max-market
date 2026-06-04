@@ -63,6 +63,7 @@ export interface SendOrderEmailParams {
   items: DownloadItem[];
   siteUrl: string;
   recommendations?: RecommendedItem[];
+  subject?: string; // override default subject
 }
 
 export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void> {
@@ -135,7 +136,7 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
   await transport.sendMail({
     from: process.env.SMTP_FROM || '"Мишка Макс" <info@mishka-max.ru>',
     to,
-    subject: 'Ваши материалы от Мишки Макса 🧸',
+    subject: params.subject ?? 'Ваши материалы от Мишки Макса 🧸',
     html,
   });
 }

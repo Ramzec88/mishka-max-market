@@ -14,6 +14,7 @@ export interface Product {
   badge: string | null;
   format: string | null;
   storage_paths: string[];
+  bundle_product_ids: string[]; // for bundles: IDs of included products (no file duplication)
   demo_url: string | null;
   boosty_url: string | null;
   lava_url: string | null;

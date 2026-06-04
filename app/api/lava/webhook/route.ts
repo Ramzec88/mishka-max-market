@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { generateToken, getTokenExpiry } from '@/lib/tokens';
-import { sendOrderEmail, DownloadItem } from '@/lib/email';
-import { getFileSizeBytes } from '@/lib/storage';
+import { sendOrderEmail } from '@/lib/email';
 import { Product } from '@/types/product';
 import { getRecommendations } from '@/lib/recommendations';
+import { resolveProductsForOrder, createTokensForProducts } from '@/lib/order-tokens';
 
 interface LavaWebhookPayload {
   eventType: 'payment.success' | 'payment.failed' | string;
@@ -44,56 +43,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (eventType === 'payment.success') {
-      const itemIds: string[] = order.items;
-      const { data: products } = await supabaseAdmin
-        .from('products')
-        .select('id, title, format, storage_paths')
-        .in('id', itemIds);
-
-      const productList = (products || []) as Pick<Product, 'id' | 'title' | 'format' | 'storage_paths'>[];
-      const downloadItems: DownloadItem[] = [];
-
-      // Загружаем все активные продукты для рекомендаций
-      const { data: allProducts } = await supabaseAdmin
-        .from('products')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order');
-      const recommendations = getRecommendations(itemIds, (allProducts ?? []) as Product[]);
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+      const itemIds: string[] = order.items;
 
-      for (const product of productList) {
-        const filePaths =
-          product.storage_paths.length > 0
-            ? product.storage_paths
-            : [`products/${product.id}/placeholder`];
-
-        for (const filePath of filePaths) {
-          const token = generateToken();
-          const expiresAt = getTokenExpiry();
-
-          const { error: tokenError } = await supabaseAdmin.from('download_tokens').insert({
-            token,
-            order_id: order.id,
-            product_id: product.id,
-            file_path: filePath,
-            expires_at: expiresAt.toISOString(),
-            downloads_count: 0,
-            max_downloads: 5,
-          });
-          if (tokenError) console.error('download_tokens insert error:', tokenError);
-
-          const fileName = filePath.split('/').pop() || filePath;
-          const fileSizeBytes = await getFileSizeBytes(filePath) ?? undefined;
-          downloadItems.push({
-            title: product.title,
-            format: product.format,
-            fileName,
-            downloadUrl: `${siteUrl}/api/download/${token}`,
-            fileSizeBytes,
-          });
-        }
-      }
+      const products = await resolveProductsForOrder(itemIds);
+      const downloadItems = await createTokensForProducts(order.id, products, siteUrl);
 
       await supabaseAdmin
         .from('orders')
@@ -107,6 +61,13 @@ export async function POST(request: NextRequest) {
       if (order.promo_code) {
         await supabaseAdmin.rpc('increment_promo_uses', { promo_code_val: order.promo_code });
       }
+
+      const { data: allProducts } = await supabaseAdmin
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+      const recommendations = getRecommendations(itemIds, (allProducts ?? []) as Product[]);
 
       try {
         await sendOrderEmail({
