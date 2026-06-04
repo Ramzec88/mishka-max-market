@@ -30,6 +30,14 @@ const CANCEL_REASON: Record<string, string> = {
   '3DS verification failed': 'Ошибка 3-D Secure',
 };
 
+interface LineItem {
+  product_id: string;
+  title: string;
+  regular_price: number; // kopecks
+  paid_price: number;    // kopecks
+  is_bump: boolean;
+}
+
 interface Order {
   id: string;
   email: string;
@@ -42,6 +50,7 @@ interface Order {
   cancellation_reason: string | null;
   promo_code: string | null;
   discount_amount: number;
+  line_items: LineItem[] | null;
 }
 
 function dateFrom(period: string): string | null {
@@ -66,7 +75,7 @@ async function getOrders(opts: {
   noStore();
   let query = supabaseAdmin
     .from('orders')
-    .select('id, email, status, amount, items, paid_at, email_sent_at, created_at, cancellation_reason, promo_code, discount_amount')
+    .select('id, email, status, amount, items, paid_at, email_sent_at, created_at, cancellation_reason, promo_code, discount_amount, line_items')
     .order('created_at', { ascending: false })
     .limit(500);
 
@@ -228,6 +237,18 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
 
   const hasAnyFilter = emailFilter || dateFilter || statusFilter;
 
+  // ── Stats ──
+  const paidOrders = filteredOrders.filter(o => o.status === 'paid');
+  const ordersWithBump = paidOrders.filter(o => o.line_items?.some(li => li.is_bump));
+  const bumpRevenue = paidOrders.reduce((sum, o) => {
+    return sum + (o.line_items?.filter(li => li.is_bump).reduce((s, li) => s + li.paid_price, 0) ?? 0);
+  }, 0);
+  const bumpConversion = paidOrders.length > 0 ? Math.round(ordersWithBump.length / paidOrders.length * 100) : 0;
+
+  const discountOrders = paidOrders.filter(o => !o.promo_code && o.discount_amount > 0);
+  const totalDiscountGiven = discountOrders.reduce((s, o) => s + o.discount_amount, 0);
+  const discountConversion = paidOrders.length > 0 ? Math.round(discountOrders.length / paidOrders.length * 100) : 0;
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -262,6 +283,53 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
           <AbandonedCartSendButton />
         )}
       </div>
+
+      {/* ── Stat cards (only in all-orders view) ── */}
+      {view === 'all' && paidOrders.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
+          {/* Bump card */}
+          <div style={{ background: '#fff', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', borderLeft: '4px solid #FF7A3D' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+              Допродажа (bump)
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: '#1a1a1a', lineHeight: 1 }}>
+              {(bumpRevenue / 100).toLocaleString('ru-RU')} ₽
+            </div>
+            <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>
+              {ordersWithBump.length} из {paidOrders.length} заказов
+              <span style={{
+                marginLeft: 8, display: 'inline-block',
+                background: bumpConversion >= 20 ? '#dcfce7' : bumpConversion >= 10 ? '#fef9c3' : '#f3f4f6',
+                color: bumpConversion >= 20 ? '#16a34a' : bumpConversion >= 10 ? '#92400e' : '#888',
+                borderRadius: 100, padding: '1px 8px', fontSize: 12, fontWeight: 700,
+              }}>
+                {bumpConversion}%
+              </span>
+            </div>
+          </div>
+
+          {/* Progress bar / volume discount card */}
+          <div style={{ background: '#fff', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', borderLeft: '4px solid #6366f1' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+              Прогресс-бар (скидки)
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: '#1a1a1a', lineHeight: 1 }}>
+              {discountOrders.length} заказов
+            </div>
+            <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>
+              Отдано скидок: {(totalDiscountGiven / 100).toLocaleString('ru-RU')} ₽
+              <span style={{
+                marginLeft: 8, display: 'inline-block',
+                background: discountConversion >= 30 ? '#dcfce7' : discountConversion >= 15 ? '#fef9c3' : '#f3f4f6',
+                color: discountConversion >= 30 ? '#16a34a' : discountConversion >= 15 ? '#92400e' : '#888',
+                borderRadius: 100, padding: '1px 8px', fontSize: 12, fontWeight: 700,
+              }}>
+                {discountConversion}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
