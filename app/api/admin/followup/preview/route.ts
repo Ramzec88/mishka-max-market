@@ -13,6 +13,14 @@ export async function POST(req: NextRequest) {
 
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
+    // Also find bundles that contain this series so bundle buyers are included
+    const { data: bundles } = await supabaseAdmin
+      .from('products')
+      .select('id')
+      .contains('bundle_product_ids', [productId]);
+    const bundleIds = (bundles || []).map((b: { id: string }) => b.id);
+    const allMatchingIds = new Set([productId, ...bundleIds]);
+
     let query = supabaseAdmin
       .from('orders')
       .select('id, email, items, paid_at')
@@ -24,7 +32,7 @@ export async function POST(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     const matching = (orders || []).filter((o) =>
-      Array.isArray(o.items) && o.items.includes(productId),
+      Array.isArray(o.items) && o.items.some((id: string) => allMatchingIds.has(id)),
     );
 
     if (matching.length === 0) {
