@@ -33,9 +33,14 @@ export async function resolveProductsForOrder(itemIds: string[]): Promise<Produc
   }
 
   // Merge: purchased first, then bundled — deduplicate by ID
+  // Bundle products themselves have no files; only their included products do
   const all = [...purchasedList, ...bundledProducts];
   const seen = new Set<string>();
-  return all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
+  return all.filter(p => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return (p.bundle_product_ids ?? []).length === 0; // skip bundle containers
+  });
 }
 
 /**
