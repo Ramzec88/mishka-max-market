@@ -57,11 +57,13 @@ export async function POST(request: NextRequest) {
     }));
     const fullAmount = foundProducts.reduce((sum, p) => sum + p.effectivePrice, 0);
 
-    // Volume discount: all items for total, non-bumped items for anchor (bumps never raise tier1)
-    const allForDiscount = foundProducts.map(p => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category }));
-    // Anchor = main (non-bump) items that are not micro-products; micro-only cart → no discount
+    // Volume discount: bundles excluded (they have their own price), non-bumped for anchor
+    const allForDiscount = foundProducts
+      .filter(p => p.category !== 'bundles')
+      .map(p => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category }));
+    // Anchor = main (non-bump, non-micro, non-bundle) items; otherwise → no discount
     const mainForAnchor = foundProducts
-      .filter(p => !bumpedSet.has(p.id) && Math.round(p.effectivePrice / 100) >= MICRO_MAX_PRICE_RUB)
+      .filter(p => !bumpedSet.has(p.id) && Math.round(p.effectivePrice / 100) >= MICRO_MAX_PRICE_RUB && p.category !== 'bundles')
       .map(p => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category }));
     const volumeInfo = calcDiscount(allForDiscount, mainForAnchor);
     const volumeDiscountAmount = volumeInfo ? Math.round(volumeInfo.discountAmount * 100) : 0; // back to kopecks
