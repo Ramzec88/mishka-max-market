@@ -176,7 +176,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
               </div>
               {cartItems.map((product) => {
                 const priceRub = Math.round(product.price / 100);
-                const discountedPrice = discountInfo && discountInfo.discountRate > 0
+                const discountedPrice = discountInfo && discountInfo.discountRate > 0 && product.category !== 'bundles'
                   ? Math.round(priceRub * (1 - discountInfo.discountRate))
                   : null;
                 return (
