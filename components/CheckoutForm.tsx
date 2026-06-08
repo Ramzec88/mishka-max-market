@@ -282,10 +282,9 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 8 }}>
           Способ оплаты
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
           {([
             { id: 'yookassa', icon: '🏦', label: 'Российская карта', sub: 'МИР, Visa, MC' },
-            { id: 'lava',     icon: '💳', label: 'Иностранная карта', sub: 'Visa, Mastercard · USD' },
           ] as const).map(({ id, icon, label, sub }) => (
             <button
               key={id}
@@ -310,15 +309,6 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
             </button>
           ))}
         </div>
-        {paymentMethod === 'lava' && finalTotal < MIN_RUB && (
-          <div style={{
-            marginTop: 8, padding: '8px 12px',
-            background: '#FFF7ED', border: '1px solid #FED7AA',
-            borderRadius: 10, fontSize: 12, color: '#92400E', lineHeight: 1.5,
-          }}>
-            ⚠️ Минимум $5 — добавьте товаров ещё на <strong>{MIN_RUB - finalTotal} ₽</strong>
-          </div>
-        )}
       </div>
 
       {/* Email */}
