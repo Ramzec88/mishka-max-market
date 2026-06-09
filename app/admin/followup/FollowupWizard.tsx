@@ -403,13 +403,13 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       {/* ── Mailing tab ── */}
       {pageTab === 'mailing' && (
       <><p style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>
-        Выберите серию, соберите аудиторию, проверьте письмо и отправьте.
+        Выберите товар, соберите аудиторию, проверьте письмо и отправьте.
       </p>
 
       {/* ── Шаг 1: выбор серии ── */}
       <div style={CARD}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Шаг 1 — Выберите серию
+          Шаг 1 — Выберите товар
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <select
@@ -418,12 +418,14 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
             style={{ ...INPUT, flex: 1 }}
             disabled={step === 'sending'}
           >
-            <option value="">— выберите серию —</option>
+            <option value="">— выберите товар —</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.cover_emoji ? `${p.cover_emoji} ` : ''}{p.title}
               </option>
             ))}
+            <option disabled>──────────────</option>
+            <option value="__all__">⚠️ Всем уникальным покупателям</option>
           </select>
           <button
             onClick={handleCollect}

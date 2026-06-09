@@ -41,13 +41,7 @@ export async function POST(req: NextRequest) {
     const allProducts = (allProductsData || []) as Product[];
     const productMap = new Map(allProducts.map((p) => [p.id, p]));
 
-    // Also find bundles that contain this series so bundle buyers are included
-    const { data: bundles } = await supabaseAdmin
-      .from('products')
-      .select('id')
-      .contains('bundle_product_ids', [productId]);
-    const bundleIds = (bundles || []).map((b: { id: string }) => b.id);
-    const allMatchingIds = new Set([productId, ...bundleIds]);
+    const isAll = productId === '__all__';
 
     let ordersQuery = supabaseAdmin
       .from('orders')
@@ -57,10 +51,19 @@ export async function POST(req: NextRequest) {
     if (require7Days) ordersQuery = ordersQuery.lte('paid_at', cutoff);
 
     const { data: orders } = await ordersQuery;
+    let matching = orders || [];
 
-    const matching = (orders || []).filter((o) =>
-      Array.isArray(o.items) && o.items.some((id: string) => allMatchingIds.has(id)),
-    );
+    if (!isAll) {
+      const { data: bundles } = await supabaseAdmin
+        .from('products')
+        .select('id')
+        .contains('bundle_product_ids', [productId]);
+      const bundleIds = (bundles || []).map((b: { id: string }) => b.id);
+      const allMatchingIds = new Set([productId, ...bundleIds]);
+      matching = matching.filter((o) =>
+        Array.isArray(o.items) && o.items.some((id: string) => allMatchingIds.has(id)),
+      );
+    }
 
     if (matching.length === 0) return NextResponse.json({ sent: 0 });
 
