@@ -77,7 +77,60 @@ function plural(n: number, one: string, few: string, many: string) {
   return `${n} ${many}`;
 }
 
+type PageTab = 'mailing' | 'customer';
+
+interface CustomerOrder {
+  id: string;
+  status: string;
+  amount: number;
+  items: string[];
+  paid_at: string | null;
+  created_at: string;
+  promo_code: string | null;
+  discount_amount: number;
+}
+
+interface CustomerFollowup {
+  order_id: string;
+  product_id: string;
+  sent_at: string;
+}
+
 export default function FollowupWizard({ products }: { products: ProductOption[] }) {
+  const [pageTab, setPageTab] = useState<PageTab>('mailing');
+
+  // Customer lookup state
+  const [lookupEmail, setLookupEmail] = useState('');
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState('');
+  const [customerOrders, setCustomerOrders] = useState<CustomerOrder[] | null>(null);
+  const [customerFollowups, setCustomerFollowups] = useState<CustomerFollowup[]>([]);
+
+  async function handleLookup() {
+    if (!lookupEmail.trim()) return;
+    setLookupLoading(true);
+    setLookupError('');
+    setCustomerOrders(null);
+    setCustomerFollowups([]);
+    try {
+      const res = await fetch('/api/admin/followup/customer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: lookupEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Ошибка');
+      setCustomerOrders(data.orders);
+      setCustomerFollowups(data.followups);
+    } catch (err) {
+      setLookupError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLookupLoading(false);
+    }
+  }
+
+  const productId_map = Object.fromEntries(products.map(p => [p.id, p.title]));
+
   const [productId, setProductId] = useState('');
   const [step, setStep] = useState<Step>('select');
 
@@ -211,12 +264,145 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
 
   const totalAfterCollect = newRecipients.length + repeatRecipients.length;
 
+  const STATUS_LABEL: Record<string, { label: string; color: string }> = {
+    paid:     { label: 'Оплачен',  color: '#16a34a' },
+    pending:  { label: 'Ожидает', color: '#92400e' },
+    canceled: { label: 'Отменён', color: '#888' },
+    failed:   { label: 'Ошибка',  color: '#dc2626' },
+  };
+
   return (
     <div style={{ maxWidth: 780, margin: '0 auto' }}>
       <h1 style={{ fontSize: 24, fontWeight: 900, color: '#1a1a1a', marginBottom: 6 }}>
         Письма Мишки Макса
       </h1>
-      <p style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>
+
+      {/* Tab switcher */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        {([
+          { id: 'mailing', label: 'Рассылка' },
+          { id: 'customer', label: '🔍 Покупатель' },
+        ] as const).map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setPageTab(tab.id)}
+            style={{
+              padding: '8px 20px', borderRadius: 8, border: 'none',
+              fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              background: pageTab === tab.id ? '#FF7A3D' : '#f3f4f6',
+              color: pageTab === tab.id ? '#fff' : '#555',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Customer lookup tab ── */}
+      {pageTab === 'customer' && (
+        <div>
+          <div style={CARD}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Поиск по email
+            </div>
+            <form onSubmit={e => { e.preventDefault(); handleLookup(); }} style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={lookupEmail}
+                onChange={e => setLookupEmail(e.target.value)}
+                placeholder="email покупателя..."
+                type="email"
+                style={{ ...INPUT, flex: 1 }}
+              />
+              <button
+                type="submit"
+                disabled={!lookupEmail.trim() || lookupLoading}
+                style={{
+                  background: lookupLoading ? '#ffb899' : '#FF7A3D',
+                  color: '#fff', border: 'none', borderRadius: 8,
+                  padding: '9px 20px', fontWeight: 700, fontSize: 14,
+                  cursor: lookupLoading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
+                }}
+              >
+                {lookupLoading ? 'Ищем...' : 'Найти'}
+              </button>
+            </form>
+            {lookupError && <div style={{ marginTop: 10, color: '#dc2626', fontSize: 13 }}>{lookupError}</div>}
+          </div>
+
+          {customerOrders !== null && (
+            <>
+              {/* Orders */}
+              <div style={CARD}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Заказы — {customerOrders.length > 0
+                    ? `${customerOrders.length} шт · оплачено ${customerOrders.filter(o => o.status === 'paid').reduce((s, o) => s + o.amount, 0) / 100} ₽`
+                    : 'не найдено'}
+                </div>
+                {customerOrders.length === 0 ? (
+                  <div style={{ color: '#aaa', fontSize: 14 }}>Заказов нет</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {customerOrders.map(order => {
+                      const s = STATUS_LABEL[order.status] || { label: order.status, color: '#888' };
+                      return (
+                        <div key={order.id} style={{ borderRadius: 8, border: '1px solid #f0f0f0', padding: '12px 14px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
+                            <div>
+                              <span style={{ fontWeight: 700, fontSize: 15, color: s.color }}>{(order.amount / 100).toLocaleString('ru-RU')} ₽</span>
+                              <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 700, background: '#f3f4f6', borderRadius: 100, padding: '2px 8px', color: s.color }}>{s.label}</span>
+                              {order.promo_code && order.discount_amount > 0 && (
+                                <span style={{ marginLeft: 8, fontSize: 12, color: '#16a34a', fontWeight: 600 }}>
+                                  промокод {order.promo_code} −{(order.discount_amount / 100).toLocaleString('ru-RU')} ₽
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#aaa', whiteSpace: 'nowrap' }}>
+                              {order.paid_at ? formatDate(order.paid_at) : formatDate(order.created_at)}
+                            </div>
+                          </div>
+                          <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {(order.items || []).map((id: string) => (
+                              <span key={id} style={{ fontSize: 11, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: '2px 8px', color: '#555' }}>
+                                {productId_map[id] || id}
+                              </span>
+                            ))}
+                          </div>
+                          <div style={{ marginTop: 6, fontSize: 11, color: '#ccc' }}>#{order.id}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Followup emails */}
+              <div style={CARD}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Письма Мишки — {customerFollowups.length > 0 ? `отправлено ${customerFollowups.length} шт` : 'не отправлялись'}
+                </div>
+                {customerFollowups.length === 0 ? (
+                  <div style={{ color: '#aaa', fontSize: 14 }}>Писем по этому адресу не было</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {customerFollowups.map((f, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: '#f9fafb', flexWrap: 'wrap', gap: 4 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
+                          ✉️ {productId_map[f.product_id] || f.product_id}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#888' }}>{formatDate(f.sent_at)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Mailing tab ── */}
+      {pageTab === 'mailing' && (
+      <><p style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>
         Выберите серию, соберите аудиторию, проверьте письмо и отправьте.
       </p>
 
@@ -626,6 +812,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
           )}
         </>
       )}
+      </>)}
     </div>
   );
 }
