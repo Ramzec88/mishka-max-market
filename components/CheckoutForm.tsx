@@ -34,11 +34,7 @@ interface BumpProduct {
   format: string | null;
 }
 
-const RUB_PER_USD = 76;
-const MIN_USD = 5;
-const MIN_RUB = RUB_PER_USD * MIN_USD; // 380 ₽
-
-type PaymentMethod = 'yookassa' | 'lava';
+type PaymentMethod = 'yookassa' | 'getplatinum';
 
 export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuccess, onError, onBumpedItemsChange, onBumpRecsLoaded }: CheckoutFormProps) {
   const [email, setEmail] = useState('');
@@ -53,8 +49,6 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
 
   const [bumpRecs, setBumpRecs] = useState<BumpProduct[]>([]);
   const [bumpedItems, setBumpedItems] = useState<string[]>([]);
-  const [showMinModal, setShowMinModal] = useState(false);
-  const [bypassMinCheck, setBypassMinCheck] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -163,30 +157,19 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
       handleError('Укажите email латиницей (например name@gmail.com) — на него придут файлы');
       return;
     }
-    if (paymentMethod === 'lava' && finalTotal < MIN_RUB && !bypassMinCheck) {
-      setShowMinModal(true);
-      return;
-    }
     setLoading(true);
     try {
-      if (paymentMethod === 'lava') {
-        const paymentProvider = 'UNLIMINT';
-        const res = await fetch('/api/create-lava-payment', {
+      if (paymentMethod === 'getplatinum') {
+        const res = await fetch('/api/create-getplatinum-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: [...items, ...bumpedItems], email: trimmedEmail, promoCode: promoData?.code ?? null, bumpedItems, paymentProvider }),
+          body: JSON.stringify({ items: [...items, ...bumpedItems], email: trimmedEmail, promoCode: promoData?.code ?? null, bumpedItems }),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || 'Ошибка при создании платежа');
         }
-        const { payment_url, order_id } = await res.json();
-        if (order_id) {
-          const payload = JSON.stringify({ id: order_id, ts: Date.now() });
-          try { sessionStorage.setItem('lava_pending_order', order_id); } catch { /* ignore */ }
-          try { localStorage.setItem('lava_payment_session', payload); } catch { /* ignore */ }
-        }
-        // Очищаем корзину до редиректа — чтобы счётчик сбросился сразу
+        const { payment_url } = await res.json();
         clearCart();
         window.dispatchEvent(new Event('cart-updated'));
         window.location.href = payment_url;
@@ -207,84 +190,21 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
       handleError(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {
       setLoading(false);
-      setBypassMinCheck(false);
     }
   }
 
-  const usdAmount = Math.max(MIN_USD, Math.round(finalTotal / RUB_PER_USD));
-  const shortfall = MIN_RUB - finalTotal;
-
   return (
     <>
-      {/* Модальное окно: минимальный платёж $5 */}
-      {showMinModal && (
-        <div
-          onClick={() => setShowMinModal(false)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 200,
-            background: 'rgba(0,0,0,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 20,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: '#fff', borderRadius: 20, padding: 28,
-              maxWidth: 360, width: '100%',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
-            }}
-          >
-            <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 12 }}>💳</div>
-            <h3 style={{ fontSize: 18, fontWeight: 900, textAlign: 'center', marginBottom: 8 }}>
-              Минимальный платёж — $5
-            </h3>
-            <p style={{ fontSize: 14, color: 'var(--ink-soft)', textAlign: 'center', lineHeight: 1.6, marginBottom: 8 }}>
-              Иностранные карты принимают платежи от <strong>$5</strong>.
-              Ваша сумма — <strong>${Math.round(finalTotal / RUB_PER_USD)} ({finalTotal} ₽)</strong>.
-            </p>
-            <p style={{ fontSize: 13, color: 'var(--ink-soft)', textAlign: 'center', lineHeight: 1.5, marginBottom: 20 }}>
-              Добавьте товаров ещё на <strong style={{ color: 'var(--orange)' }}>{shortfall} ₽</strong> — или оплатите через российскую карту.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => setShowMinModal(false)}
-                style={{
-                  background: 'var(--orange)', color: '#fff',
-                  border: 'none', borderRadius: 100,
-                  padding: '13px 20px', fontWeight: 800, fontSize: 15,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                Добавить товары
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowMinModal(false); setBypassMinCheck(true); setTimeout(() => { formRef.current?.requestSubmit(); }, 0); }}
-                style={{
-                  background: '#f3f4f6', color: '#555',
-                  border: 'none', borderRadius: 100,
-                  padding: '13px 20px', fontWeight: 700, fontSize: 14,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                Всё равно оплатить
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
     <form ref={formRef} onSubmit={handleSubmit}>
       {/* Способ оплаты */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 8 }}>
           Способ оплаты
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {([
             { id: 'yookassa', icon: '🏦', label: 'Российская карта', sub: 'МИР, Visa, MC' },
+            { id: 'getplatinum', icon: '🌍', label: 'Иностранная карта', sub: 'Visa, Mastercard' },
           ] as const).map(({ id, icon, label, sub }) => (
             <button
               key={id}
