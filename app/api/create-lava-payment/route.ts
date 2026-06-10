@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     const foundProducts = (products as (Pick<Product, 'id' | 'title' | 'price' | 'bump_price' | 'format'> & { category: string })[]).map((p) => ({
       ...p,
-      effectivePrice: bumpedSet.has(p.id) ? (p.bump_price ?? Math.round(p.price * 0.85)) : p.price,
+      effectivePrice: bumpedSet.has(p.id) && p.category !== 'bundles' ? (p.bump_price ?? Math.round(p.price * 0.85)) : p.price,
     }));
     const fullAmount = foundProducts.reduce((sum, p) => sum + p.effectivePrice, 0);
 

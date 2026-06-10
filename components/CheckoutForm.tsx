@@ -85,7 +85,7 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
   }, [bumpedItems.join(','), bumpRecs.map(r => r.id).join(',')]);
 
   const effectiveBumpPrice = (rec: BumpProduct) =>
-    rec.bump_price ?? Math.round(rec.price * 0.85);
+    rec.category === 'bundles' ? rec.price : (rec.bump_price ?? Math.round(rec.price * 0.85));
 
   const visibleBumpRecs = bumpRecs.filter((r) => !bumpedItems.includes(r.id));
   const bumpExtraKopecks = bumpedItems.reduce((sum, id) => {
