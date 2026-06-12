@@ -23,11 +23,14 @@ export async function POST(
     }
 
     // Find all paid orders that contain this bundle product
-    const { data: orders } = await supabaseAdmin
+    const { data: allPaidOrders } = await supabaseAdmin
       .from('orders')
       .select('id, email, items')
-      .eq('status', 'paid')
-      .contains('items', [bundleProductId]);
+      .eq('status', 'paid');
+
+    const orders = (allPaidOrders || []).filter((o) =>
+      Array.isArray(o.items) && (o.items as string[]).includes(bundleProductId),
+    );
 
     if (!orders || orders.length === 0) {
       return NextResponse.json({ notified: 0, message: 'Покупателей комплекта не найдено' });
