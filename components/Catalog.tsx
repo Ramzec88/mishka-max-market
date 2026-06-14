@@ -285,11 +285,11 @@ export default function Catalog({ products }: CatalogProps) {
                   style={{ display: 'block', position: 'absolute', inset: 0, borderRadius: 28, overflow: 'hidden', background: '#87CEEB' }}
                 >
                   <picture style={{ position: 'absolute', inset: 0, display: 'block' }}>
-                    <source media="(max-width: 600px)" srcSet="/hero-azbuka-mobile.png?v=2" />
-                    <source media="(min-width: 601px)" srcSet="/hero-azbuka.png?v=2" />
+                    <source media="(max-width: 600px)" srcSet="/hero-azbuka-mobile.png?v=3" />
+                    <source media="(min-width: 601px)" srcSet="/hero-azbuka.png?v=3" />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/hero-azbuka.png?v=2"
+                      src="/hero-azbuka.png?v=3"
                       alt="Азбука Мишки Макса"
                       style={{
                         position: 'absolute',
