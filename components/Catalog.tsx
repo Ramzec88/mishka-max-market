@@ -279,13 +279,10 @@ export default function Catalog({ products }: CatalogProps) {
             {
               key: 'azbuka',
               content: (
-                <div style={{
-                  borderRadius: 28,
-                  overflow: 'hidden',
-                  position: 'absolute',
-                  inset: 0,
-                  background: '#FFF7ED',
-                }}>
+                <a
+                  href="/?product=azbuka-s-mishkoy-maksom-polnyy-kurs-izucheniya-bukv-8-seriy"
+                  style={{ display: 'block', position: 'absolute', inset: 0, borderRadius: 28, overflow: 'hidden', background: '#FFF7ED' }}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/hero-azbuka.png"
@@ -300,7 +297,7 @@ export default function Catalog({ products }: CatalogProps) {
                       display: 'block',
                     }}
                   />
-                </div>
+                </a>
               ),
             },
           ]}
