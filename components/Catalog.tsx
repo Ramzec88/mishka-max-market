@@ -281,24 +281,23 @@ export default function Catalog({ products }: CatalogProps) {
               content: (
                 <div style={{
                   borderRadius: 28,
-                  boxShadow: '0 4px 32px rgba(0,0,0,0.07)',
                   overflow: 'hidden',
-                  position: 'relative',
-                  minHeight: 320,
+                  position: 'absolute',
+                  inset: 0,
                   background: '#FFF7ED',
-                  display: 'flex',
-                  alignItems: 'stretch',
                 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/hero-azbuka.png"
                     alt="Азбука Мишки Макса"
                     style={{
+                      position: 'absolute',
+                      inset: 0,
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
+                      objectPosition: 'center',
                       display: 'block',
-                      minHeight: 320,
                     }}
                   />
                 </div>

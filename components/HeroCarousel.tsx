@@ -33,16 +33,23 @@ export default function HeroCarousel({ slides, intervalMs = 5000 }: Props) {
       onMouseLeave={() => setPaused(false)}
       style={{ position: 'relative' }}
     >
-      {/* Slides */}
+      {/* Height anchor: first slide rendered invisible — sets wrapper height */}
+      <div style={{ visibility: 'hidden', pointerEvents: 'none' }}>
+        {slides[0]?.content}
+      </div>
+
+      {/* All slides overlay the anchor, absolutely positioned */}
       {slides.map((slide, idx) => (
         <div
           key={slide.key}
           style={{
-            opacity: idx === current ? 1 : 0,
-            position: idx === current ? 'relative' : 'absolute',
+            position: 'absolute',
             inset: 0,
+            opacity: idx === current ? 1 : 0,
             transition: 'opacity 0.6s ease',
             pointerEvents: idx === current ? 'auto' : 'none',
+            overflow: 'hidden',
+            borderRadius: 28,
           }}
         >
           {slide.content}
@@ -52,10 +59,12 @@ export default function HeroCarousel({ slides, intervalMs = 5000 }: Props) {
       {/* Dots */}
       {slides.length > 1 && (
         <div style={{
+          position: 'relative',
+          zIndex: 3,
           display: 'flex',
           justifyContent: 'center',
           gap: 8,
-          marginTop: 16,
+          paddingTop: 16,
         }}>
           {slides.map((_, idx) => (
             <button
@@ -90,7 +99,7 @@ export default function HeroCarousel({ slides, intervalMs = 5000 }: Props) {
               background: 'rgba(255,255,255,0.85)', border: 'none',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-              zIndex: 2,
+              zIndex: 4,
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
@@ -105,7 +114,7 @@ export default function HeroCarousel({ slides, intervalMs = 5000 }: Props) {
               background: 'rgba(255,255,255,0.85)', border: 'none',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-              zIndex: 2,
+              zIndex: 4,
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
