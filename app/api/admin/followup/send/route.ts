@@ -9,13 +9,14 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { productId, letterBody, subject, skipAttachment, includeAlreadySent, require7Days = true } = await req.json() as {
+    const { productId, letterBody, subject, skipAttachment, includeAlreadySent, require7Days = true, selectedOrderIds } = await req.json() as {
       productId: string;
       letterBody: string;
       subject: string;
       skipAttachment?: boolean;
       includeAlreadySent?: boolean;
       require7Days?: boolean;
+      selectedOrderIds?: string[];
     };
 
     if (!productId || !letterBody) {
@@ -78,6 +79,12 @@ export async function POST(req: NextRequest) {
         .in('order_id', orderIds);
       const sentSet = new Set((alreadySent || []).map((r: { order_id: string }) => r.order_id));
       pending = matching.filter((o) => !sentSet.has(o.id));
+    }
+
+    // Filter to selected order IDs if provided
+    if (selectedOrderIds && selectedOrderIds.length > 0) {
+      const selectedSet = new Set(selectedOrderIds);
+      pending = pending.filter((o) => selectedSet.has(o.id));
     }
 
     // Deduplicate by email

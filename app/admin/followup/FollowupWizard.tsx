@@ -136,6 +136,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
 
   const [newRecipients, setNewRecipients] = useState<Recipient[]>([]);
   const [repeatRecipients, setRepeatRecipients] = useState<Recipient[]>([]);
+  const [selectedNewOrderIds, setSelectedNewOrderIds] = useState<Set<string>>(new Set());
   const [includeAlreadySent, setIncludeAlreadySent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showRepeat, setShowRepeat] = useState(false);
@@ -196,9 +197,10 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
 
   const selectedProduct = products.find((p) => p.id === productId) ?? null;
 
+  const selectedNewRecipients = newRecipients.filter((r) => selectedNewOrderIds.has(r.orderId));
   const activeRecipients = includeAlreadySent
-    ? [...newRecipients, ...repeatRecipients]
-    : newRecipients;
+    ? [...selectedNewRecipients, ...repeatRecipients]
+    : selectedNewRecipients;
 
   async function handleCollect() {
     if (!productId) return;
@@ -216,9 +218,12 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка');
 
-      setNewRecipients(data.newRecipients || []);
+      const newR: Recipient[] = data.newRecipients || [];
+      setNewRecipients(newR);
+      setSelectedNewOrderIds(new Set(newR.map((r: Recipient) => r.orderId)));
       setRepeatRecipients(data.repeatRecipients || []);
       setLetterBody(DEFAULT_BODY(selectedProduct?.title ?? ''));
+      setShowNew(true);
       setStep('preview');
     } catch (err) {
       setCollectError(err instanceof Error ? err.message : String(err));
@@ -237,7 +242,10 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       const res = await fetch('/api/admin/followup/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, letterBody, subject, skipAttachment, includeAlreadySent, require7Days }),
+        body: JSON.stringify({
+          productId, letterBody, subject, skipAttachment, includeAlreadySent, require7Days,
+          selectedOrderIds: Array.from(selectedNewOrderIds),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка');
@@ -256,6 +264,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
     setProductId('');
     setNewRecipients([]);
     setRepeatRecipients([]);
+    setSelectedNewOrderIds(new Set());
     setIncludeAlreadySent(false);
     setShowNew(false);
     setShowRepeat(false);
@@ -493,20 +502,45 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
                 background: newRecipients.length > 0 ? '#f0fdf4' : '#f9fafb',
+                flexWrap: 'wrap',
               }}>
                 <div style={{
                   minWidth: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: newRecipients.length > 0 ? '#16a34a' : '#d1d5db',
-                  color: '#fff', fontWeight: 900, fontSize: 16,
+                  background: selectedNewOrderIds.size > 0 ? '#16a34a' : '#d1d5db',
+                  color: '#fff', fontWeight: 900, fontSize: 16, flexShrink: 0,
                 }}>
-                  {newRecipients.length}
+                  {selectedNewOrderIds.size > 0
+                    ? (selectedNewOrderIds.size < newRecipients.length
+                        ? `${selectedNewOrderIds.size}/${newRecipients.length}`
+                        : newRecipients.length)
+                    : newRecipients.length}
                 </div>
-                <div style={{ flex: 1, fontSize: 14, color: '#1a1a1a' }}>
+                <div style={{ flex: 1, fontSize: 14, color: '#1a1a1a', minWidth: 0 }}>
                   {newRecipients.length > 0
-                    ? <><strong>{plural(newRecipients.length, 'новый адрес', 'новых адреса', 'новых адресов')}</strong> — ещё не получали письмо по этой серии</>
+                    ? <>
+                        <strong>
+                          {selectedNewOrderIds.size < newRecipients.length && selectedNewOrderIds.size > 0
+                            ? `Выбрано ${selectedNewOrderIds.size} из ${newRecipients.length}`
+                            : plural(newRecipients.length, 'новый адрес', 'новых адреса', 'новых адресов')}
+                        </strong>
+                        {' '}— ещё не получали письмо по этой серии
+                      </>
                     : <span style={{ color: '#888' }}>Новых адресов нет — все уже получали письмо</span>
                   }
                 </div>
+                {newRecipients.length > 0 && step === 'preview' && (
+                  <button
+                    onClick={() => {
+                      if (selectedNewOrderIds.size === newRecipients.length) {
+                        setSelectedNewOrderIds(new Set());
+                      } else {
+                        setSelectedNewOrderIds(new Set(newRecipients.map(r => r.orderId)));
+                      }
+                    }}
+                    style={{ background: 'none', border: '1px solid #16a34a', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#16a34a', fontWeight: 600, whiteSpace: 'nowrap', padding: '3px 10px' }}>
+                    {selectedNewOrderIds.size === newRecipients.length ? 'Снять все' : 'Выбрать все'}
+                  </button>
+                )}
                 {newRecipients.length > 0 && (
                   <button onClick={() => setShowNew(v => !v)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#16a34a', fontWeight: 600, whiteSpace: 'nowrap' }}>
@@ -515,13 +549,39 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
                 )}
               </div>
               {showNew && newRecipients.length > 0 && (
-                <div style={{ maxHeight: 180, overflowY: 'auto', background: '#fff', padding: '8px 14px' }}>
-                  {newRecipients.map((r) => (
-                    <div key={r.orderId} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
-                      <span>{r.email}</span>
-                      <span style={{ color: '#aaa', marginLeft: 12, whiteSpace: 'nowrap' }}>оплата {formatDate(r.paidAt)}</span>
-                    </div>
-                  ))}
+                <div style={{ maxHeight: 240, overflowY: 'auto', background: '#fff', padding: '4px 14px' }}>
+                  {newRecipients.map((r) => {
+                    const checked = selectedNewOrderIds.has(r.orderId);
+                    return (
+                      <label key={r.orderId} style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '6px 0', borderBottom: '1px solid #f0f0f0',
+                        cursor: step === 'preview' ? 'pointer' : 'default',
+                        background: checked ? 'transparent' : '#fafafa',
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={step !== 'preview'}
+                          onChange={() => {
+                            setSelectedNewOrderIds(prev => {
+                              const next = new Set(prev);
+                              if (next.has(r.orderId)) next.delete(r.orderId);
+                              else next.add(r.orderId);
+                              return next;
+                            });
+                          }}
+                          style={{ width: 15, height: 15, flexShrink: 0, accentColor: '#16a34a' }}
+                        />
+                        <span style={{ flex: 1, fontSize: 13, color: checked ? '#1a1a1a' : '#aaa', textDecoration: checked ? 'none' : 'line-through' }}>
+                          {r.email}
+                        </span>
+                        <span style={{ color: '#aaa', marginLeft: 8, whiteSpace: 'nowrap', fontSize: 12 }}>
+                          оплата {formatDate(r.paidAt)}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
             </div>
