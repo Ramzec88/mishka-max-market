@@ -26,7 +26,11 @@ export interface Product {
   created_at: string;
 }
 
-// Product enriched with a presigned cover URL (computed server-side, not in DB)
-export type ProductDisplay = Product & { cover_url?: string };
+// Product enriched with server-computed fields
+export type ProductDisplay = Product & {
+  cover_url?: string;
+  avg_rating?: number;
+  review_count?: number;
+};
 
 export type ProductInsert = Omit<Product, 'created_at'>;

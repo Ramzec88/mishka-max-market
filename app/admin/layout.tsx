@@ -51,6 +51,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           Письма Мишки
         </Link>
+        <Link
+          href="/admin/reviews"
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+        >
+          Отзывы
+        </Link>
         <div style={{ marginLeft: 'auto' }}>
           <button
             onClick={handleLogout}

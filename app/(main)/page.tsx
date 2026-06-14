@@ -104,8 +104,38 @@ function attachCoverUrls(products: Product[]): ProductDisplay[] {
   });
 }
 
+async function getRatings(): Promise<Map<string, { avg: number; count: number }>> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) return new Map();
+  try {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' }) },
+    });
+    const { data } = await supabase
+      .from('reviews')
+      .select('product_id, rating')
+      .eq('is_published', true);
+    const map = new Map<string, { sum: number; count: number }>();
+    for (const r of data ?? []) {
+      const cur = map.get(r.product_id) ?? { sum: 0, count: 0 };
+      map.set(r.product_id, { sum: cur.sum + r.rating, count: cur.count + 1 });
+    }
+    const result = new Map<string, { avg: number; count: number }>();
+    for (const [id, { sum, count }] of Array.from(map.entries())) {
+      result.set(id, { avg: Math.round((sum / count) * 10) / 10, count });
+    }
+    return result;
+  } catch {
+    return new Map();
+  }
+}
+
 export default async function HomePage() {
-  const products = await getProducts();
-  const productsWithCovers = attachCoverUrls(products);
+  const [products, ratings] = await Promise.all([getProducts(), getRatings()]);
+  const productsWithCovers: ProductDisplay[] = attachCoverUrls(products).map((p) => {
+    const r = ratings.get(p.id);
+    return r ? { ...p, avg_rating: r.avg, review_count: r.count } : p;
+  });
   return <Catalog products={productsWithCovers} />;
 }

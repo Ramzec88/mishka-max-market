@@ -156,6 +156,13 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
           {product.title}
         </h3>
 
+        {product.avg_rating != null && product.review_count != null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
+            <span style={{ color: '#FF7A3D', fontSize: 13 }}>{'★'.repeat(Math.round(product.avg_rating))}{'☆'.repeat(5 - Math.round(product.avg_rating))}</span>
+            <span style={{ fontSize: 12, color: '#888' }}>{product.avg_rating} ({product.review_count})</span>
+          </div>
+        )}
+
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginTop: 'auto', paddingTop: 10 }}>
           <span style={{ fontSize: 19, fontWeight: 900, color: 'var(--ink)' }}>{priceRubles} ₽</span>
           {priceOldRubles && (

@@ -88,6 +88,12 @@ export async function POST(request: NextRequest) {
         .order('sort_order');
       const recommendations = getRecommendations(itemIds, (allProducts ?? []) as Product[]);
 
+      const allProductsMap = new Map((allProducts ?? []).map((p) => [p.id, p]));
+      const reviewItems = itemIds
+        .map((id) => allProductsMap.get(id))
+        .filter(Boolean)
+        .map((p) => ({ productId: p!.id, title: p!.title }));
+
       try {
         await sendOrderEmail({
           to: order.email,
@@ -100,6 +106,7 @@ export async function POST(request: NextRequest) {
             emoji: p.cover_emoji ?? '🎵',
             url: `${siteUrl}/?product=${p.id}`,
           })),
+          reviewItems,
         });
         await supabaseAdmin
           .from('orders')
