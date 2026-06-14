@@ -150,6 +150,11 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
   const [collecting, setCollecting] = useState(false);
   const [collectError, setCollectError] = useState('');
 
+  const [testEmail, setTestEmail] = useState('');
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState<'ok' | 'error' | null>(null);
+  const [testError, setTestError] = useState('');
+
   const [sendProgress, setSendProgress] = useState(0);
   const [sendTotal, setSendTotal] = useState(0);
   const [sendErrors, setSendErrors] = useState<string[]>([]);
@@ -256,6 +261,28 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
     } catch (err) {
       setSendErrors([err instanceof Error ? err.message : String(err)]);
       setStep('done');
+    }
+  }
+
+  async function handleTestSend() {
+    if (!testEmail.trim() || !letterBody.trim()) return;
+    setTestSending(true);
+    setTestResult(null);
+    setTestError('');
+    try {
+      const res = await fetch('/api/admin/followup/send-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, letterBody, subject, skipAttachment, testEmail: testEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Ошибка');
+      setTestResult('ok');
+    } catch (err) {
+      setTestResult('error');
+      setTestError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setTestSending(false);
     }
   }
 
@@ -817,6 +844,51 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
               </div>
             )}
           </div>
+
+          {/* ── Тест-отправка ── */}
+          {step === 'preview' && (
+            <div style={{ ...CARD, background: '#f9fafb', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                📧 Тест-отправка
+              </div>
+              <div style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>
+                Отправьте себе одно письмо с темой «[ТЕСТ] …», чтобы убедиться, что оно приходит и выглядит правильно.
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="email"
+                  value={testEmail}
+                  onChange={e => { setTestEmail(e.target.value); setTestResult(null); }}
+                  placeholder="ваш@email.ru"
+                  style={{ ...INPUT, flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={handleTestSend}
+                  disabled={testSending || !testEmail.trim() || !letterBody.trim()}
+                  style={{
+                    background: testSending ? '#e5e7eb' : '#4b5563',
+                    color: '#fff', border: 'none', borderRadius: 8,
+                    padding: '9px 18px', fontSize: 13, fontWeight: 700,
+                    cursor: (testSending || !testEmail.trim()) ? 'not-allowed' : 'pointer',
+                    whiteSpace: 'nowrap', flexShrink: 0,
+                  }}
+                >
+                  {testSending ? 'Отправляем...' : 'Отправить тест'}
+                </button>
+              </div>
+              {testResult === 'ok' && (
+                <div style={{ marginTop: 10, fontSize: 13, color: '#16a34a', fontWeight: 600 }}>
+                  ✅ Тестовое письмо отправлено на {testEmail} — проверьте почту
+                </div>
+              )}
+              {testResult === 'error' && (
+                <div style={{ marginTop: 10, fontSize: 13, color: '#dc2626' }}>
+                  ❌ {testError}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ── Кнопка отправки ── */}
           {step === 'preview' && (
