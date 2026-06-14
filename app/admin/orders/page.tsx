@@ -247,6 +247,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
 
   const discountOrders = paidOrders.filter(o => !o.promo_code && o.discount_amount > 0);
   const totalDiscountGiven = discountOrders.reduce((s, o) => s + o.discount_amount, 0);
+  const discountRevenue = discountOrders.reduce((s, o) => s + o.amount, 0);
   const discountConversion = paidOrders.length > 0 ? Math.round(discountOrders.length / paidOrders.length * 100) : 0;
 
   return (
@@ -314,10 +315,10 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               Прогресс-бар (скидки)
             </div>
             <div style={{ fontSize: 26, fontWeight: 900, color: '#1a1a1a', lineHeight: 1 }}>
-              {discountOrders.length} заказов
+              {(discountRevenue / 100).toLocaleString('ru-RU')} ₽
             </div>
-            <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>
-              Отдано скидок: {(totalDiscountGiven / 100).toLocaleString('ru-RU')} ₽
+            <div style={{ fontSize: 13, color: '#888', marginTop: 4 }}>
+              {discountOrders.length} заказов со скидкой
               <span style={{
                 marginLeft: 8, display: 'inline-block',
                 background: discountConversion >= 30 ? '#dcfce7' : discountConversion >= 15 ? '#fef9c3' : '#f3f4f6',
@@ -326,6 +327,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               }}>
                 {discountConversion}%
               </span>
+            </div>
+            <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>
+              Отдано скидок: {(totalDiscountGiven / 100).toLocaleString('ru-RU')} ₽
             </div>
           </div>
         </div>
