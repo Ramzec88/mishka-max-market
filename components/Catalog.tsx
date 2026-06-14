@@ -8,6 +8,7 @@ import ProductCard from './ProductCard';
 import ProductRow from './ProductRow';
 import ProductSheet from './ProductSheet';
 import CartButton from './CartButton';
+import HeroCarousel from './HeroCarousel';
 import CartDrawer from './CartDrawer';
 import StickyPlayer from './StickyPlayer';
 import CartToast from './CartToast';
@@ -191,87 +192,120 @@ export default function Catalog({ products }: CatalogProps) {
         <CartButton onClick={() => setDrawerOpen(true)} />
       </div>
 
-      {/* Hero */}
+      {/* Hero Carousel */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 0' }}>
-        <div className="hero-inner" style={{
-          background: '#fff',
-          borderRadius: 28,
-          boxShadow: '0 4px 32px rgba(0,0,0,0.07)',
-          padding: 'clamp(28px, 5vw, 52px)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'clamp(24px, 4vw, 56px)',
-          position: 'relative',
-        }}>
-          {/* Left */}
-          <div style={{ flex: '1 1 0', minWidth: 0 }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: '#FFF7ED', border: '1.5px solid #FFD4B8',
-              borderRadius: 100, padding: '6px 14px', marginBottom: 20,
-            }}>
-              <span style={{ fontSize: 14 }}>🧸</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#C2410C' }}>Для заботливых мам и креативных педагогов</span>
-            </div>
-            <h1 style={{
-              fontSize: 'clamp(28px, 4vw, 52px)',
-              fontWeight: 900,
-              lineHeight: 1.1,
-              letterSpacing: '-0.03em',
-              color: 'var(--ink)',
-              margin: '0 0 16px',
-            }}>
-              Готовые решения для<br />
-              <span style={{ background: 'linear-gradient(90deg, #FF7A3D, #FF4D6D)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                увлекательных занятий
-              </span>
-              <br />и ярких праздников
-            </h1>
-            <p style={{ fontSize: 16, color: 'var(--ink-soft)', lineHeight: 1.6, margin: '0 0 28px', maxWidth: 420 }}>
-              Авторские игры, песни и сценарии, которые сэкономят вам время
-              и подарят детям радость. Мгновенная доставка на email после оплаты.
-            </p>
-            <button
-              onClick={() => document.getElementById('showcase-section')?.scrollIntoView({ behavior: 'smooth' })}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: 'var(--orange)', color: '#fff',
-                border: 'none', borderRadius: 100,
-                padding: '14px 28px', fontSize: 15, fontWeight: 700,
-                cursor: 'pointer', fontFamily: 'inherit',
-                boxShadow: '0 4px 16px rgba(255,122,61,0.35)',
-                transition: 'transform 0.15s, box-shadow 0.15s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(255,122,61,0.5)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(255,122,61,0.35)'; }}
-            >
-              Открыть каталог
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </button>
-          </div>
-
-          {/* Right — mascot */}
-          <div className="hero-mascot" style={{ flexShrink: 0, width: 'clamp(260px, 36vw, 440px)', position: 'relative' }}>
-            <div style={{
-              position: 'absolute',
-              top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '55%', height: '55%',
-              borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
-              background: 'linear-gradient(135deg, #F5EFE6, #EDE0D4)',
-              boxShadow: '0 8px 40px rgba(180,130,90,0.18)',
-            }} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/3d_maks.png" alt="3D Макс" style={{
-              display: 'block',
-              width: '100%',
-              height: 'auto',
-              objectFit: 'contain',
-              position: 'relative',
-              zIndex: 1,
-            }} />
-          </div>
-        </div>
+        <HeroCarousel
+          intervalMs={5000}
+          slides={[
+            {
+              key: 'main',
+              content: (
+                <div className="hero-inner" style={{
+                  background: '#fff',
+                  borderRadius: 28,
+                  boxShadow: '0 4px 32px rgba(0,0,0,0.07)',
+                  padding: 'clamp(28px, 5vw, 52px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'clamp(24px, 4vw, 56px)',
+                  position: 'relative',
+                }}>
+                  {/* Left */}
+                  <div style={{ flex: '1 1 0', minWidth: 0 }}>
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      background: '#FFF7ED', border: '1.5px solid #FFD4B8',
+                      borderRadius: 100, padding: '6px 14px', marginBottom: 20,
+                    }}>
+                      <span style={{ fontSize: 14 }}>🧸</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#C2410C' }}>Для заботливых мам и креативных педагогов</span>
+                    </div>
+                    <h1 style={{
+                      fontSize: 'clamp(28px, 4vw, 52px)',
+                      fontWeight: 900,
+                      lineHeight: 1.1,
+                      letterSpacing: '-0.03em',
+                      color: 'var(--ink)',
+                      margin: '0 0 16px',
+                    }}>
+                      Готовые решения для<br />
+                      <span style={{ background: 'linear-gradient(90deg, #FF7A3D, #FF4D6D)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        увлекательных занятий
+                      </span>
+                      <br />и ярких праздников
+                    </h1>
+                    <p style={{ fontSize: 16, color: 'var(--ink-soft)', lineHeight: 1.6, margin: '0 0 28px', maxWidth: 420 }}>
+                      Авторские игры, песни и сценарии, которые сэкономят вам время
+                      и подарят детям радость. Мгновенная доставка на email после оплаты.
+                    </p>
+                    <button
+                      onClick={() => document.getElementById('showcase-section')?.scrollIntoView({ behavior: 'smooth' })}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 8,
+                        background: 'var(--orange)', color: '#fff',
+                        border: 'none', borderRadius: 100,
+                        padding: '14px 28px', fontSize: 15, fontWeight: 700,
+                        cursor: 'pointer', fontFamily: 'inherit',
+                        boxShadow: '0 4px 16px rgba(255,122,61,0.35)',
+                        transition: 'transform 0.15s, box-shadow 0.15s',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(255,122,61,0.5)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(255,122,61,0.35)'; }}
+                    >
+                      Открыть каталог
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
+                  </div>
+                  {/* Right — mascot */}
+                  <div className="hero-mascot" style={{ flexShrink: 0, width: 'clamp(260px, 36vw, 440px)', position: 'relative' }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%', left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '55%', height: '55%',
+                      borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
+                      background: 'linear-gradient(135deg, #F5EFE6, #EDE0D4)',
+                      boxShadow: '0 8px 40px rgba(180,130,90,0.18)',
+                    }} />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/3d_maks.png" alt="3D Макс" style={{
+                      display: 'block', width: '100%', height: 'auto',
+                      objectFit: 'contain', position: 'relative', zIndex: 1,
+                    }} />
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: 'azbuka',
+              content: (
+                <div style={{
+                  borderRadius: 28,
+                  boxShadow: '0 4px 32px rgba(0,0,0,0.07)',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  minHeight: 320,
+                  background: '#FFF7ED',
+                  display: 'flex',
+                  alignItems: 'stretch',
+                }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/hero-azbuka.png"
+                    alt="Азбука Мишки Макса"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                      minHeight: 320,
+                    }}
+                  />
+                </div>
+              ),
+            },
+          ]}
+        />
       </section>
 
       {/* ── Showcase (tiles) ── */}
