@@ -282,21 +282,21 @@ export default function Catalog({ products }: CatalogProps) {
               content: (
                 <a
                   href="/?product=azbuka-s-mishkoy-maksom-polnyy-kurs-izucheniya-bukv-8-seriy"
-                  style={{ display: 'block', position: 'absolute', inset: 0, borderRadius: 28, overflow: 'hidden', background: '#FFF7ED' }}
+                  style={{ display: 'block', position: 'absolute', inset: 0, borderRadius: 28, overflow: 'hidden', background: '#87CEEB' }}
                 >
                   <picture style={{ position: 'absolute', inset: 0, display: 'block' }}>
-                    <source media="(max-width: 600px)" srcSet="/hero-azbuka-mobile.png" />
-                    <source media="(min-width: 601px)" srcSet="/hero-azbuka.png" />
+                    <source media="(max-width: 600px)" srcSet="/hero-azbuka-mobile.png?v=2" />
+                    <source media="(min-width: 601px)" srcSet="/hero-azbuka.png?v=2" />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/hero-azbuka.png"
+                      src="/hero-azbuka.png?v=2"
                       alt="Азбука Мишки Макса"
                       style={{
                         position: 'absolute',
                         inset: 0,
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
+                        objectFit: 'contain',
                         objectPosition: 'center',
                         display: 'block',
                       }}
