@@ -92,6 +92,7 @@ export default function HeroCarousel({ slides, intervalMs = 5000 }: Props) {
           <button
             onClick={() => { setPaused(true); goTo(current - 1); }}
             aria-label="Назад"
+            className="carousel-arrow"
             style={{
               position: 'absolute', top: '50%', left: 12,
               transform: 'translateY(-50%)',
@@ -107,6 +108,7 @@ export default function HeroCarousel({ slides, intervalMs = 5000 }: Props) {
           <button
             onClick={() => { setPaused(true); goTo(current + 1); }}
             aria-label="Вперёд"
+            className="carousel-arrow"
             style={{
               position: 'absolute', top: '50%', right: 12,
               transform: 'translateY(-50%)',

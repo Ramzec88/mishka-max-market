@@ -184,7 +184,8 @@ export default function Catalog({ products }: CatalogProps) {
         @media (max-width: 580px) { .section-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 600px) {
           .hero-inner { flex-direction: column !important; }
-          .hero-mascot { width: 100% !important; margin-top: 8px; }
+          .hero-mascot { display: none !important; }
+          .carousel-arrow { display: none !important; }
         }
       `}</style>
 
@@ -283,20 +284,24 @@ export default function Catalog({ products }: CatalogProps) {
                   href="/?product=azbuka-s-mishkoy-maksom-polnyy-kurs-izucheniya-bukv-8-seriy"
                   style={{ display: 'block', position: 'absolute', inset: 0, borderRadius: 28, overflow: 'hidden', background: '#FFF7ED' }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/hero-azbuka.png"
-                    alt="Азбука Мишки Макса"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      objectPosition: 'center',
-                      display: 'block',
-                    }}
-                  />
+                  <picture style={{ position: 'absolute', inset: 0, display: 'block' }}>
+                    <source media="(max-width: 600px)" srcSet="/hero-azbuka-mobile.png" />
+                    <source media="(min-width: 601px)" srcSet="/hero-azbuka.png" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/hero-azbuka.png"
+                      alt="Азбука Мишки Макса"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'center',
+                        display: 'block',
+                      }}
+                    />
+                  </picture>
                 </a>
               ),
             },
