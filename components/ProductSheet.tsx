@@ -285,52 +285,6 @@ export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }
             .product-desc p  { margin: 4px 0; }
           `}</style>
 
-          {/* Reviews */}
-          {reviewsLoading && (
-            <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 20 }}>
-              Загружаем отзывы…
-            </div>
-          )}
-          {!reviewsLoading && reviews.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)', marginBottom: 10 }}>
-                Отзывы
-                <span style={{ fontWeight: 600, color: 'var(--ink-soft)', marginLeft: 6 }}>
-                  {reviews.length}
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {reviews.map((review) => (
-                  <div
-                    key={review.id}
-                    style={{
-                      background: '#fff',
-                      borderLeft: '3px solid #FF7A3D',
-                      borderRadius: 10,
-                      padding: 14,
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                      <StarRating rating={review.rating} />
-                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>
-                        {review.name || 'Аноним'}
-                      </span>
-                      <span style={{ fontSize: 11, color: 'var(--ink-soft)', marginLeft: 'auto' }}>
-                        {relativeDate(review.created_at)}
-                      </span>
-                    </div>
-                    {review.body && (
-                      <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.55, margin: 0 }}>
-                        {review.body}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Price + CTA */}
           <div
             style={{
@@ -434,6 +388,52 @@ export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }
                     Купить через Lava Top
                   </a>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Reviews */}
+          {reviewsLoading && (
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 20 }}>
+              Загружаем отзывы…
+            </div>
+          )}
+          {!reviewsLoading && reviews.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)', marginBottom: 10 }}>
+                Отзывы
+                <span style={{ fontWeight: 600, color: 'var(--ink-soft)', marginLeft: 6 }}>
+                  {reviews.length}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    style={{
+                      background: '#fff',
+                      borderLeft: '3px solid #FF7A3D',
+                      borderRadius: 10,
+                      padding: 14,
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <StarRating rating={review.rating} />
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>
+                        {review.name || 'Аноним'}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--ink-soft)', marginLeft: 'auto' }}>
+                        {relativeDate(review.created_at)}
+                      </span>
+                    </div>
+                    {review.body && (
+                      <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.55, margin: 0 }}>
+                        {review.body}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
