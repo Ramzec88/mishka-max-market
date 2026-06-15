@@ -609,21 +609,6 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         <p style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>
           Ссылки на страницу товара в Boosty и Lava Top. Если заполнены — на карточке появятся кнопки для покупателей с Visa/Mastercard не из России.
         </p>
-        <div style={{ marginBottom: 12 }}>
-          <label style={LABEL}>
-            ☁️ Ссылка на облачное хранилище
-          </label>
-          <input
-            type="url"
-            value={cloudUrl}
-            onChange={e => setCloudUrl(e.target.value)}
-            placeholder="https://disk.yandex.ru/d/... или https://drive.google.com/..."
-            style={INPUT}
-          />
-          <div style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>
-            Если указана — покупатель получит кнопку «Открыть папку» вместо (или вместе с) файлами для скачивания
-          </div>
-        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={LABEL}>
@@ -656,7 +641,23 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
 
       {/* Файлы для скачивания */}
       <div style={CARD}>
-        <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, color: '#1a1a1a' }}>Файлы для скачивания</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 4, color: '#1a1a1a' }}>Файлы для скачивания</h2>
+        <p style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>
+          Загрузите файлы для скачивания или укажите ссылку на облако. Можно использовать оба варианта одновременно.
+        </p>
+        <div style={{ marginBottom: 16 }}>
+          <label style={LABEL}>☁️ Ссылка на облачное хранилище</label>
+          <input
+            type="url"
+            value={cloudUrl}
+            onChange={e => setCloudUrl(e.target.value)}
+            placeholder="https://disk.yandex.ru/d/... или https://drive.google.com/..."
+            style={INPUT}
+          />
+          <div style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>
+            Если указана — покупатель получит кнопку «Открыть папку». Можно использовать вместо файлов или вместе с ними.
+          </div>
+        </div>
 
         {storagePaths.length > 0 && (
           <div style={{ marginBottom: 16 }}>

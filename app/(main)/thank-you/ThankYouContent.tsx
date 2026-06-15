@@ -158,8 +158,9 @@ export default function ThankYouContent() {
 
           if (data.status === 'paid') {
             const downloadLinks = data.download_links || [];
+            const cloudLinksData = data.cloud_links || [];
             if (!cancelled) setLinks(downloadLinks);
-            if (!cancelled) setCloudLinks(data.cloud_links || []);
+            if (!cancelled) setCloudLinks(cloudLinksData);
 
             // Отправляем ecommerce-событие в Яндекс Метрику ровно один раз
             if (!ymFired.current && data.amount != null && data.ecommerce_products?.length) {
@@ -186,7 +187,8 @@ export default function ThankYouContent() {
               });
             }
 
-            if (downloadLinks.length > 0) {
+            // Останавливаем поллинг если есть хоть что-то для покупателя (файлы или облако)
+            if (downloadLinks.length > 0 || cloudLinksData.length > 0) {
               if (!cancelled) setPolling(false);
               return;
             }
@@ -344,25 +346,44 @@ export default function ThankYouContent() {
             </p>
           </div>
 
+          {/* Облачные ссылки — основной блок когда нет файлов */}
+          {links.length === 0 && cloudLinks.length > 0 && (
+            <div style={{ background: '#EFF6FF', borderRadius: 'var(--radius-lg)', padding: 24, boxShadow: 'var(--shadow-sm)', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 4, color: '#1a1a1a' }}>☁️ Ваши материалы в облаке</h2>
+              <p style={{ color: '#4B70B3', fontSize: 14, marginBottom: 16, lineHeight: 1.5 }}>
+                Ссылка на папку с материалами также отправлена вам на email.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {cloudLinks.map((cl) => (
+                  <div key={cl.product_id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: 12, padding: '12px 0', borderBottom: '1px solid #DBEAFE',
+                  }}>
+                    <div style={{ fontWeight: 600, fontSize: 15, color: '#1a1a1a' }}>{cl.product_title}</div>
+                    <a
+                      href={cl.cloud_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: '#4F87FF', color: '#fff',
+                        padding: '10px 22px', borderRadius: 100,
+                        fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', flexShrink: 0,
+                        textDecoration: 'none',
+                      }}
+                    >
+                      Открыть папку ↗
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Файлы для скачивания */}
+          {links.length > 0 && (
           <div style={{ background: '#fff', borderRadius: 'var(--radius-lg)', padding: 24, boxShadow: 'var(--shadow-sm)' }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Ваши файлы</h2>
-            {links.length === 0 ? (
-              <div>
-                <p style={{ color: 'var(--ink-soft)', fontSize: 14, marginBottom: 16 }}>
-                  Ссылки ещё не появились. Проверьте email или нажмите кнопку ниже.
-                </p>
-                <button
-                  onClick={handleRetry}
-                  style={{
-                    background: 'var(--orange)', color: '#fff',
-                    padding: '10px 20px', borderRadius: 100,
-                    fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer',
-                  }}
-                >
-                  Обновить ссылки
-                </button>
-              </div>
-            ) : (() => {
+            {(() => {
               // группируем по product_id
               const groups = new Map<string, { title: string; files: DownloadLink[] }>();
               for (const link of links) {
@@ -419,40 +440,38 @@ export default function ThankYouContent() {
                 </div>
               ));
             })()}
-          </div>
 
-          {/* Облачные ссылки */}
-          {cloudLinks.length > 0 && (
-            <div style={{ marginTop: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 800, color: '#1a1a1a', marginBottom: 12 }}>
-                ☁️ Материалы в облаке
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {cloudLinks.map((cl) => (
-                  <div key={cl.product_id} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    gap: 12, padding: '14px 0', borderBottom: '1px solid var(--border)',
-                  }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: '#1a1a1a' }}>
-                      {cl.product_title}
+            {/* Облачные ссылки дополнительно к файлам */}
+            {cloudLinks.length > 0 && (
+              <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                <h3 style={{ fontSize: 15, fontWeight: 800, color: '#1a1a1a', marginBottom: 12 }}>
+                  ☁️ Материалы в облаке
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {cloudLinks.map((cl) => (
+                    <div key={cl.product_id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: '#1a1a1a' }}>{cl.product_title}</div>
+                      <a
+                        href={cl.cloud_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          background: '#4F87FF', color: '#fff',
+                          padding: '8px 16px', borderRadius: 100,
+                          fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
+                          textDecoration: 'none',
+                        }}
+                      >
+                        Открыть папку ↗
+                      </a>
                     </div>
-                    <a
-                      href={cl.cloud_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        background: '#4F87FF', color: '#fff',
-                        padding: '9px 18px', borderRadius: 100,
-                        fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
-                        textDecoration: 'none',
-                      }}
-                    >
-                      Открыть папку ↗
-                    </a>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+          </div>
           )}
 
           {/* Рекомендации */}
