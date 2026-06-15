@@ -57,6 +57,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           Отзывы
         </Link>
+        <Link
+          href="/admin/settings"
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+        >
+          Настройки
+        </Link>
         <div style={{ marginLeft: 'auto' }}>
           <button
             onClick={handleLogout}
