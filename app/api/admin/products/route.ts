@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       sort_order: Number(body.sort_order) || 0,
       recommended_product_ids: Array.isArray(body.recommended_product_ids) ? body.recommended_product_ids : [],
       letter_s3_key: body.letter_s3_key || null,
+      cloud_url: body.cloud_url || null,
       bump_price: body.bump_price ? Math.round(Number(body.bump_price) * 100) : null,
     };
 

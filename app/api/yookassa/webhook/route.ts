@@ -67,6 +67,10 @@ export async function POST(request: NextRequest) {
         .map((id) => allProductsMap.get(id))
         .filter(Boolean)
         .map((p) => ({ productId: p!.id, title: p!.title }));
+      const cloudItems = itemIds
+        .map((id) => allProductsMap.get(id))
+        .filter((p) => p && (p as Product & { cloud_url?: string }).cloud_url)
+        .map((p) => ({ title: p!.title, cloudUrl: (p as Product & { cloud_url: string }).cloud_url }));
 
       try {
         await sendOrderEmail({
@@ -81,6 +85,7 @@ export async function POST(request: NextRequest) {
             url: `${siteUrl}/?product=${p.id}`,
           })),
           reviewItems,
+          cloudItems: cloudItems.length > 0 ? cloudItems : undefined,
         });
         await supabaseAdmin
           .from('orders')

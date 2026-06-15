@@ -62,6 +62,11 @@ export interface ReviewItem {
   title: string;
 }
 
+export interface CloudItem {
+  title: string;
+  cloudUrl: string;
+}
+
 export interface SendOrderEmailParams {
   to: string;
   orderId: string;
@@ -69,11 +74,12 @@ export interface SendOrderEmailParams {
   siteUrl: string;
   recommendations?: RecommendedItem[];
   reviewItems?: ReviewItem[];
+  cloudItems?: CloudItem[];
   subject?: string; // override default subject
 }
 
 export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void> {
-  const { to, orderId, items, siteUrl, recommendations, reviewItems } = params;
+  const { to, orderId, items, siteUrl, recommendations, reviewItems, cloudItems } = params;
 
   const templatePath = join(process.cwd(), 'emails', 'order-delivery.html');
   let html = readFileSync(templatePath, 'utf-8');
@@ -132,6 +138,32 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
     </tr>`;
   }
 
+  let cloudSectionHtml = '';
+  if (cloudItems && cloudItems.length > 0) {
+    const rows = cloudItems.map((c) => `
+    <tr>
+      <td style="padding: 12px 0; border-bottom: 1px solid #F0E4D6;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="vertical-align: middle; font-size: 14px; font-weight: 700; color: #1F1B16;">${c.title}</td>
+            <td style="width: 160px; text-align: right; vertical-align: middle;">
+              <a href="${c.cloudUrl}" style="display: inline-block; background: #4F87FF; color: #fff; padding: 10px 20px; border-radius: 100px; font-weight: 700; font-size: 14px; text-decoration: none;">
+                ☁️ Открыть папку
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`).join('');
+    cloudSectionHtml = `
+    <tr>
+      <td style="background: #EFF6FF; padding: 20px 32px; border-top: 1px solid #DBEAFE; border-bottom: 1px solid #DBEAFE;">
+        <p style="margin: 0 0 12px; font-size: 15px; font-weight: 900; color: #1F1B16;">☁️ Ваши материалы в облаке</p>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
+      </td>
+    </tr>`;
+  }
+
   let reviewSectionHtml = '';
   if (reviewItems && reviewItems.length > 0) {
     const reviewLinks = reviewItems
@@ -165,6 +197,7 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
 
   html = html
     .replace('{{ITEMS}}', itemsHtml)
+    .replace('{{CLOUD_SECTION}}', cloudSectionHtml)
     .replace('{{RECOMMENDATIONS}}', recommendationsHtml)
     .replace('{{REVIEW_SECTION}}', reviewSectionHtml)
     .replace(/\{\{THANK_YOU_URL\}\}/g, `${siteUrl}/thank-you?order=${orderId}`)

@@ -20,6 +20,7 @@ export interface Product {
   lava_url: string | null;
   recommended_product_ids: string[];
   letter_s3_key: string | null; // PDF «Письмо Мишки Макса» для follow-up рассылки
+  cloud_url: string | null;    // ссылка на облачное хранилище (Яндекс.Диск и т.п.)
   bump_price: number | null;
   is_active: boolean;
   sort_order: number;

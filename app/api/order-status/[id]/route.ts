@@ -30,6 +30,7 @@ export async function GET(
     cancellation_reason?: string | null;
     ecommerce_products?: { id: string; name: string; price: number }[];
     download_links?: unknown[];
+    cloud_links?: { product_id: string; product_title: string; cloud_url: string }[];
   } = {
     status: order.status,
   };
@@ -48,13 +49,21 @@ export async function GET(
     if (itemIds.length > 0) {
       const { data: products } = await supabaseAdmin
         .from('products')
-        .select('id, title, price')
+        .select('id, title, price, cloud_url')
         .in('id', itemIds);
       response.ecommerce_products = (products || []).map((p) => ({
         id: p.id,
         name: p.title,
         price: Math.round(p.price / 100),
       }));
+      const cloudProducts = (products || []).filter((p) => p.cloud_url);
+      if (cloudProducts.length > 0) {
+        response.cloud_links = cloudProducts.map((p) => ({
+          product_id: p.id,
+          product_title: p.title,
+          cloud_url: p.cloud_url as string,
+        }));
+      }
     }
 
     const { data: tokens } = await supabaseAdmin

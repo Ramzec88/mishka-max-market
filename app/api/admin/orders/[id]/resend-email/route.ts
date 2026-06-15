@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { sendOrderEmail, DownloadItem } from '@/lib/email';
+import { sendOrderEmail, DownloadItem, CloudItem } from '@/lib/email';
 import { getFileSizeBytes } from '@/lib/storage';
 import { getTokenExpiry } from '@/lib/tokens';
 
@@ -11,7 +11,7 @@ export async function POST(
   try {
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
-      .select('id, email, status')
+      .select('id, email, status, items')
       .eq('id', params.id)
       .single();
 
@@ -38,10 +38,13 @@ export async function POST(
       .eq('order_id', params.id);
 
     const productIds = Array.from(new Set(tokens.map((t) => t.product_id)));
+    const allItemIds: string[] = Array.isArray(order.items) ? order.items : [];
+    const allFetchIds = Array.from(new Set([...productIds, ...allItemIds]));
+
     const { data: products } = await supabaseAdmin
       .from('products')
-      .select('id, title, format')
-      .in('id', productIds);
+      .select('id, title, format, cloud_url')
+      .in('id', allFetchIds);
 
     const productMap = new Map((products || []).map((p) => [p.id, p]));
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
@@ -60,7 +63,18 @@ export async function POST(
       })
     );
 
-    await sendOrderEmail({ to: order.email, orderId: order.id, items, siteUrl });
+    const cloudItems: CloudItem[] = allItemIds
+      .map((id) => productMap.get(id))
+      .filter((p) => p?.cloud_url)
+      .map((p) => ({ title: p!.title, cloudUrl: p!.cloud_url as string }));
+
+    await sendOrderEmail({
+      to: order.email,
+      orderId: order.id,
+      items,
+      siteUrl,
+      cloudItems: cloudItems.length > 0 ? cloudItems : undefined,
+    });
 
     await supabaseAdmin
       .from('orders')
