@@ -321,11 +321,6 @@ export default function Catalog({ products, latestReviews }: CatalogProps) {
         />
       </section>
 
-      {/* Reviews feed */}
-      {latestReviews && latestReviews.length > 0 && (
-        <ReviewsFeed reviews={latestReviews} />
-      )}
-
       {/* ── Showcase (tiles) ── */}
       {showcaseProducts.length > 0 && (
         <section id="showcase-section" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 44px' }}>
@@ -545,6 +540,11 @@ export default function Catalog({ products, latestReviews }: CatalogProps) {
           </div>
         )}
       </div>
+
+      {/* Reviews feed — before footer */}
+      {latestReviews && latestReviews.length > 0 && (
+        <ReviewsFeed reviews={latestReviews} />
+      )}
 
       <CartDrawer products={products} isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
