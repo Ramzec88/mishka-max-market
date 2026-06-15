@@ -63,10 +63,10 @@ export async function createTokensForProducts(
   const downloadItems: DownloadItem[] = [];
 
   for (const product of products) {
-    const filePaths =
-      product.storage_paths.length > 0
-        ? product.storage_paths
-        : [`products/${product.id}/placeholder`];
+    // Cloud-only products have no storage_paths — no tokens needed
+    if (product.storage_paths.length === 0) continue;
+
+    const filePaths = product.storage_paths;
 
     for (const filePath of filePaths) {
       if (existingPaths.has(filePath)) continue; // already has token
