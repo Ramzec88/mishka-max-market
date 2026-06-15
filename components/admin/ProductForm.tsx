@@ -134,6 +134,7 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
   const [bumpPrice, setBumpPrice] = useState(product?.bump_price ? String(product.bump_price / 100) : '');
   const [demoUrl, setDemoUrl] = useState(product?.demo_url ?? '');
+  const [cloudUrl, setCloudUrl] = useState(product?.cloud_url ?? '');
   const [boostyUrl, setBoostyUrl] = useState(product?.boosty_url ?? '');
   const [lavaUrl, setLavaUrl] = useState(product?.lava_url ?? '');
   const [demoUploading, setDemoUploading] = useState(false);
@@ -322,6 +323,7 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         format: resolvedFormat || null,
         storage_paths: finalStoragePaths,
         demo_url: demoUrl.trim() || null,
+        cloud_url: cloudUrl.trim() || null,
         boosty_url: boostyUrl.trim() || null,
         lava_url: lavaUrl.trim() || null,
         is_active: isActive,
@@ -607,6 +609,21 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         <p style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>
           Ссылки на страницу товара в Boosty и Lava Top. Если заполнены — на карточке появятся кнопки для покупателей с Visa/Mastercard не из России.
         </p>
+        <div style={{ marginBottom: 12 }}>
+          <label style={LABEL}>
+            ☁️ Ссылка на облачное хранилище
+          </label>
+          <input
+            type="url"
+            value={cloudUrl}
+            onChange={e => setCloudUrl(e.target.value)}
+            placeholder="https://disk.yandex.ru/d/... или https://drive.google.com/..."
+            style={INPUT}
+          />
+          <div style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>
+            Если указана — покупатель получит кнопку «Открыть папку» вместо (или вместе с) файлами для скачивания
+          </div>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={LABEL}>

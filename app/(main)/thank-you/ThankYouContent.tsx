@@ -60,6 +60,12 @@ interface EcommerceProduct {
   price: number;
 }
 
+interface CloudLink {
+  product_id: string;
+  product_title: string;
+  cloud_url: string;
+}
+
 interface OrderStatusResponse {
   status: OrderStatus;
   amount?: number;
@@ -68,6 +74,7 @@ interface OrderStatusResponse {
   cancellation_reason?: string | null;
   ecommerce_products?: EcommerceProduct[];
   download_links?: DownloadLink[];
+  cloud_links?: CloudLink[];
 }
 
 const CANCEL_MESSAGES: Record<string, { title: string; body: string }> = {
@@ -114,6 +121,7 @@ export default function ThankYouContent() {
 
   const [status, setStatus] = useState<OrderStatus | null>(null);
   const [links, setLinks] = useState<DownloadLink[]>([]);
+  const [cloudLinks, setCloudLinks] = useState<CloudLink[]>([]);
   const [polling, setPolling] = useState(true);
   const [retryKey, setRetryKey] = useState(0);
   const [cancelReason, setCancelReason] = useState<string | null>(null);
@@ -151,6 +159,7 @@ export default function ThankYouContent() {
           if (data.status === 'paid') {
             const downloadLinks = data.download_links || [];
             if (!cancelled) setLinks(downloadLinks);
+            if (!cancelled) setCloudLinks(data.cloud_links || []);
 
             // Отправляем ecommerce-событие в Яндекс Метрику ровно один раз
             if (!ymFired.current && data.amount != null && data.ecommerce_products?.length) {
@@ -411,6 +420,40 @@ export default function ThankYouContent() {
               ));
             })()}
           </div>
+
+          {/* Облачные ссылки */}
+          {cloudLinks.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 800, color: '#1a1a1a', marginBottom: 12 }}>
+                ☁️ Материалы в облаке
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {cloudLinks.map((cl) => (
+                  <div key={cl.product_id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: 12, padding: '14px 0', borderBottom: '1px solid var(--border)',
+                  }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: '#1a1a1a' }}>
+                      {cl.product_title}
+                    </div>
+                    <a
+                      href={cl.cloud_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: '#4F87FF', color: '#fff',
+                        padding: '9px 18px', borderRadius: 100,
+                        fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
+                        textDecoration: 'none',
+                      }}
+                    >
+                      Открыть папку ↗
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Рекомендации */}
           {recommendations.length > 0 && (

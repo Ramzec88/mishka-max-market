@@ -88,6 +88,16 @@ export async function POST(request: NextRequest) {
         .order('sort_order');
       const recommendations = getRecommendations(itemIds, (allProducts ?? []) as Product[]);
 
+      const allProductsMap = new Map((allProducts ?? []).map((p) => [p.id, p]));
+      const reviewItems = itemIds
+        .map((id) => allProductsMap.get(id))
+        .filter(Boolean)
+        .map((p) => ({ productId: p!.id, title: p!.title }));
+      const cloudItems = itemIds
+        .map((id) => allProductsMap.get(id))
+        .filter((p) => p && (p as Product & { cloud_url?: string }).cloud_url)
+        .map((p) => ({ title: p!.title, cloudUrl: (p as Product & { cloud_url: string }).cloud_url }));
+
       try {
         await sendOrderEmail({
           to: order.email,
@@ -100,6 +110,8 @@ export async function POST(request: NextRequest) {
             emoji: p.cover_emoji ?? '🎵',
             url: `${siteUrl}/?product=${p.id}`,
           })),
+          reviewItems,
+          cloudItems: cloudItems.length > 0 ? cloudItems : undefined,
         });
         await supabaseAdmin
           .from('orders')

@@ -57,17 +57,29 @@ export interface RecommendedItem {
   url: string;
 }
 
+export interface ReviewItem {
+  productId: string;
+  title: string;
+}
+
+export interface CloudItem {
+  title: string;
+  cloudUrl: string;
+}
+
 export interface SendOrderEmailParams {
   to: string;
   orderId: string;
   items: DownloadItem[];
   siteUrl: string;
   recommendations?: RecommendedItem[];
+  reviewItems?: ReviewItem[];
+  cloudItems?: CloudItem[];
   subject?: string; // override default subject
 }
 
 export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void> {
-  const { to, orderId, items, siteUrl, recommendations } = params;
+  const { to, orderId, items, siteUrl, recommendations, reviewItems, cloudItems } = params;
 
   const templatePath = join(process.cwd(), 'emails', 'order-delivery.html');
   let html = readFileSync(templatePath, 'utf-8');
@@ -126,9 +138,68 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
     </tr>`;
   }
 
+  let cloudSectionHtml = '';
+  if (cloudItems && cloudItems.length > 0) {
+    const rows = cloudItems.map((c) => `
+    <tr>
+      <td style="padding: 12px 0; border-bottom: 1px solid #F0E4D6;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="vertical-align: middle; font-size: 14px; font-weight: 700; color: #1F1B16;">${c.title}</td>
+            <td style="width: 160px; text-align: right; vertical-align: middle;">
+              <a href="${c.cloudUrl}" style="display: inline-block; background: #4F87FF; color: #fff; padding: 10px 20px; border-radius: 100px; font-weight: 700; font-size: 14px; text-decoration: none;">
+                ☁️ Открыть папку
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`).join('');
+    cloudSectionHtml = `
+    <tr>
+      <td style="background: #EFF6FF; padding: 20px 32px; border-top: 1px solid #DBEAFE; border-bottom: 1px solid #DBEAFE;">
+        <p style="margin: 0 0 12px; font-size: 15px; font-weight: 900; color: #1F1B16;">☁️ Ваши материалы в облаке</p>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
+      </td>
+    </tr>`;
+  }
+
+  let reviewSectionHtml = '';
+  if (reviewItems && reviewItems.length > 0) {
+    const reviewLinks = reviewItems
+      .map(
+        (r) => `
+      <tr>
+        <td style="padding: 8px 0; border-bottom: 1px solid #F0E4D6;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="vertical-align: middle; font-size: 14px; color: #5A4F45;">${r.title}</td>
+              <td style="width: 140px; text-align: right; vertical-align: middle;">
+                <a href="${siteUrl}/review?order=${orderId}&amp;product=${r.productId}" style="display: inline-block; background: #FFF1E8; color: #FF7A3D; padding: 7px 14px; border-radius: 100px; font-weight: 700; font-size: 13px; text-decoration: none; border: 1.5px solid #FFD4B3;">
+                  ⭐ Оставить отзыв
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>`,
+      )
+      .join('');
+    reviewSectionHtml = `
+    <tr>
+      <td style="background: #FFFAF4; padding: 20px 32px; border-top: 1px solid #F0E4D6;">
+        <p style="margin: 0 0 12px; font-size: 15px; font-weight: 900; color: #1F1B16;">Поделитесь впечатлением 🐻</p>
+        <p style="margin: 0 0 12px; font-size: 13px; color: #888;">Ваш отзыв помогает другим педагогам найти нужные материалы</p>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">${reviewLinks}</table>
+      </td>
+    </tr>`;
+  }
+
   html = html
     .replace('{{ITEMS}}', itemsHtml)
+    .replace('{{CLOUD_SECTION}}', cloudSectionHtml)
     .replace('{{RECOMMENDATIONS}}', recommendationsHtml)
+    .replace('{{REVIEW_SECTION}}', reviewSectionHtml)
     .replace(/\{\{THANK_YOU_URL\}\}/g, `${siteUrl}/thank-you?order=${orderId}`)
     .replace(/\{\{SITE_URL\}\}/g, siteUrl);
 
