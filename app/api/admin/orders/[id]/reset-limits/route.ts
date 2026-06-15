@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getTokenExpiry } from '@/lib/tokens';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,16 +9,29 @@ export async function POST(
   { params }: { params: { id: string } },
 ) {
   try {
-    const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const newExpiry = getTokenExpiry().toISOString();
 
-    const { error } = await supabaseAdmin
+    // Fetch current max_downloads per token so we can increment individually
+    const { data: tokens, error: fetchError } = await supabaseAdmin
       .from('download_tokens')
-      .update({ downloads_count: 0, expires_at: newExpiry })
+      .select('token, max_downloads')
       .eq('order_id', params.id);
 
-    if (error) throw error;
+    if (fetchError) throw fetchError;
+    if (!tokens || tokens.length === 0) {
+      return NextResponse.json({ error: 'Токены не найдены' }, { status: 404 });
+    }
 
-    return NextResponse.json({ ok: true });
+    // Increase each token's limit by 5 and extend expiry
+    for (const t of tokens) {
+      const { error } = await supabaseAdmin
+        .from('download_tokens')
+        .update({ max_downloads: t.max_downloads + 5, expires_at: newExpiry })
+        .eq('token', t.token);
+      if (error) throw error;
+    }
+
+    return NextResponse.json({ ok: true, updated: tokens.length });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
