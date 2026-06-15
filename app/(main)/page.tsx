@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import Catalog from '@/components/Catalog';
 import { Product, ProductDisplay } from '@/types/product';
 import { getPublicUrl } from '@/lib/storage';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,14 +106,8 @@ function attachCoverUrls(products: Product[]): ProductDisplay[] {
 }
 
 async function getRatings(): Promise<Map<string, { avg: number; count: number }>> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) return new Map();
   try {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' }) },
-    });
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
       .from('reviews')
       .select('product_id, rating')
       .eq('is_published', true);
