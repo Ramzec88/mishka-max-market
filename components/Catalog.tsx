@@ -12,6 +12,7 @@ import HeroCarousel from './HeroCarousel';
 import CartDrawer from './CartDrawer';
 import StickyPlayer from './StickyPlayer';
 import CartToast from './CartToast';
+import ReviewsFeed from './ReviewsFeed';
 
 const SECTIONS: { category: Category; label: string; icon: string }[] = [
   { category: 'songs', label: 'Песни', icon: '🎵' },
@@ -20,11 +21,22 @@ const SECTIONS: { category: Category; label: string; icon: string }[] = [
   { category: 'bundles', label: 'Комплекты', icon: '🎁' },
 ];
 
-interface CatalogProps {
-  products: ProductDisplay[];
+interface LatestReview {
+  id: string;
+  name: string | null;
+  rating: number;
+  body: string | null;
+  created_at: string;
+  product_id: string;
+  product_title: string;
 }
 
-export default function Catalog({ products }: CatalogProps) {
+interface CatalogProps {
+  products: ProductDisplay[];
+  latestReviews?: LatestReview[];
+}
+
+export default function Catalog({ products, latestReviews }: CatalogProps) {
   const [activeSection, setActiveSection] = useState<'all' | Category>('all');
   const [search, setSearch] = useState(() =>
     typeof window !== 'undefined' ? ((window as any).__catalogSearch ?? '') : ''
@@ -308,6 +320,11 @@ export default function Catalog({ products }: CatalogProps) {
           ]}
         />
       </section>
+
+      {/* Reviews feed */}
+      {latestReviews && latestReviews.length > 0 && (
+        <ReviewsFeed reviews={latestReviews} />
+      )}
 
       {/* ── Showcase (tiles) ── */}
       {showcaseProducts.length > 0 && (

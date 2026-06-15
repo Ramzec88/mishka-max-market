@@ -105,6 +105,16 @@ function attachCoverUrls(products: Product[]): ProductDisplay[] {
   });
 }
 
+interface LatestReview {
+  id: string;
+  name: string | null;
+  rating: number;
+  body: string | null;
+  created_at: string;
+  product_id: string;
+  product_title: string;
+}
+
 async function getRatings(): Promise<Map<string, { avg: number; count: number }>> {
   try {
     const { data } = await supabaseAdmin
@@ -126,11 +136,40 @@ async function getRatings(): Promise<Map<string, { avg: number; count: number }>
   }
 }
 
+async function getLatestReviews(): Promise<LatestReview[]> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('reviews')
+      .select('id, name, rating, body, created_at, product_id, products(title)')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) return [];
+
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      rating: r.rating,
+      body: r.body,
+      created_at: r.created_at,
+      product_id: r.product_id,
+      product_title: (r.products as { title: string } | null)?.title ?? '',
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export default async function HomePage() {
-  const [products, ratings] = await Promise.all([getProducts(), getRatings()]);
+  const [products, ratings, latestReviews] = await Promise.all([
+    getProducts(),
+    getRatings(),
+    getLatestReviews(),
+  ]);
   const productsWithCovers: ProductDisplay[] = attachCoverUrls(products).map((p) => {
     const r = ratings.get(p.id);
     return r ? { ...p, avg_rating: r.avg, review_count: r.count } : p;
   });
-  return <Catalog products={productsWithCovers} />;
+  return <Catalog products={productsWithCovers} latestReviews={latestReviews} />;
 }

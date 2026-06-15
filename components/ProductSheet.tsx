@@ -4,6 +4,37 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { ProductDisplay } from '@/types/product';
 
+interface ReviewPublic {
+  id: string;
+  name: string | null;
+  rating: number;
+  body: string | null;
+  created_at: string;
+}
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <span aria-label={`${rating} из 5`} style={{ fontSize: 13, letterSpacing: 1 }}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} style={{ color: '#FF7A3D' }}>
+          {i < rating ? '★' : '☆'}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function relativeDate(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'сегодня';
+  if (days === 1) return 'вчера';
+  if (days < 7) return `${days} дн. назад`;
+  if (days < 30) return `${Math.floor(days / 7)} нед. назад`;
+  if (days < 365) return `${Math.floor(days / 30)} мес. назад`;
+  return `${Math.floor(days / 365)} г. назад`;
+}
+
 const coverBg: Record<string, string> = {
   orange: 'linear-gradient(135deg, var(--orange-light), #FFE4D1)',
   lavender: 'linear-gradient(135deg, #E8E0F5, #D4C7ED)',
@@ -22,6 +53,8 @@ interface Props {
 export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }: Props) {
   const [visible, setVisible] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [reviews, setReviews] = useState<ReviewPublic[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const startY = useRef(0);
 
   useEffect(() => {
@@ -48,6 +81,17 @@ export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [product, onClose]);
+
+  useEffect(() => {
+    if (!product) { setReviews([]); return; }
+    setReviews([]);
+    setReviewsLoading(true);
+    fetch(`/api/reviews/${encodeURIComponent(product.id)}`)
+      .then((r) => r.json())
+      .then((json) => { setReviews(json.reviews ?? []); })
+      .catch(() => { /* silently ignore */ })
+      .finally(() => setReviewsLoading(false));
+  }, [product?.id]);
 
   if (!product && !visible) return null;
   if (!product) return null;
@@ -240,6 +284,52 @@ export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }
             .product-desc li { margin: 2px 0; }
             .product-desc p  { margin: 4px 0; }
           `}</style>
+
+          {/* Reviews */}
+          {reviewsLoading && (
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 20 }}>
+              Загружаем отзывы…
+            </div>
+          )}
+          {!reviewsLoading && reviews.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)', marginBottom: 10 }}>
+                Отзывы
+                <span style={{ fontWeight: 600, color: 'var(--ink-soft)', marginLeft: 6 }}>
+                  {reviews.length}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    style={{
+                      background: '#fff',
+                      borderLeft: '3px solid #FF7A3D',
+                      borderRadius: 10,
+                      padding: 14,
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <StarRating rating={review.rating} />
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>
+                        {review.name || 'Аноним'}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--ink-soft)', marginLeft: 'auto' }}>
+                        {relativeDate(review.created_at)}
+                      </span>
+                    </div>
+                    {review.body && (
+                      <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.55, margin: 0 }}>
+                        {review.body}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Price + CTA */}
           <div
