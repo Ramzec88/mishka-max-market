@@ -27,17 +27,7 @@ export async function POST(
       .select('token, product_id, file_path')
       .eq('order_id', params.id);
 
-    if (!tokens || tokens.length === 0) {
-      return NextResponse.json({ error: 'Токены не найдены' }, { status: 404 });
-    }
-
-    // Сбрасываем лимит скачиваний и продлеваем срок действия
-    await supabaseAdmin
-      .from('download_tokens')
-      .update({ downloads_count: 0, expires_at: getTokenExpiry().toISOString() })
-      .eq('order_id', params.id);
-
-    const productIds = Array.from(new Set(tokens.map((t) => t.product_id)));
+    const productIds = Array.from(new Set((tokens ?? []).map((t) => t.product_id)));
     const allItemIds: string[] = Array.isArray(order.items) ? order.items : [];
     const allFetchIds = Array.from(new Set([...productIds, ...allItemIds]));
 
@@ -47,10 +37,28 @@ export async function POST(
       .in('id', allFetchIds);
 
     const productMap = new Map((products || []).map((p) => [p.id, p]));
+
+    const cloudItemsCheck: CloudItem[] = allItemIds
+      .map((id) => productMap.get(id))
+      .filter((p) => p?.cloud_url)
+      .map((p) => ({ title: p!.title, cloudUrl: p!.cloud_url as string }));
+
+    if ((!tokens || tokens.length === 0) && cloudItemsCheck.length === 0) {
+      return NextResponse.json({ error: 'Токены не найдены' }, { status: 404 });
+    }
+
+    // Сбрасываем лимит скачиваний и продлеваем срок действия
+    if (tokens && tokens.length > 0) {
+      await supabaseAdmin
+        .from('download_tokens')
+        .update({ downloads_count: 0, expires_at: getTokenExpiry().toISOString() })
+        .eq('order_id', params.id);
+    }
+
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
     const items: DownloadItem[] = await Promise.all(
-      tokens.map(async (t) => {
+      (tokens ?? []).map(async (t) => {
         const product = productMap.get(t.product_id);
         const fileSizeBytes = await getFileSizeBytes(t.file_path) ?? undefined;
         return {
@@ -63,17 +71,12 @@ export async function POST(
       })
     );
 
-    const cloudItems: CloudItem[] = allItemIds
-      .map((id) => productMap.get(id))
-      .filter((p) => p?.cloud_url)
-      .map((p) => ({ title: p!.title, cloudUrl: p!.cloud_url as string }));
-
     await sendOrderEmail({
       to: order.email,
       orderId: order.id,
       items,
       siteUrl,
-      cloudItems: cloudItems.length > 0 ? cloudItems : undefined,
+      cloudItems: cloudItemsCheck.length > 0 ? cloudItemsCheck : undefined,
     });
 
     await supabaseAdmin
