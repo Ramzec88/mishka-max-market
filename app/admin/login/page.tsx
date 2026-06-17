@@ -25,7 +25,7 @@ export default function AdminLoginPage() {
       const data = await res.json();
 
       if (res.ok && data.ok) {
-        router.push('/admin/products');
+        router.push('/admin');
       } else {
         setError(data.error || 'Ошибка авторизации');
       }

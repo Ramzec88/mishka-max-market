@@ -28,6 +28,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           Мишка Макс — Админ
         </span>
         <Link
+          href="/admin"
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+        >
+          Дашборд
+        </Link>
+        <Link
           href="/admin/products"
           style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
         >
