@@ -218,6 +218,28 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   }
   const topReasons = Array.from(reasonMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
+  // ── Promo code impact ──
+  const promoOrders = paid.filter((o) => o.promo_code);
+  const nonPromoOrders = paid.filter((o) => !o.promo_code);
+  const promoShare = paid.length > 0 ? Math.round((promoOrders.length / paid.length) * 100) : 0;
+  const promoDiscountGiven = promoOrders.reduce((s, o) => s + (o.discount_amount || 0), 0);
+  const promoRevenue = promoOrders.reduce((s, o) => s + o.amount, 0);
+  const aovPromo = promoOrders.length > 0 ? Math.round(promoRevenue / promoOrders.length) : 0;
+  const aovNonPromo = nonPromoOrders.length > 0
+    ? Math.round(nonPromoOrders.reduce((s, o) => s + o.amount, 0) / nonPromoOrders.length)
+    : 0;
+
+  const promoCodeMap = new Map<string, { count: number; revenue: number; discount: number }>();
+  for (const o of promoOrders) {
+    const code = o.promo_code as string;
+    const cur = promoCodeMap.get(code) || { count: 0, revenue: 0, discount: 0 };
+    cur.count += 1;
+    cur.revenue += o.amount;
+    cur.discount += o.discount_amount || 0;
+    promoCodeMap.set(code, cur);
+  }
+  const topPromoCodes = Array.from(promoCodeMap.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, 5);
+
   // ── Daily revenue trend (last 14 days, independent of period filter) ──
   const days: { label: string; revenue: number }[] = [];
   const now = new Date();
@@ -305,6 +327,53 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── Promo code impact ── */}
+      <div style={{ ...CARD, marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div style={CARD_LABEL}>Влияние промокодов</div>
+          <Link href="/admin/promo-codes" style={{ fontSize: 12, fontWeight: 700, color: '#FF7A3D', textDecoration: 'none' }}>
+            Управление промокодами →
+          </Link>
+        </div>
+        {promoOrders.length === 0 ? (
+          <div style={{ fontSize: 13, color: '#aaa' }}>Промокоды не использовались за период</div>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#1a1a1a' }}>{promoShare}%</div>
+                <div style={{ fontSize: 12, color: '#888' }}>заказов со скидкой ({promoOrders.length} из {paid.length})</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#1a1a1a' }}>{(promoDiscountGiven / 100).toLocaleString('ru-RU')} ₽</div>
+                <div style={{ fontSize: 12, color: '#888' }}>отдано скидок</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#1a1a1a' }}>{(aovPromo / 100).toLocaleString('ru-RU')} ₽</div>
+                <div style={{ fontSize: 12, color: '#888' }}>средний чек с промокодом</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: aovPromo >= aovNonPromo ? '#16a34a' : '#dc2626' }}>
+                  {(aovNonPromo / 100).toLocaleString('ru-RU')} ₽
+                </div>
+                <div style={{ fontSize: 12, color: '#888' }}>средний чек без промокода</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {topPromoCodes.map(([code, c]) => (
+                <div key={code} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, borderTop: '1px solid #f0f0f0', paddingTop: 8 }}>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#16a34a', fontSize: 13 }}>{code}</span>
+                  <span style={{ fontSize: 13, color: '#888' }}>
+                    {c.count}× · выручка <b style={{ color: '#1a1a1a' }}>{(c.revenue / 100).toLocaleString('ru-RU')} ₽</b>
+                    {' '}· скидок <b style={{ color: '#1a1a1a' }}>{(c.discount / 100).toLocaleString('ru-RU')} ₽</b>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
