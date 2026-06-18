@@ -211,6 +211,7 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
               type="button"
               onClick={() => setPaymentMethod(id)}
               style={{
+                position: 'relative',
                 padding: '10px 6px',
                 borderRadius: 12,
                 border: `2px solid ${paymentMethod === id ? 'var(--orange)' : 'var(--border)'}`,
@@ -221,6 +222,25 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
                 textAlign: 'center',
               }}
             >
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  border: `2px solid ${paymentMethod === id ? 'var(--orange)' : 'var(--border)'}`,
+                  background: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {paymentMethod === id && (
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--orange)' }} />
+                )}
+              </span>
               <div style={{ fontSize: 18, marginBottom: 2 }}>{icon}</div>
               <div style={{ fontSize: 11, fontWeight: 700, color: paymentMethod === id ? 'var(--orange)' : 'var(--ink)', lineHeight: 1.2 }}>
                 {label}
