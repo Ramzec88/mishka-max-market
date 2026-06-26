@@ -131,10 +131,11 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'Europe/Moscow' });
 }
 
-interface Props { searchParams: { email?: string; sort?: string } }
+interface Props { searchParams: { email?: string; product?: string; sort?: string } }
 
 export default async function AdminCustomersPage({ searchParams }: Props) {
   const emailFilter = searchParams.email?.trim().toLowerCase() || '';
+  const productFilter = searchParams.product?.trim().toLowerCase() || '';
 
   const [orders, products] = await Promise.all([getPaidOrders(), getProducts()]);
   const productMap = new Map(products.map((p) => [p.id, p]));
@@ -187,8 +188,17 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
   // ── Customers table (filterable, sorted by spend) ──
   let customerList = Array.from(allCustomers.values());
   if (emailFilter) customerList = customerList.filter((c) => c.email.toLowerCase().includes(emailFilter));
+  if (productFilter) {
+    customerList = customerList.filter((c) =>
+      Array.from(c.products.values()).some((p) => p.title.toLowerCase().includes(productFilter)),
+    );
+  }
   customerList.sort((a, b) => b.totalSpent - a.totalSpent);
   const topCustomers = customerList.slice(0, 100);
+
+  const sortedProductTitles = Array.from(new Set(products.map((p) => p.title))).sort((a, b) =>
+    a.localeCompare(b, 'ru'),
+  );
 
   const statusByEmail = new Map(azbukaStatuses.map((s) => [s.email, s]));
 
@@ -286,17 +296,29 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
       <div style={CARD}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <div style={CARD_LABEL}>Покупатели (топ {topCustomers.length} по сумме)</div>
-          <form method="GET" action="/admin/customers" style={{ display: 'flex', gap: 8 }}>
+          <form method="GET" action="/admin/customers" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input
               name="email"
               defaultValue={emailFilter}
               placeholder="Поиск по email..."
               style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 12px', fontSize: 13, outline: 'none' }}
             />
+            <input
+              name="product"
+              defaultValue={searchParams.product || ''}
+              list="product-options"
+              placeholder="Поиск по товару..."
+              style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 12px', fontSize: 13, outline: 'none' }}
+            />
+            <datalist id="product-options">
+              {sortedProductTitles.map((title) => (
+                <option key={title} value={title} />
+              ))}
+            </datalist>
             <button type="submit" style={{ background: '#FF7A3D', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
               Найти
             </button>
-            {emailFilter && (
+            {(emailFilter || productFilter) && (
               <a href="/admin/customers" style={{ fontSize: 13, color: '#888', alignSelf: 'center', textDecoration: 'none' }}>Сбросить</a>
             )}
           </form>
