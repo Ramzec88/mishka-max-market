@@ -25,13 +25,14 @@ export async function POST(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     let matching = orders || [];
+    let bundleIds: string[] = [];
 
     if (!isAll) {
       const { data: bundles } = await supabaseAdmin
         .from('products')
         .select('id')
         .contains('bundle_product_ids', [productId]);
-      const bundleIds = (bundles || []).map((b: { id: string }) => b.id);
+      bundleIds = (bundles || []).map((b: { id: string }) => b.id);
       const allMatchingIds = new Set([productId, ...bundleIds]);
       matching = matching.filter((o) =>
         Array.isArray(o.items) && o.items.some((id: string) => allMatchingIds.has(id)),
@@ -43,6 +44,21 @@ export async function POST(req: NextRequest) {
     }
 
     const orderIds = matching.map((o) => o.id);
+
+    const bundleOwnerEmails = new Set<string>();
+    if (bundleIds.length > 0) {
+      const emails = Array.from(new Set(matching.map((o) => o.email)));
+      const { data: allOrders } = await supabaseAdmin
+        .from('orders')
+        .select('email, items')
+        .eq('status', 'paid')
+        .in('email', emails);
+      for (const o of allOrders || []) {
+        if (Array.isArray(o.items) && o.items.some((id: string) => bundleIds.includes(id))) {
+          bundleOwnerEmails.add(o.email);
+        }
+      }
+    }
 
     const { data: alreadySent } = await supabaseAdmin
       .from('followup_emails')
@@ -56,19 +72,20 @@ export async function POST(req: NextRequest) {
 
     const newEmailSet = new Set<string>();
     const repeatEmailSet = new Set<string>();
-    const newRecipients: { orderId: string; email: string; paidAt: string }[] = [];
-    const repeatRecipients: { orderId: string; email: string; paidAt: string; sentAt: string }[] = [];
+    const newRecipients: { orderId: string; email: string; paidAt: string; ownsBundle: boolean }[] = [];
+    const repeatRecipients: { orderId: string; email: string; paidAt: string; sentAt: string; ownsBundle: boolean }[] = [];
 
     for (const o of matching) {
+      const ownsBundle = bundleOwnerEmails.has(o.email);
       if (sentMap.has(o.id)) {
         if (!repeatEmailSet.has(o.email)) {
           repeatEmailSet.add(o.email);
-          repeatRecipients.push({ orderId: o.id, email: o.email, paidAt: o.paid_at, sentAt: sentMap.get(o.id)! });
+          repeatRecipients.push({ orderId: o.id, email: o.email, paidAt: o.paid_at, sentAt: sentMap.get(o.id)!, ownsBundle });
         }
       } else {
         if (!newEmailSet.has(o.email)) {
           newEmailSet.add(o.email);
-          newRecipients.push({ orderId: o.id, email: o.email, paidAt: o.paid_at });
+          newRecipients.push({ orderId: o.id, email: o.email, paidAt: o.paid_at, ownsBundle });
         }
       }
     }

@@ -10,6 +10,7 @@ interface Recipient {
   email: string;
   paidAt: string;
   sentAt?: string;
+  ownsBundle?: boolean;
 }
 
 interface EmailTemplate {
@@ -75,6 +76,23 @@ function plural(n: number, one: string, few: string, many: string) {
   if (mod10 === 1) return `${n} ${one}`;
   if (mod10 >= 2 && mod10 <= 4) return `${n} ${few}`;
   return `${n} ${many}`;
+}
+
+function BundleBadge({ ownsBundle }: { ownsBundle?: boolean }) {
+  if (!ownsBundle) return null;
+  return (
+    <span
+      title="Купил комплект"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 3,
+        marginLeft: 8, padding: '2px 7px', borderRadius: 999,
+        background: '#fef3c7', color: '#92400e', fontSize: 11, fontWeight: 700,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      🎁 комплект
+    </span>
+  );
 }
 
 type PageTab = 'mailing' | 'customer';
@@ -603,6 +621,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
                         <span style={{ flex: 1, fontSize: 13, color: checked ? '#1a1a1a' : '#aaa', textDecoration: checked ? 'none' : 'line-through' }}>
                           {r.email}
                         </span>
+                        <BundleBadge ownsBundle={r.ownsBundle} />
                         <span style={{ color: '#aaa', marginLeft: 8, whiteSpace: 'nowrap', fontSize: 12 }}>
                           оплата {formatDate(r.paidAt)}
                         </span>
@@ -650,8 +669,11 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
                 {showRepeat && (
                   <div style={{ maxHeight: 180, overflowY: 'auto', background: '#fff', padding: '8px 14px' }}>
                     {repeatRecipients.map((r) => (
-                      <div key={r.orderId} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
-                        <span>{r.email}</span>
+                      <div key={r.orderId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
+                        <span style={{ display: 'flex', alignItems: 'center' }}>
+                          {r.email}
+                          <BundleBadge ownsBundle={r.ownsBundle} />
+                        </span>
                         <span style={{ color: '#aaa', marginLeft: 12, whiteSpace: 'nowrap' }}>
                           последнее письмо {r.sentAt ? formatDate(r.sentAt) : '—'}
                         </span>
