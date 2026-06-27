@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   const { data: allProducts } = await supabaseAdmin
     .from('products')
-    .select('id, title, price, bump_price, category, cover_emoji, cover_variant, cover_image, format, recommended_product_ids, is_active, sort_order')
+    .select('id, title, price, bump_price, category, is_bundle, cover_emoji, cover_variant, cover_image, format, recommended_product_ids, is_active, sort_order')
     .eq('is_active', true)
     .order('sort_order');
 
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       price: p.price,
       bump_price: p.bump_price,
       category: p.category,
+      is_bundle: p.is_bundle,
       cover_emoji: p.cover_emoji,
       cover_variant: p.cover_variant,
       cover_url: (p as unknown as { cover_image: string | null }).cover_image

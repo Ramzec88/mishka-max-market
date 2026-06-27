@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
   const { data: allProducts } = await supabaseAdmin
     .from('products')
-    .select('id, title, price, price_old, category, cover_emoji, cover_variant, badge, format, recommended_product_ids, is_active, sort_order')
+    .select('id, title, price, price_old, category, is_bundle, cover_emoji, cover_variant, badge, format, recommended_product_ids, is_active, sort_order')
     .eq('is_active', true)
     .order('sort_order');
 

@@ -156,6 +156,7 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
   const [uploadProgress, setUploadProgress] = useState(0);
   const [recommendedIds, setRecommendedIds] = useState<string[]>(product?.recommended_product_ids ?? []);
   const [recsOpen, setRecsOpen] = useState((product?.recommended_product_ids ?? []).length > 0);
+  const [isBundle, setIsBundle] = useState(product?.is_bundle ?? false);
   const [bundleIds, setBundleIds] = useState<string[]>(product?.bundle_product_ids ?? []);
   const [bundleOpen, setBundleOpen] = useState((product?.bundle_product_ids ?? []).length > 0);
   const [notifying, setNotifying] = useState(false);
@@ -331,6 +332,7 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         cover_image: newCoverKey,
         recommended_product_ids: recommendedIds,
         bundle_product_ids: bundleIds,
+        is_bundle: isBundle,
         letter_s3_key: letterS3Key || null,
         bump_price: bumpPrice ? Number(bumpPrice) : null,
         _deleteKeys: deleteKeys,
@@ -413,13 +415,30 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
 
         <div style={{ display: 'flex', gap: 16 }}>
           <div style={{ flex: 1 }}>
-            <label style={LABEL}>Категория</label>
-            <select value={category} onChange={e => setCategory(e.target.value as Category)} style={INPUT}>
+            <label style={LABEL}>В каком разделе опубликовать?</label>
+            <select
+              value={category}
+              onChange={e => {
+                const next = e.target.value as Category;
+                setCategory(next);
+                if (next === 'bundles') setIsBundle(true);
+              }}
+              style={INPUT}
+            >
               <option value="songs">Песни</option>
               <option value="scenarios">Сценарии</option>
               <option value="materials">Материалы</option>
               <option value="bundles">Комплекты</option>
             </select>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, cursor: 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={isBundle} onChange={e => setIsBundle(e.target.checked)} />
+              <span style={{ fontSize: 13, color: '#555' }}>📦 Это комплект из нескольких товаров</span>
+            </label>
+            {isBundle && category !== 'bundles' && (
+              <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
+                Состав комплекта настраивается ниже, а карточка будет показана в разделе «{category === 'songs' ? 'Песни' : category === 'scenarios' ? 'Сценарии' : 'Материалы'}».
+              </div>
+            )}
           </div>
           <div style={{ flex: 1 }}>
             <label style={LABEL}>Формат</label>
@@ -863,8 +882,8 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         </div>
       )}
 
-      {/* Состав комплекта — только для category = bundles */}
-      {category === 'bundles' && allProducts.length > 0 && (
+      {/* Состав комплекта — для любой карточки с флагом «Это комплект» */}
+      {isBundle && allProducts.length > 0 && (
         <div style={CARD}>
           <div
             onClick={() => setBundleOpen(o => !o)}

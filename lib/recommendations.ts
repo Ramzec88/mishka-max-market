@@ -18,7 +18,7 @@ export function getRecommendations(
   );
 
   const purchasedProducts = allProducts.filter((p) => purchasedSet.has(p.id));
-  const hasBundlePurchased = purchasedProducts.some((p) => p.category === 'bundles');
+  const hasBundlePurchased = purchasedProducts.some((p) => p.is_bundle);
 
   if (hasBundlePurchased) return [];
 
@@ -43,7 +43,7 @@ export function getRecommendations(
 
   // Bundle upsell first when 2+ individual items bought
   if (purchasedIds.length >= 2) {
-    const bundle = activeUnpurchased.find((p) => p.category === 'bundles');
+    const bundle = activeUnpurchased.find((p) => p.is_bundle);
     if (bundle) result.push(bundle);
     if (result.length >= limit) return result;
   }

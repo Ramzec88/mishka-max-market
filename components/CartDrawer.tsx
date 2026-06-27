@@ -75,7 +75,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
 
   // Bundles are excluded from the discount system — they have their own price
   const cartItemsForDiscount = cartItems
-    .filter(p => p.category !== 'bundles')
+    .filter(p => !p.is_bundle)
     .map(p => ({ id: p.id, price: Math.round(p.price / 100), category: p.category }));
   // Anchor = main items that are not micro-products; micro-only cart → no discount tier
   const anchorItems = cartItemsForDiscount.filter(p => p.price >= MICRO_MAX_PRICE_RUB);
@@ -176,7 +176,7 @@ export default function CartDrawer({ products, isOpen, onClose }: CartDrawerProp
               </div>
               {cartItems.map((product) => {
                 const priceRub = Math.round(product.price / 100);
-                const discountedPrice = discountInfo && discountInfo.discountRate > 0 && product.category !== 'bundles'
+                const discountedPrice = discountInfo && discountInfo.discountRate > 0 && !product.is_bundle
                   ? Math.round(priceRub * (1 - discountInfo.discountRate))
                   : null;
                 return (

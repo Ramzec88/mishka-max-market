@@ -29,6 +29,7 @@ interface ProductRow {
   price: number;
   category: string;
   bundle_product_ids: string[];
+  is_bundle: boolean;
 }
 
 async function getPaidOrders(): Promise<OrderRow[]> {
@@ -45,7 +46,7 @@ async function getPaidOrders(): Promise<OrderRow[]> {
 async function getProducts(): Promise<ProductRow[]> {
   const { data } = await supabaseAdmin
     .from('products')
-    .select('id, title, price, category, bundle_product_ids');
+    .select('id, title, price, category, bundle_product_ids, is_bundle');
   return (data || []) as ProductRow[];
 }
 
@@ -149,7 +150,7 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
   const seriesIds = seriesProducts.map((p) => p.id);
   const seriesIdSet = new Set(seriesIds);
   const azbukaBundle = products.find(
-    (p) => p.category === 'bundles' && p.bundle_product_ids.some((id) => seriesIdSet.has(id)),
+    (p) => p.is_bundle && p.bundle_product_ids.some((id) => seriesIdSet.has(id)),
   );
 
   interface AzbukaStatus {

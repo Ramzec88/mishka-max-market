@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     const { data: products, error: productsError } = await supabaseAdmin
       .from('products')
-      .select('id, title, price, bump_price, format, category')
+      .select('id, title, price, bump_price, format, category, is_bundle')
       .in('id', items)
       .eq('is_active', true);
 
@@ -33,25 +33,23 @@ export async function POST(request: NextRequest) {
     }
 
     const foundProducts = (
-      products as (Pick<Product, 'id' | 'title' | 'price' | 'bump_price' | 'format'> & {
-        category: string;
-      })[]
+      products as (Pick<Product, 'id' | 'title' | 'price' | 'bump_price' | 'format' | 'category' | 'is_bundle'>)[]
     ).map((p) => ({
       ...p,
-      effectivePrice: bumpedSet.has(p.id) && p.category !== 'bundles' ? (p.bump_price ?? Math.round(p.price * 0.85)) : p.price,
+      effectivePrice: bumpedSet.has(p.id) && !p.is_bundle ? (p.bump_price ?? Math.round(p.price * 0.85)) : p.price,
     }));
 
     const fullAmount = foundProducts.reduce((sum, p) => sum + p.effectivePrice, 0);
 
     const allForDiscount = foundProducts
-      .filter((p) => p.category !== 'bundles')
+      .filter((p) => !p.is_bundle)
       .map((p) => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category }));
     const mainForAnchor = foundProducts
       .filter(
         (p) =>
           !bumpedSet.has(p.id) &&
           Math.round(p.effectivePrice / 100) >= MICRO_MAX_PRICE_RUB &&
-          p.category !== 'bundles',
+          !p.is_bundle,
       )
       .map((p) => ({ id: p.id, price: Math.round(p.effectivePrice / 100), category: p.category }));
     const volumeInfo = calcDiscount(allForDiscount, mainForAnchor);

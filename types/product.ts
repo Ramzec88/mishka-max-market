@@ -15,6 +15,7 @@ export interface Product {
   format: string | null;
   storage_paths: string[];
   bundle_product_ids: string[]; // for bundles: IDs of included products (no file duplication)
+  is_bundle: boolean; // composed of other products — independent of `category` (which controls where it's listed)
   demo_url: string | null;
   boosty_url: string | null;
   lava_url: string | null;
