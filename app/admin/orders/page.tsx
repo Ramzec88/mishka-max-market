@@ -6,6 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import CopyEmailButton from '@/components/admin/CopyEmailButton';
 import MarkContactedButton from '@/components/admin/MarkContactedButton';
 import AbandonedCartSendButton from '@/components/admin/AbandonedCartSendButton';
+import ExpireStaleOrdersButton from '@/components/admin/ExpireStaleOrdersButton';
 
 const CANCEL_REASON: Record<string, string> = {
   payment_canceled:        'Отменён покупателем',
@@ -402,6 +403,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               <Link href={buildUrl(currentParams, { status: undefined })}       style={CHIP(!statusFilter)}>Все</Link>
               <Link href={buildUrl(currentParams, { status: 'paid' })}          style={{ ...CHIP(statusFilter === 'paid'), ...(statusFilter === 'paid' ? { borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' } : {}) }}>Только оплаченные</Link>
               <Link href={buildUrl(currentParams, { status: 'problem' })}       style={{ ...CHIP(statusFilter === 'problem'), ...(statusFilter === 'problem' ? { borderColor: '#dc2626', color: '#dc2626', background: '#fef2f2' } : {}) }}>Только проблемные</Link>
+              <div style={{ marginLeft: 'auto' }}>
+                <ExpireStaleOrdersButton />
+              </div>
             </div>
           </div>
 
