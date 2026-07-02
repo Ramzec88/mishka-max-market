@@ -155,7 +155,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
   const [newRecipients, setNewRecipients] = useState<Recipient[]>([]);
   const [repeatRecipients, setRepeatRecipients] = useState<Recipient[]>([]);
   const [selectedNewOrderIds, setSelectedNewOrderIds] = useState<Set<string>>(new Set());
-  const [includeAlreadySent, setIncludeAlreadySent] = useState(false);
+  const [selectedRepeatOrderIds, setSelectedRepeatOrderIds] = useState<Set<string>>(new Set());
   const [showNew, setShowNew] = useState(false);
   const [showRepeat, setShowRepeat] = useState(false);
 
@@ -221,16 +221,14 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
   const selectedProduct = products.find((p) => p.id === productId) ?? null;
 
   const selectedNewRecipients = newRecipients.filter((r) => selectedNewOrderIds.has(r.orderId));
-  const activeRecipients = includeAlreadySent
-    ? [...selectedNewRecipients, ...repeatRecipients]
-    : selectedNewRecipients;
+  const selectedRepeatRecipients = repeatRecipients.filter((r) => selectedRepeatOrderIds.has(r.orderId));
+  const activeRecipients = [...selectedNewRecipients, ...selectedRepeatRecipients];
 
   async function handleCollect() {
     if (!productId) return;
     setCollecting(true);
     setCollectError('');
     setStep('select');
-    setIncludeAlreadySent(false);
 
     try {
       const res = await fetch('/api/admin/followup/preview', {
@@ -245,6 +243,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       setNewRecipients(newR);
       setSelectedNewOrderIds(new Set(newR.map((r: Recipient) => r.orderId)));
       setRepeatRecipients(data.repeatRecipients || []);
+      setSelectedRepeatOrderIds(new Set());
       setLetterBody(DEFAULT_BODY(selectedProduct?.title ?? ''));
       setShowNew(true);
       setStep('preview');
@@ -266,8 +265,10 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productId, letterBody, subject, skipAttachment, includeAlreadySent, require7Days,
-          selectedOrderIds: Array.from(selectedNewOrderIds),
+          productId, letterBody, subject, skipAttachment,
+          includeAlreadySent: selectedRepeatOrderIds.size > 0,
+          require7Days,
+          selectedOrderIds: [...Array.from(selectedNewOrderIds), ...Array.from(selectedRepeatOrderIds)],
         }),
       });
       const data = await res.json();
@@ -310,7 +311,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
     setNewRecipients([]);
     setRepeatRecipients([]);
     setSelectedNewOrderIds(new Set());
-    setIncludeAlreadySent(false);
+    setSelectedRepeatOrderIds(new Set());
     setShowNew(false);
     setShowRepeat(false);
     setSendErrors([]);
@@ -634,51 +635,83 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
 
             {/* Уже получали */}
             {repeatRecipients.length > 0 && (
-              <div style={{ border: `1px solid ${includeAlreadySent ? '#fed7aa' : '#e5e7eb'}`, borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{
+                border: `1px solid ${selectedRepeatOrderIds.size > 0 ? '#fed7aa' : '#e5e7eb'}`,
+                borderRadius: 8, overflow: 'hidden',
+              }}>
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                  background: includeAlreadySent ? '#fff7ed' : '#f9fafb',
+                  background: selectedRepeatOrderIds.size > 0 ? '#fff7ed' : '#f9fafb',
+                  flexWrap: 'wrap',
                 }}>
                   <div style={{
                     minWidth: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: includeAlreadySent ? '#FF7A3D' : '#9ca3af',
-                    color: '#fff', fontWeight: 900, fontSize: 16,
+                    background: selectedRepeatOrderIds.size > 0 ? '#FF7A3D' : '#9ca3af',
+                    color: '#fff', fontWeight: 900, fontSize: 16, flexShrink: 0,
                   }}>
-                    {repeatRecipients.length}
+                    {selectedRepeatOrderIds.size > 0
+                      ? (selectedRepeatOrderIds.size < repeatRecipients.length
+                          ? `${selectedRepeatOrderIds.size}/${repeatRecipients.length}`
+                          : repeatRecipients.length)
+                      : repeatRecipients.length}
                   </div>
-                  <div style={{ flex: 1, fontSize: 14, color: '#1a1a1a' }}>
+                  <div style={{ flex: 1, fontSize: 14, color: '#1a1a1a', minWidth: 0 }}>
                     <strong>{plural(repeatRecipients.length, 'адрес', 'адреса', 'адресов')}</strong> уже получали письмо по этой серии
                   </div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: step === 'preview' ? 'pointer' : 'default', whiteSpace: 'nowrap' }}>
-                    <input
-                      type="checkbox"
-                      checked={includeAlreadySent}
-                      onChange={(e) => setIncludeAlreadySent(e.target.checked)}
-                      disabled={step !== 'preview'}
-                      style={{ width: 15, height: 15 }}
-                    />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: includeAlreadySent ? '#FF7A3D' : '#555' }}>
-                      Включить в рассылку
-                    </span>
-                  </label>
+                  {step === 'preview' && (
+                    <button
+                      onClick={() => {
+                        if (selectedRepeatOrderIds.size === repeatRecipients.length) {
+                          setSelectedRepeatOrderIds(new Set());
+                        } else {
+                          setSelectedRepeatOrderIds(new Set(repeatRecipients.map(r => r.orderId)));
+                          setShowRepeat(true);
+                        }
+                      }}
+                      style={{ background: 'none', border: '1px solid #FF7A3D', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#FF7A3D', fontWeight: 600, whiteSpace: 'nowrap', padding: '3px 10px' }}>
+                      {selectedRepeatOrderIds.size === repeatRecipients.length ? 'Снять все' : 'Выбрать все'}
+                    </button>
+                  )}
                   <button onClick={() => setShowRepeat(v => !v)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap' }}>
                     {showRepeat ? '▲ Скрыть' : '▼ Список'}
                   </button>
                 </div>
                 {showRepeat && (
-                  <div style={{ maxHeight: 180, overflowY: 'auto', background: '#fff', padding: '8px 14px' }}>
-                    {repeatRecipients.map((r) => (
-                      <div key={r.orderId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
-                        <span style={{ display: 'flex', alignItems: 'center' }}>
-                          {r.email}
+                  <div style={{ maxHeight: 240, overflowY: 'auto', background: '#fff', padding: '4px 14px' }}>
+                    {repeatRecipients.map((r) => {
+                      const checked = selectedRepeatOrderIds.has(r.orderId);
+                      return (
+                        <label key={r.orderId} style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '6px 0', borderBottom: '1px solid #f0f0f0',
+                          cursor: step === 'preview' ? 'pointer' : 'default',
+                          background: checked ? 'transparent' : '#fafafa',
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={step !== 'preview'}
+                            onChange={() => {
+                              setSelectedRepeatOrderIds(prev => {
+                                const next = new Set(prev);
+                                if (next.has(r.orderId)) next.delete(r.orderId);
+                                else next.add(r.orderId);
+                                return next;
+                              });
+                            }}
+                            style={{ width: 15, height: 15, flexShrink: 0, accentColor: '#FF7A3D' }}
+                          />
+                          <span style={{ flex: 1, fontSize: 13, color: checked ? '#1a1a1a' : '#aaa', textDecoration: checked ? 'none' : 'line-through' }}>
+                            {r.email}
+                          </span>
                           <BundleBadge ownsBundle={r.ownsBundle} />
-                        </span>
-                        <span style={{ color: '#aaa', marginLeft: 12, whiteSpace: 'nowrap' }}>
-                          последнее письмо {r.sentAt ? formatDate(r.sentAt) : '—'}
-                        </span>
-                      </div>
-                    ))}
+                          <span style={{ color: '#aaa', marginLeft: 8, whiteSpace: 'nowrap', fontSize: 12 }}>
+                            последнее письмо {r.sentAt ? formatDate(r.sentAt) : '—'}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
                 )}
               </div>
