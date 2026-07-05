@@ -474,6 +474,47 @@ export default function ThankYouContent() {
           </div>
           )}
 
+          {/* Отзыв */}
+          {(() => {
+            const purchasedProducts = new Map<string, string>();
+            for (const l of links) purchasedProducts.set(l.product_id, l.product_title || l.product_id);
+            for (const cl of cloudLinks) purchasedProducts.set(cl.product_id, cl.product_title || cl.product_id);
+            const productList = Array.from(purchasedProducts.entries());
+            if (productList.length === 0) return null;
+
+            return (
+              <div style={{
+                marginTop: 20, background: '#FFF8F3', border: '1.5px solid #FFE4D1',
+                borderRadius: 16, padding: 24, textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 32, marginBottom: 10 }}>⭐</div>
+                <h3 style={{ fontSize: 17, fontWeight: 900, color: '#1a1a1a', marginBottom: 8 }}>
+                  Понравились материалы?
+                </h3>
+                <p style={{ fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.6, marginBottom: 16 }}>
+                  Оставьте отзыв прямо сейчас — это займёт минуту и поможет другим педагогам выбрать нужные материалы.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {productList.map(([id, title]) => (
+                    <a
+                      key={id}
+                      href={`/review?order=${orderId}&product=${id}`}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                        background: '#fff', border: '1px solid #FFD4B8',
+                        padding: '12px 18px', borderRadius: 100,
+                        fontWeight: 700, fontSize: 14, color: '#1a1a1a', textDecoration: 'none',
+                      }}
+                    >
+                      <span style={{ textAlign: 'left' }}>{title}</span>
+                      <span style={{ color: '#FF7A3D', flexShrink: 0, whiteSpace: 'nowrap' }}>Оставить отзыв →</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Рекомендации */}
           {recommendations.length > 0 && (
             <div style={{
