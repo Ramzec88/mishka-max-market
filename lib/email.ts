@@ -303,13 +303,21 @@ export interface SendFollowupEmailParams {
   recommendations?: FollowupRecommendedItem[];
 }
 
+// Turns "[label](https://...)" markers into styled links so admins don't have to paste raw URLs into the letter text.
+function renderInlineLinks(text: string): string {
+  return text.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    '<a href="$2" style="color:#FF7A3D;font-weight:700;text-decoration:underline;">$1</a>',
+  );
+}
+
 // Converts plain text (paragraphs separated by \n\n) to HTML paragraphs.
 function textToHtml(text: string): string {
   return text
     .split(/\n\n+/)
     .map((para) =>
       `<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#3D3530;">${
-        para.trim().replace(/\n/g, '<br />')
+        renderInlineLinks(para.trim()).replace(/\n/g, '<br />')
       }</p>`,
     )
     .join('');

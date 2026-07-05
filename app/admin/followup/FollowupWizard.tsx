@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Product } from '@/types/product';
 
 type ProductOption = Pick<Product, 'id' | 'title' | 'cover_emoji' | 'letter_s3_key'>;
@@ -77,6 +77,30 @@ const INPUT: React.CSSProperties = {
   boxSizing: 'border-box',
   background: '#fff',
 };
+
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://mishka-max.ru').replace(/\/$/, '');
+
+const LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+
+// Renders "[label](url)" markers (inserted via the "Вставить ссылку" tool) as actual links in the preview.
+function renderTextWithLinks(text: string, keyPrefix: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let i = 0;
+  LINK_RE.lastIndex = 0;
+  while ((match = LINK_RE.exec(text))) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    parts.push(
+      <a key={`${keyPrefix}-${i++}`} href={match[2]} target="_blank" rel="noreferrer" style={{ color: '#FF7A3D', fontWeight: 700, textDecoration: 'underline' }}>
+        {match[1]}
+      </a>,
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts;
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('ru-RU', {
@@ -191,6 +215,12 @@ export default function FollowupWizard({ products, segments = [], initialProduct
   const [letterBody, setLetterBody] = useState('');
   const [skipAttachment, setSkipAttachment] = useState(false);
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [showLinkTool, setShowLinkTool] = useState(false);
+  const [linkProductId, setLinkProductId] = useState('');
+  const [linkLabel, setLinkLabel] = useState('');
+  const [linkCustomUrl, setLinkCustomUrl] = useState('');
+
   const [require7Days, setRequire7Days] = useState(true);
 
   const [collecting, setCollecting] = useState(false);
@@ -244,6 +274,32 @@ export default function FollowupWizard({ products, segments = [], initialProduct
     saveTemplates(updated);
     setTemplates(updated);
     if (selectedTemplateId === id) setSelectedTemplateId('');
+  }
+
+  function handleInsertLink() {
+    const url = linkProductId ? `${SITE_URL}/?product=${linkProductId}` : linkCustomUrl.trim();
+    const label = linkLabel.trim();
+    if (!url || !label) return;
+    const markdown = `[${label}](${url})`;
+
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? letterBody.length;
+    const end = el?.selectionEnd ?? letterBody.length;
+    const next = letterBody.slice(0, start) + markdown + letterBody.slice(end);
+    setLetterBody(next);
+
+    if (el) {
+      requestAnimationFrame(() => {
+        el.focus();
+        const pos = start + markdown.length;
+        el.setSelectionRange(pos, pos);
+      });
+    }
+
+    setLinkProductId('');
+    setLinkLabel('');
+    setLinkCustomUrl('');
+    setShowLinkTool(false);
   }
 
   const selectedProduct = products.find((p) => p.id === productId) ?? null;
@@ -911,13 +967,75 @@ export default function FollowupWizard({ products, segments = [], initialProduct
 
             {/* Текст письма */}
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 6 }}>
-                Текст письма
-                <span style={{ fontWeight: 400, color: '#aaa', marginLeft: 8 }}>
-                  (абзацы разделяйте пустой строкой)
-                </span>
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>
+                  Текст письма
+                  <span style={{ fontWeight: 400, color: '#aaa', marginLeft: 8 }}>
+                    (абзацы разделяйте пустой строкой)
+                  </span>
+                </label>
+                {step === 'preview' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowLinkTool(v => !v)}
+                    style={{ background: showLinkTool ? '#FFF0E6' : '#fff', border: '1px solid #FF7A3D', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#FF7A3D', fontWeight: 700, whiteSpace: 'nowrap', padding: '4px 10px' }}
+                  >
+                    🔗 Вставить ссылку
+                  </button>
+                )}
+              </div>
+
+              {showLinkTool && step === 'preview' && (
+                <div style={{ marginBottom: 10, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <select
+                      value={linkProductId}
+                      onChange={(e) => {
+                        setLinkProductId(e.target.value);
+                        const p = products.find(pp => pp.id === e.target.value);
+                        if (p && !linkLabel.trim()) setLinkLabel(`Купить «${p.title}»`);
+                      }}
+                      style={{ ...INPUT, flex: 1, minWidth: 180, fontSize: 13 }}
+                    >
+                      <option value="">— ссылка на товар —</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>{p.cover_emoji ? `${p.cover_emoji} ` : ''}{p.title}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="url"
+                      value={linkCustomUrl}
+                      onChange={(e) => { setLinkCustomUrl(e.target.value); setLinkProductId(''); }}
+                      placeholder="или своя ссылка: https://..."
+                      style={{ ...INPUT, flex: 1, minWidth: 180, fontSize: 13 }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      value={linkLabel}
+                      onChange={(e) => setLinkLabel(e.target.value)}
+                      placeholder="Текст ссылки, например: Купить комплект"
+                      style={{ ...INPUT, flex: 1, minWidth: 180, fontSize: 13 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleInsertLink}
+                      disabled={!linkLabel.trim() || (!linkProductId && !linkCustomUrl.trim())}
+                      style={{
+                        background: (!linkLabel.trim() || (!linkProductId && !linkCustomUrl.trim())) ? '#ffb899' : '#FF7A3D',
+                        color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700,
+                        cursor: (!linkLabel.trim() || (!linkProductId && !linkCustomUrl.trim())) ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Вставить
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <textarea
+                ref={textareaRef}
                 value={letterBody}
                 onChange={(e) => setLetterBody(e.target.value)}
                 rows={10}
@@ -934,7 +1052,7 @@ export default function FollowupWizard({ products, segments = [], initialProduct
                 {letterBody.split(/\n\n+/).map((para, i) => (
                   <p key={i} style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.7, color: '#3D3530' }}>
                     {para.split('\n').map((line, j) => (
-                      <span key={j}>{line}{j < para.split('\n').length - 1 && <br />}</span>
+                      <span key={j}>{renderTextWithLinks(line, `${i}-${j}`)}{j < para.split('\n').length - 1 && <br />}</span>
                     ))}
                   </p>
                 ))}
