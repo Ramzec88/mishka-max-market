@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getAzbukaStoppedRecipients, stageFromSegmentId } from '@/lib/azbuka-funnel';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,30 +14,41 @@ export async function POST(req: NextRequest) {
 
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const isAll = productId === '__all__';
+    const stage = stageFromSegmentId(productId);
 
-    let query = supabaseAdmin
-      .from('orders')
-      .select('id, email, items, paid_at')
-      .eq('status', 'paid');
-
-    if (require7Days) query = query.lte('paid_at', cutoff);
-
-    const { data: orders, error } = await query;
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-    let matching = orders || [];
+    let matching: { id: string; email: string; paid_at: string }[];
     let bundleIds: string[] = [];
 
-    if (!isAll) {
-      const { data: bundles } = await supabaseAdmin
-        .from('products')
-        .select('id')
-        .contains('bundle_product_ids', [productId]);
-      bundleIds = (bundles || []).map((b: { id: string }) => b.id);
-      const allMatchingIds = new Set([productId, ...bundleIds]);
-      matching = matching.filter((o) =>
-        Array.isArray(o.items) && o.items.some((id: string) => allMatchingIds.has(id)),
-      );
+    if (stage !== null) {
+      const { recipients } = await getAzbukaStoppedRecipients(stage);
+      matching = recipients.map((r) => ({ id: r.orderId, email: r.email, paid_at: r.paidAt }));
+      if (require7Days) matching = matching.filter((m) => m.paid_at <= cutoff);
+    } else {
+      let query = supabaseAdmin
+        .from('orders')
+        .select('id, email, items, paid_at')
+        .eq('status', 'paid');
+
+      if (require7Days) query = query.lte('paid_at', cutoff);
+
+      const { data: orders, error } = await query;
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+      let productMatching = orders || [];
+
+      if (!isAll) {
+        const { data: bundles } = await supabaseAdmin
+          .from('products')
+          .select('id')
+          .contains('bundle_product_ids', [productId]);
+        bundleIds = (bundles || []).map((b: { id: string }) => b.id);
+        const allMatchingIds = new Set([productId, ...bundleIds]);
+        productMatching = productMatching.filter((o) =>
+          Array.isArray(o.items) && o.items.some((id: string) => allMatchingIds.has(id)),
+        );
+      }
+
+      matching = productMatching.map((o) => ({ id: o.id, email: o.email, paid_at: o.paid_at }));
     }
 
     if (matching.length === 0) {

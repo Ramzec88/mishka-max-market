@@ -5,6 +5,12 @@ import type { Product } from '@/types/product';
 
 type ProductOption = Pick<Product, 'id' | 'title' | 'cover_emoji' | 'letter_s3_key'>;
 
+export interface Segment {
+  id: string;
+  label: string;
+  stage: number;
+}
+
 interface Recipient {
   orderId: string;
   email: string;
@@ -43,6 +49,15 @@ const DEFAULT_BODY = (title: string) =>
 Я написал тебе личное письмо — загляни в приложение к этому письму. Там сюрприз для твоего маленького читателя! 🎁
 
 А ещё — мы с буквами очень скучаем и ждём вас снова!`;
+
+const DEFAULT_SEGMENT_BODY = (stage: number) =>
+  `Привет! Это Мишка Макс 🐻
+
+Я заметил, что вы прошли с нами ${stage} ${stage === 1 ? 'серию' : stage < 5 ? 'серии' : 'серий'} «Учим буквы с Мишкой Максом» — и остановились. Очень жаль, если малыш заскучал на полпути!
+
+Чтобы пройти весь алфавит целиком, выгоднее взять комплект «Азбука с Мишкой Максом» — все серии сразу со скидкой.
+
+Возвращайтесь — буквы вас заждались! 🎁`;
 
 const CARD: React.CSSProperties = {
   background: '#fff',
@@ -114,7 +129,13 @@ interface CustomerFollowup {
   sent_at: string;
 }
 
-export default function FollowupWizard({ products }: { products: ProductOption[] }) {
+interface FollowupWizardProps {
+  products: ProductOption[];
+  segments?: Segment[];
+  initialProductId?: string;
+}
+
+export default function FollowupWizard({ products, segments = [], initialProductId }: FollowupWizardProps) {
   const [pageTab, setPageTab] = useState<PageTab>('mailing');
 
   // Customer lookup state
@@ -147,9 +168,16 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
     }
   }
 
-  const productId_map = Object.fromEntries(products.map(p => [p.id, p.title]));
+  const productId_map = Object.fromEntries([
+    ...products.map(p => [p.id, p.title]),
+    ...segments.map(s => [s.id, s.label.replace(/^🎯 /, '')]),
+  ]);
 
-  const [productId, setProductId] = useState('');
+  const validInitialProductId = initialProductId && (
+    products.some(p => p.id === initialProductId) || segments.some(s => s.id === initialProductId)
+  ) ? initialProductId : '';
+
+  const [productId, setProductId] = useState(validInitialProductId);
   const [step, setStep] = useState<Step>('select');
 
   const [newRecipients, setNewRecipients] = useState<Recipient[]>([]);
@@ -219,6 +247,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
   }
 
   const selectedProduct = products.find((p) => p.id === productId) ?? null;
+  const selectedSegment = segments.find((s) => s.id === productId) ?? null;
 
   const selectedNewRecipients = newRecipients.filter((r) => selectedNewOrderIds.has(r.orderId));
   const selectedRepeatRecipients = repeatRecipients.filter((r) => selectedRepeatOrderIds.has(r.orderId));
@@ -244,7 +273,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       setSelectedNewOrderIds(new Set(newR.map((r: Recipient) => r.orderId)));
       setRepeatRecipients(data.repeatRecipients || []);
       setSelectedRepeatOrderIds(new Set());
-      setLetterBody(DEFAULT_BODY(selectedProduct?.title ?? ''));
+      setLetterBody(selectedSegment ? DEFAULT_SEGMENT_BODY(selectedSegment.stage) : DEFAULT_BODY(selectedProduct?.title ?? ''));
       setShowNew(true);
       setStep('preview');
     } catch (err) {
@@ -253,6 +282,11 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
       setCollecting(false);
     }
   }
+
+  useEffect(() => {
+    if (validInitialProductId) handleCollect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSend() {
     setStep('sending');
@@ -481,6 +515,14 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
             ))}
             <option disabled>──────────────</option>
             <option value="__all__">⚠️ Всем уникальным покупателям</option>
+            {segments.length > 0 && (
+              <>
+                <option disabled>──────────────</option>
+                {segments.map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </>
+            )}
           </select>
           <button
             onClick={handleCollect}
@@ -817,7 +859,7 @@ export default function FollowupWizard({ products }: { products: ProductOption[]
             </div>
 
             {/* Вложение */}
-            {selectedProduct?.letter_s3_key ? (
+            {selectedSegment ? null : selectedProduct?.letter_s3_key ? (
               <div style={{ marginBottom: 16 }}>
                 <div style={{
                   padding: '10px 14px', borderRadius: skipAttachment ? '8px 8px 0 0' : 8,

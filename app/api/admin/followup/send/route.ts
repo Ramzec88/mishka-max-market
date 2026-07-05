@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendFollowupEmail } from '@/lib/email';
 import { getRecommendations } from '@/lib/recommendations';
+import { getAzbukaStoppedRecipients, stageFromSegmentId } from '@/lib/azbuka-funnel';
 import type { Product } from '@/types/product';
 
 export const dynamic = 'force-dynamic';
@@ -43,27 +44,35 @@ export async function POST(req: NextRequest) {
     const productMap = new Map(allProducts.map((p) => [p.id, p]));
 
     const isAll = productId === '__all__';
+    const stage = stageFromSegmentId(productId);
 
-    let ordersQuery = supabaseAdmin
-      .from('orders')
-      .select('id, email, items')
-      .eq('status', 'paid');
+    let matching: { id: string; email: string; items: string[] }[];
 
-    if (require7Days) ordersQuery = ordersQuery.lte('paid_at', cutoff);
+    if (stage !== null) {
+      const { recipients, ownedSeriesIds } = await getAzbukaStoppedRecipients(stage);
+      matching = recipients.map((r) => ({ id: r.orderId, email: r.email, items: ownedSeriesIds }));
+    } else {
+      let ordersQuery = supabaseAdmin
+        .from('orders')
+        .select('id, email, items')
+        .eq('status', 'paid');
 
-    const { data: orders } = await ordersQuery;
-    let matching = orders || [];
+      if (require7Days) ordersQuery = ordersQuery.lte('paid_at', cutoff);
 
-    if (!isAll) {
-      const { data: bundles } = await supabaseAdmin
-        .from('products')
-        .select('id')
-        .contains('bundle_product_ids', [productId]);
-      const bundleIds = (bundles || []).map((b: { id: string }) => b.id);
-      const allMatchingIds = new Set([productId, ...bundleIds]);
-      matching = matching.filter((o) =>
-        Array.isArray(o.items) && o.items.some((id: string) => allMatchingIds.has(id)),
-      );
+      const { data: orders } = await ordersQuery;
+      matching = orders || [];
+
+      if (!isAll) {
+        const { data: bundles } = await supabaseAdmin
+          .from('products')
+          .select('id')
+          .contains('bundle_product_ids', [productId]);
+        const bundleIds = (bundles || []).map((b: { id: string }) => b.id);
+        const allMatchingIds = new Set([productId, ...bundleIds]);
+        matching = matching.filter((o) =>
+          Array.isArray(o.items) && o.items.some((id: string) => allMatchingIds.has(id)),
+        );
+      }
     }
 
     if (matching.length === 0) return NextResponse.json({ sent: 0 });

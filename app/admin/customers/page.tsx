@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { unstable_noStore as noStore } from 'next/cache';
 import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { detectAzbukaSeries, buildAzbukaStatuses, segmentIdForStage } from '@/lib/azbuka-funnel';
 
 interface LineItem {
   product_id: string;
@@ -143,40 +144,8 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
   const allCustomers = buildCustomers(orders, productMap);
 
   // ── Detect the Azbuka series + its bundle generically ──
-  const seriesProducts = products
-    .filter((p) => p.id.startsWith('uchim-bukvy-s-mishkoy-maksom'))
-    .map((p) => ({ ...p, num: parseInt((p.id.match(/\d+/) || ['0'])[0], 10) }))
-    .sort((a, b) => a.num - b.num);
-  const seriesIds = seriesProducts.map((p) => p.id);
-  const seriesIdSet = new Set(seriesIds);
-  const azbukaBundle = products.find(
-    (p) => p.is_bundle && p.bundle_product_ids.some((id) => seriesIdSet.has(id)),
-  );
-
-  interface AzbukaStatus {
-    email: string;
-    ownedCount: number; // consecutive series owned from start (or full via bundle)
-    hasGap: boolean;
-    completed: boolean; // owns all series or the bundle
-  }
-
-  const azbukaStatuses: AzbukaStatus[] = [];
-  if (seriesIds.length > 0) {
-    for (const c of Array.from(allCustomers.values())) {
-      const ownsAny = seriesIds.some((id) => c.ownedIds.has(id));
-      if (!ownsAny) continue;
-      let consecutive = 0;
-      while (consecutive < seriesIds.length && c.ownedIds.has(seriesIds[consecutive])) consecutive += 1;
-      const totalOwned = seriesIds.filter((id) => c.ownedIds.has(id)).length;
-      const completed = totalOwned === seriesIds.length;
-      azbukaStatuses.push({
-        email: c.email,
-        ownedCount: consecutive,
-        hasGap: totalOwned !== consecutive,
-        completed,
-      });
-    }
-  }
+  const { seriesProducts, seriesIds, azbukaBundle } = detectAzbukaSeries(products);
+  const azbukaStatuses = seriesIds.length > 0 ? buildAzbukaStatuses(orders, products, seriesIds) : [];
   const azbukaFunnel = seriesIds.map((_, i) =>
     azbukaStatuses.filter((s) => s.ownedCount >= i + 1 || s.completed).length,
   );
@@ -254,9 +223,17 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
                   <div style={{ fontSize: 13, fontWeight: 800, color: '#1a1a1a', marginTop: 6 }}>{count}</div>
                   <div style={{ fontSize: 11, color: '#888' }}>Серия {p.num}</div>
                   {stoppedByStage[i] > 0 && (
-                    <div style={{ fontSize: 10, color: '#dc2626', marginTop: 2 }}>
-                      −{stoppedByStage[i]} остановились
-                    </div>
+                    <>
+                      <div style={{ fontSize: 10, color: '#dc2626', marginTop: 2 }}>
+                        −{stoppedByStage[i]} остановились
+                      </div>
+                      <Link
+                        href={`/admin/followup?segment=${segmentIdForStage(i + 1)}`}
+                        style={{ display: 'inline-block', marginTop: 3, fontSize: 10, fontWeight: 700, color: '#FF7A3D', textDecoration: 'none' }}
+                      >
+                        ✉️ Написать
+                      </Link>
+                    </>
                   )}
                 </div>
               );
