@@ -48,6 +48,15 @@ export interface DownloadItem {
   downloadUrl: string;
   fileName?: string;
   fileSizeBytes?: number;
+  productId?: string; // groups files of the same product (e.g. one series of a bundle) together in the email
+}
+
+function pluralRu(n: number, one: string, few: string, many: string): string {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 19) return many;
+  if (mod10 === 1) return one;
+  if (mod10 >= 2 && mod10 <= 4) return few;
+  return many;
 }
 
 export interface RecommendedItem {
@@ -86,20 +95,57 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
 
   const LARGE_FILE_BYTES = 50 * 1024 * 1024;
 
-  const itemsHtml = items
-    .map((item) => {
-      const isLarge = item.fileSizeBytes != null && item.fileSizeBytes > LARGE_FILE_BYTES;
-      const sizeMb = item.fileSizeBytes != null ? (item.fileSizeBytes / 1024 / 1024).toFixed(0) : null;
+  // Group files belonging to the same product (e.g. one series of a bundle) so a bundle's
+  // email doesn't repeat the same title for every file — one header, files listed underneath.
+  const itemGroups = new Map<string, { title: string; format: string | null; files: DownloadItem[] }>();
+  for (const item of items) {
+    const key = item.productId || item.title;
+    if (!itemGroups.has(key)) itemGroups.set(key, { title: item.title, format: item.format, files: [] });
+    itemGroups.get(key)!.files.push(item);
+  }
+
+  const itemsHtml = Array.from(itemGroups.values())
+    .map((group) => {
+      const filesHtml = group.files
+        .map((item) => {
+          const isLarge = item.fileSizeBytes != null && item.fileSizeBytes > LARGE_FILE_BYTES;
+          const sizeMb = item.fileSizeBytes != null ? (item.fileSizeBytes / 1024 / 1024).toFixed(0) : null;
+          return `
+      <tr>
+        <td style="padding: 8px 0; border-bottom: 1px solid #F5EDE3;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="vertical-align: middle;">
+                ${item.fileName ? `<div style="font-size: 13px; color: #5A4F45;">${item.fileName}${sizeMb ? ` · ${sizeMb} МБ` : ''}</div>` : ''}
+                ${isLarge ? `<div style="margin-top: 6px; background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #92400E; max-width: 320px;">⏳ Файл крупный (${sizeMb} МБ) — дождитесь полной загрузки.</div>` : ''}
+              </td>
+              <td style="width: 110px; text-align: right; vertical-align: middle;">
+                <a href="${item.downloadUrl}" style="display: inline-block; background: #FF7A3D; color: #fff; padding: 8px 18px; border-radius: 100px; font-weight: 700; font-size: 13px; text-decoration: none;">
+                  Скачать
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>`;
+        })
+        .join('');
+
+      const count = group.files.length;
+      const countLabel = pluralRu(count, 'файл', 'файла', 'файлов');
+
       return `
     <tr>
-      <td style="padding: 16px 0; border-bottom: 1px solid #F0E4D6;">
-        <div style="font-weight: 700; font-size: 15px; color: #1F1B16; margin-bottom: 4px;">${item.title}</div>
-        ${item.fileName ? `<div style="font-size: 13px; color: #5A4F45; margin-bottom: 2px;">${item.fileName}${sizeMb ? ` · ${sizeMb} МБ` : ''}</div>` : ''}
-        ${item.format ? `<div style="font-size: 13px; color: #5A4F45;">${item.format}</div>` : ''}
-        ${isLarge ? `<div style="margin-top: 8px; background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #92400E;">⏳ Файл крупный (${sizeMb} МБ) — скачивание может занять несколько минут. Дождитесь полной загрузки, не закрывайте страницу.</div>` : ''}
-        <a href="${item.downloadUrl}" style="display: inline-block; margin-top: 10px; background: #FF7A3D; color: #fff; padding: 10px 20px; border-radius: 100px; font-weight: 700; font-size: 14px; text-decoration: none;">
-          Скачать
-        </a>
+      <td style="padding: 14px 0; border-bottom: 1px solid #F0E4D6;">
+        <details open>
+          <summary style="font-weight: 700; font-size: 15px; color: #1F1B16; cursor: pointer;">
+            ${group.title}
+            <span style="font-weight: 400; color: #aaa; font-size: 13px;">
+              (${count} ${countLabel}${group.format ? ` · ${group.format}` : ''})
+            </span>
+          </summary>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;">${filesHtml}</table>
+        </details>
       </td>
     </tr>
   `;

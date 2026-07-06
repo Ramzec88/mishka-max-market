@@ -67,6 +67,7 @@ export async function POST(
           fileName: t.file_path.split('/').pop() || t.file_path,
           downloadUrl: `${siteUrl}/api/download/${t.token}`,
           fileSizeBytes,
+          productId: t.product_id,
         };
       })
     );

@@ -93,6 +93,7 @@ export async function createTokensForProducts(
         fileName,
         downloadUrl: `${siteUrl}/api/download/${token}`,
         fileSizeBytes,
+        productId: product.id,
       });
     }
   }
