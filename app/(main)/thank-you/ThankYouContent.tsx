@@ -93,12 +93,7 @@ const CANCEL_MESSAGES: Record<string, { title: string; body: string }> = {
 
 export default function ThankYouContent() {
   const searchParams = useSearchParams();
-  // Robokassa has no explicit "payment failed" webhook — a declined/abandoned payment
-  // never touches our backend, so the order stays 'pending' regardless. We can only tell
-  // success from failure by which URL Robokassa redirected to, so its FailURL in the
-  // merchant dashboard must be configured as /thank-you?payment_failed=1 (see below).
-  const paymentFailedFromQuery = searchParams.get('payment_failed') === '1';
-  // Robokassa's SuccessURL/FailURL redirect carries our order id back as Shp_orderid
+  // Robokassa's SuccessURL redirect carries our order id back as Shp_orderid
   // (the custom parameter we pass it), not "order" like the other providers.
   const orderIdFromQuery = searchParams.get('order') || searchParams.get('Shp_orderid');
   const [orderId, setOrderId] = useState<string | null>(orderIdFromQuery);
@@ -144,7 +139,7 @@ export default function ThankYouContent() {
   }, []);
 
   useEffect(() => {
-    if (paymentFailedFromQuery || !orderId) {
+    if (!orderId) {
       setPolling(false);
       return;
     }
@@ -225,7 +220,7 @@ export default function ThankYouContent() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [orderId, retryKey, paymentFailedFromQuery]);
+  }, [orderId, retryKey]);
 
   useEffect(() => {
     if (status === 'paid' && orderId) {
@@ -245,32 +240,6 @@ export default function ThankYouContent() {
   const handleRetry = useCallback(() => {
     setRetryKey((k) => k + 1);
   }, []);
-
-  if (paymentFailedFromQuery) {
-    return (
-      <div style={{ maxWidth: 520, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>❌</div>
-        <h1 style={{ fontSize: 26, fontWeight: 900, marginBottom: 12 }}>Платёж не прошёл</h1>
-        <p style={{ color: 'var(--ink-soft)', marginBottom: 8, lineHeight: 1.6 }}>
-          Оплата была отменена или отклонена банком. Попробуйте снова или напишите нам.
-        </p>
-        <p style={{ color: 'var(--ink-soft)', fontSize: 13, marginBottom: 28 }}>
-          Остались вопросы?{' '}
-          <a href="mailto:info@mishka-max.ru" style={{ color: 'var(--orange)', fontWeight: 700 }}>
-            info@mishka-max.ru
-          </a>
-        </p>
-        <Link href="/"
-          style={{
-            display: 'inline-block', background: 'var(--orange)', color: '#fff',
-            padding: '14px 28px', borderRadius: 100, fontWeight: 800, fontSize: 16, textDecoration: 'none',
-          }}
-        >
-          Вернуться в каталог
-        </Link>
-      </div>
-    );
-  }
 
   if (!orderResolved) {
     return (
