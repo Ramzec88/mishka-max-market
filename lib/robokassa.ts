@@ -36,7 +36,7 @@ function hash(input: string): string {
 export interface RobokassaReceiptItem {
   name: string;
   quantity: number;
-  cost: number; // rubles, per unit
+  sum: number; // rubles, total for this line (quantity included)
 }
 
 export interface RobokassaPaymentParams {
@@ -63,7 +63,7 @@ function buildReceiptParam(items: RobokassaReceiptItem[]): string {
     items: items.map((i) => ({
       name: i.name.slice(0, 128),
       quantity: i.quantity,
-      cost: i.cost,
+      sum: i.sum,
       tax: RECEIPT_TAX,
       payment_object: RECEIPT_PAYMENT_OBJECT,
     })),
@@ -71,7 +71,15 @@ function buildReceiptParam(items: RobokassaReceiptItem[]): string {
   return encodeURIComponent(JSON.stringify(receipt));
 }
 
-export function buildRobokassaPaymentUrl(params: RobokassaPaymentParams): string {
+export interface RobokassaPaymentForm {
+  actionUrl: string;
+  fields: Record<string, string>;
+}
+
+// Robokassa's own docs say to use POST (not the GET redirect used for simple payments)
+// once a Receipt is involved, since the itemized JSON can be too large for a URL. The
+// caller submits `fields` as a POST form to `actionUrl`.
+export function buildRobokassaPaymentForm(params: RobokassaPaymentParams): RobokassaPaymentForm {
   const merchantLogin = process.env.ROBOKASSA_MERCHANT_LOGIN;
   const password1 = process.env.ROBOKASSA_PASSWORD1;
   if (!merchantLogin) throw new Error('ROBOKASSA_MERCHANT_LOGIN не настроен');
@@ -85,7 +93,7 @@ export function buildRobokassaPaymentUrl(params: RobokassaPaymentParams): string
   const signatureBase = `${merchantLogin}:${outSum}:${INV_ID}:${receiptParam}:${password1}:${shpPart}`;
   const signatureValue = hash(signatureBase);
 
-  const query = new URLSearchParams({
+  const fields: Record<string, string> = {
     MerchantLogin: merchantLogin,
     OutSum: outSum,
     InvId: String(INV_ID),
@@ -95,11 +103,11 @@ export function buildRobokassaPaymentUrl(params: RobokassaPaymentParams): string
     Culture: 'ru',
     Encoding: 'utf-8',
     [ORDER_SHP_KEY]: params.orderId,
-  });
-  if (params.email) query.set('Email', params.email);
-  if (process.env.ROBOKASSA_TEST_MODE === '1') query.set('IsTest', '1');
+  };
+  if (params.email) fields.Email = params.email;
+  if (process.env.ROBOKASSA_TEST_MODE === '1') fields.IsTest = '1';
 
-  return `${PAYMENT_URL}?${query.toString()}`;
+  return { actionUrl: PAYMENT_URL, fields };
 }
 
 // Verifies the ResultURL notification signature: hash(OutSum:InvId:Password2[:Shp_key=value...]),

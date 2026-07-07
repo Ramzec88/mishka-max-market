@@ -170,10 +170,23 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || 'Ошибка при создании платежа');
         }
-        const { payment_url } = await res.json();
+        const { actionUrl, fields } = await res.json();
         clearCart();
         window.dispatchEvent(new Event('cart-updated'));
-        window.location.href = payment_url;
+        // Robokassa requires POST (not a GET redirect) once a Receipt is attached —
+        // the itemized JSON can exceed URL length limits.
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = actionUrl;
+        for (const [key, value] of Object.entries(fields as Record<string, string>)) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        }
+        document.body.appendChild(form);
+        form.submit();
       } else {
         const res = await fetch('/api/create-payment', {
           method: 'POST',

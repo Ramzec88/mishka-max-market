@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { buildRobokassaPaymentUrl } from '@/lib/robokassa';
+import { buildRobokassaPaymentForm } from '@/lib/robokassa';
 import { Product } from '@/types/product';
 import { calcDiscount, MICRO_MAX_PRICE_RUB } from '@/lib/discount';
 
@@ -144,10 +144,10 @@ export async function POST(request: NextRequest) {
         itemPriceKopecks = Math.max(1, Math.round((basePrice * (totalBeforeDiscount - discountAmount)) / totalBeforeDiscount));
         distributed += itemPriceKopecks;
       }
-      return { name: p.title, quantity: 1, cost: itemPriceKopecks / 100 };
+      return { name: p.title, quantity: 1, sum: itemPriceKopecks / 100 };
     });
 
-    const payment_url = buildRobokassaPaymentUrl({
+    const { actionUrl, fields } = buildRobokassaPaymentForm({
       amountKopecks: finalAmount,
       description,
       email,
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       receiptItems,
     });
 
-    return NextResponse.json({ payment_url, order_id: order.id });
+    return NextResponse.json({ actionUrl, fields, order_id: order.id });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('create-robokassa-payment error:', message);
