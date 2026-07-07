@@ -126,11 +126,33 @@ export async function POST(request: NextRequest) {
       ? foundProducts[0].title.slice(0, 100)
       : `Заказ №${order.id.slice(0, 8)} — ${foundProducts.length} товара`;
 
+    // Build fiscal receipt lines whose costs sum to exactly finalAmount (Robokassa rejects
+    // a mismatch) — same proportional-discount distribution used for GetPlatinum's receipt.
+    const totalBeforeDiscount = foundProducts.reduce(
+      (s, p) => s + Math.round(p.effectivePrice * (1 - volumeDiscountRate)),
+      0,
+    );
+    let distributed = 0;
+    const receiptItems = foundProducts.map((p, idx) => {
+      const basePrice = Math.round(p.effectivePrice * (1 - volumeDiscountRate));
+      let itemPriceKopecks: number;
+      if (discountAmount === 0 || totalBeforeDiscount === 0) {
+        itemPriceKopecks = basePrice;
+      } else if (idx === foundProducts.length - 1) {
+        itemPriceKopecks = Math.max(1, finalAmount - distributed);
+      } else {
+        itemPriceKopecks = Math.max(1, Math.round((basePrice * (totalBeforeDiscount - discountAmount)) / totalBeforeDiscount));
+        distributed += itemPriceKopecks;
+      }
+      return { name: p.title, quantity: 1, cost: itemPriceKopecks / 100 };
+    });
+
     const payment_url = buildRobokassaPaymentUrl({
       amountKopecks: finalAmount,
       description,
       email,
       orderId: order.id,
+      receiptItems,
     });
 
     return NextResponse.json({ payment_url, order_id: order.id });

@@ -33,11 +33,42 @@ function hash(input: string): string {
   return createHash(getHashAlgo()).update(input).digest('hex');
 }
 
+export interface RobokassaReceiptItem {
+  name: string;
+  quantity: number;
+  cost: number; // rubles, per unit
+}
+
 export interface RobokassaPaymentParams {
   amountKopecks: number;
   description: string;
   email?: string;
   orderId: string;
+  receiptItems: RobokassaReceiptItem[];
+}
+
+// The fiscal receipt (54-FZ) tax label — "none" (не облагается НДС), matching the tax
+// treatment already used for GetPlatinum's receipts elsewhere in this codebase for the
+// same business. Change here if the shop's tax regime with Robokassa differs.
+const RECEIPT_TAX = 'none';
+const RECEIPT_PAYMENT_OBJECT = 'service';
+
+// Robokassa expects the Receipt query param's *logical* value to already be a URL-encoded
+// JSON string (see their own docs example: Receipt=%257B%2522items%2522... — that's the
+// JSON encoded once, then encoded AGAIN because it's traveling inside a query string).
+// So: encode once here for both the signature and as the value handed to URLSearchParams,
+// which will encode it a second time when serializing the URL.
+function buildReceiptParam(items: RobokassaReceiptItem[]): string {
+  const receipt = {
+    items: items.map((i) => ({
+      name: i.name.slice(0, 128),
+      quantity: i.quantity,
+      cost: i.cost,
+      tax: RECEIPT_TAX,
+      payment_object: RECEIPT_PAYMENT_OBJECT,
+    })),
+  };
+  return encodeURIComponent(JSON.stringify(receipt));
 }
 
 export function buildRobokassaPaymentUrl(params: RobokassaPaymentParams): string {
@@ -47,10 +78,11 @@ export function buildRobokassaPaymentUrl(params: RobokassaPaymentParams): string
   if (!password1) throw new Error('ROBOKASSA_PASSWORD1 не настроен');
 
   const outSum = formatSum(params.amountKopecks);
+  const receiptParam = buildReceiptParam(params.receiptItems);
   const shpParams = { [ORDER_SHP_KEY]: params.orderId };
   const shpPart = buildShpSignaturePart(shpParams);
 
-  const signatureBase = `${merchantLogin}:${outSum}:${INV_ID}:${password1}:${shpPart}`;
+  const signatureBase = `${merchantLogin}:${outSum}:${INV_ID}:${receiptParam}:${password1}:${shpPart}`;
   const signatureValue = hash(signatureBase);
 
   const query = new URLSearchParams({
@@ -58,6 +90,7 @@ export function buildRobokassaPaymentUrl(params: RobokassaPaymentParams): string
     OutSum: outSum,
     InvId: String(INV_ID),
     Description: params.description.slice(0, 100),
+    Receipt: receiptParam,
     SignatureValue: signatureValue,
     Culture: 'ru',
     Encoding: 'utf-8',
