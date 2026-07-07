@@ -35,7 +35,7 @@ interface BumpProduct {
   format: string | null;
 }
 
-type PaymentMethod = 'yookassa' | 'getplatinum';
+type PaymentMethod = 'yookassa' | 'robokassa';
 
 export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuccess, onError, onBumpedItemsChange, onBumpRecsLoaded }: CheckoutFormProps) {
   const [email, setEmail] = useState('');
@@ -160,8 +160,8 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
     }
     setLoading(true);
     try {
-      if (paymentMethod === 'getplatinum') {
-        const res = await fetch('/api/create-getplatinum-payment', {
+      if (paymentMethod === 'robokassa') {
+        const res = await fetch('/api/create-robokassa-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items: [...items, ...bumpedItems], email: trimmedEmail, promoCode: promoData?.code ?? null, bumpedItems }),
@@ -205,7 +205,7 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {([
             { id: 'yookassa', icon: '🏦', label: 'Российская карта', sub: 'МИР, Visa, MC' },
-            { id: 'getplatinum', icon: '🌍', label: 'Иностранная карта', sub: 'Visa, Mastercard' },
+            { id: 'robokassa', icon: '🌍', label: 'Иностранная карта', sub: 'Visa, Mastercard' },
           ] as const).map(({ id, icon, label, sub }) => (
             <button
               key={id}

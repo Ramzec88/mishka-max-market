@@ -93,7 +93,9 @@ const CANCEL_MESSAGES: Record<string, { title: string; body: string }> = {
 
 export default function ThankYouContent() {
   const searchParams = useSearchParams();
-  const orderIdFromQuery = searchParams.get('order');
+  // Robokassa's SuccessURL/FailURL redirect carries our order id back as Shp_orderid
+  // (the custom parameter we pass it), not "order" like the other providers.
+  const orderIdFromQuery = searchParams.get('order') || searchParams.get('Shp_orderid');
   const [orderId, setOrderId] = useState<string | null>(orderIdFromQuery);
   const [orderResolved, setOrderResolved] = useState(!!orderIdFromQuery);
 
