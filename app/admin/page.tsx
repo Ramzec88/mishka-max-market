@@ -253,6 +253,55 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   }
   const maxDayRevenue = Math.max(1, ...days.map((d) => d.revenue));
 
+  // ── "Оплаты" widget: fixed periods, independent of the period selector above ──
+  const paidOrdersAll = allOrders.filter((o) => o.status === 'paid');
+  const sumSince = (from: Date) => paidOrdersAll.filter((o) => o.paid_at && new Date(o.paid_at) >= from);
+  const sumBetween = (from: Date, to: Date) => paidOrdersAll.filter((o) => o.paid_at && new Date(o.paid_at) >= from && new Date(o.paid_at) < to);
+  const revenueOf = (rows: OrderRow[]) => rows.reduce((s, o) => s + o.amount, 0);
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+
+  const todayOrders = sumSince(todayStart);
+  const yesterdayOrders = sumBetween(yesterdayStart, todayStart);
+  const monthOrders = sumSince(monthStart);
+  const prevMonthOrders = sumBetween(prevMonthStart, monthStart);
+  const yearOrders = sumSince(yearStart);
+
+  const todayRevenue = revenueOf(todayOrders);
+  const yesterdayRevenue = revenueOf(yesterdayOrders);
+  const monthRevenue = revenueOf(monthOrders);
+  const prevMonthRevenue = revenueOf(prevMonthOrders);
+  const yearRevenue = revenueOf(yearOrders);
+  const allTimeRevenue = revenueOf(paidOrdersAll);
+
+  const pctChange = (current: number, previous: number): number | null =>
+    previous > 0 ? Math.round(((current - previous) / previous) * 100) : null;
+  const todayChange = pctChange(todayRevenue, yesterdayRevenue);
+  const monthChange = pctChange(monthRevenue, prevMonthRevenue);
+
+  // ── Best month / average per active month ──
+  const monthlyRevenue = new Map<string, number>(); // "YYYY-MM" -> kopecks
+  for (const o of paidOrdersAll) {
+    if (!o.paid_at) continue;
+    const d = new Date(o.paid_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    monthlyRevenue.set(key, (monthlyRevenue.get(key) || 0) + o.amount);
+  }
+  let bestMonthKey: string | null = null;
+  let bestMonthRevenue = 0;
+  for (const [key, rev] of Array.from(monthlyRevenue.entries())) {
+    if (rev > bestMonthRevenue) { bestMonthRevenue = rev; bestMonthKey = key; }
+  }
+  const bestMonthLabel = bestMonthKey
+    ? new Date(Number(bestMonthKey.split('-')[0]), Number(bestMonthKey.split('-')[1]) - 1, 1)
+        .toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' })
+    : '—';
+  const avgPerActiveMonth = monthlyRevenue.size > 0 ? Math.round(allTimeRevenue / monthlyRevenue.size) : 0;
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
@@ -263,6 +312,69 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
               {label}
             </Link>
           ))}
+        </div>
+      </div>
+
+      {/* ── Оплаты ── */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 18 }}>💳</span>
+          <h2 style={{ fontSize: 17, fontWeight: 900, color: '#1a1a1a', margin: 0 }}>Оплаты</h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 12 }}>
+          <div style={CARD}>
+            <div style={CARD_LABEL}>📅 Сегодня</div>
+            <div style={CARD_VALUE}>{(todayRevenue / 100).toLocaleString('ru-RU')} ₽</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>{todayOrders.length} опл.</span>
+              {todayChange !== null && (
+                <span style={{ color: todayChange >= 0 ? '#16a34a' : '#dc2626', fontWeight: 700 }}>
+                  {todayChange >= 0 ? '↗' : '↘'} {Math.abs(todayChange)}% вчера
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div style={{ ...CARD, background: '#F0FDF4' }}>
+            <div style={CARD_LABEL}>📅 Этот месяц</div>
+            <div style={CARD_VALUE}>{(monthRevenue / 100).toLocaleString('ru-RU')} ₽</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>{monthOrders.length} опл.</span>
+              {monthChange !== null && (
+                <span style={{ color: monthChange >= 0 ? '#16a34a' : '#dc2626', fontWeight: 700 }}>
+                  {monthChange >= 0 ? '↗' : '↘'} {Math.abs(monthChange)}% к прошлому
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div style={CARD}>
+            <div style={CARD_LABEL}>📈 С начала года</div>
+            <div style={CARD_VALUE}>{(yearRevenue / 100).toLocaleString('ru-RU')} ₽</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>{yearOrders.length} опл.</div>
+          </div>
+
+          <div style={{ ...CARD, background: '#1a1a1a' }}>
+            <div style={{ ...CARD_LABEL, color: '#999' }}>💳 Всё время</div>
+            <div style={{ ...CARD_VALUE, color: '#fff' }}>{(allTimeRevenue / 100).toLocaleString('ru-RU')} ₽</div>
+            <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>{paidOrdersAll.length} опл.</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          <div style={{ ...CARD, background: '#FEF9E7' }}>
+            <div style={CARD_LABEL}>🏆 Лучший месяц</div>
+            <div style={CARD_VALUE}>
+              {(bestMonthRevenue / 100).toLocaleString('ru-RU')} ₽
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#888', marginLeft: 8 }}>· {bestMonthLabel}</span>
+            </div>
+          </div>
+
+          <div style={{ ...CARD, background: '#F9FAFB' }}>
+            <div style={CARD_LABEL}>📅 Средний за месяц</div>
+            <div style={CARD_VALUE}>{(avgPerActiveMonth / 100).toLocaleString('ru-RU')} ₽</div>
+          </div>
         </div>
       </div>
 
