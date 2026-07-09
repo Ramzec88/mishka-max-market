@@ -355,10 +355,10 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
             <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>{yearOrders.length} опл.</div>
           </div>
 
-          <div style={{ ...CARD, background: '#1a1a1a' }}>
-            <div style={{ ...CARD_LABEL, color: '#999' }}>💳 Всё время</div>
-            <div style={{ ...CARD_VALUE, color: '#fff' }}>{(allTimeRevenue / 100).toLocaleString('ru-RU')} ₽</div>
-            <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>{paidOrdersAll.length} опл.</div>
+          <div style={{ ...CARD, background: '#FFF1E8' }}>
+            <div style={CARD_LABEL}>💳 Всё время</div>
+            <div style={CARD_VALUE}>{(allTimeRevenue / 100).toLocaleString('ru-RU')} ₽</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>{paidOrdersAll.length} опл.</div>
           </div>
         </div>
 
@@ -379,43 +379,51 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
       </div>
 
       {/* ── KPI cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
-        <div style={{ ...CARD, borderLeft: '4px solid #16a34a' }}>
-          <div style={CARD_LABEL}>Выручка</div>
-          <div style={CARD_VALUE}>{(revenue / 100).toLocaleString('ru-RU')} ₽</div>
-          <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>{paid.length} оплаченных заказов</div>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 18 }}>📊</span>
+          <h2 style={{ fontSize: 17, fontWeight: 900, color: '#1a1a1a', margin: 0 }}>
+            Показатели · {PERIOD_LABEL[period]}
+          </h2>
         </div>
-
-        <div style={{ ...CARD, borderLeft: '4px solid #FF7A3D' }}>
-          <div style={CARD_LABEL}>Средний чек</div>
-          <div style={CARD_VALUE}>{(aov / 100).toLocaleString('ru-RU')} ₽</div>
-          <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>на заказ</div>
-        </div>
-
-        <div style={{ ...CARD, borderLeft: '4px solid #6366f1' }}>
-          <div style={CARD_LABEL}>Конверсия в оплату</div>
-          <div style={CARD_VALUE}>{conversion}%</div>
-          <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>{paid.length} из {totalAttempts} попыток</div>
-        </div>
-
-        <div style={{ ...CARD, borderLeft: '4px solid #0ea5e9' }}>
-          <div style={CARD_LABEL}>Покупатели</div>
-          <div style={CARD_VALUE}>{paidEmailsInPeriod.size}</div>
-          <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>
-            новых {newCustomers} · повторных {returningCustomers}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          <div style={{ ...CARD, background: '#F0FDF4' }}>
+            <div style={CARD_LABEL}>💰 Выручка</div>
+            <div style={CARD_VALUE}>{(revenue / 100).toLocaleString('ru-RU')} ₽</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>{paid.length} оплаченных заказов</div>
           </div>
-        </div>
 
-        <div style={{ ...CARD, borderLeft: emailHealthPct >= 95 ? '4px solid #16a34a' : '4px solid #dc2626' }}>
-          <div style={CARD_LABEL}>Письма доставлены</div>
-          <div style={CARD_VALUE}>{emailHealthPct}%</div>
-          <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>{emailSentCount} из {paid.length}</div>
-        </div>
+          <div style={{ ...CARD, background: '#FFF1E8' }}>
+            <div style={CARD_LABEL}>🧾 Средний чек</div>
+            <div style={CARD_VALUE}>{(aov / 100).toLocaleString('ru-RU')} ₽</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>на заказ</div>
+          </div>
 
-        <div style={{ ...CARD, borderLeft: '4px solid #f59e0b' }}>
-          <div style={CARD_LABEL}>Отзывы</div>
-          <div style={CARD_VALUE}>{reviewsAgg.count > 0 ? `★ ${reviewsAgg.avg}` : '—'}</div>
-          <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>{reviewsAgg.count} опубликовано</div>
+          <div style={{ ...CARD, background: '#EEF2FF' }}>
+            <div style={CARD_LABEL}>🎯 Конверсия в оплату</div>
+            <div style={CARD_VALUE}>{conversion}%</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>{paid.length} из {totalAttempts} попыток</div>
+          </div>
+
+          <div style={{ ...CARD, background: '#EFF6FF' }}>
+            <div style={CARD_LABEL}>👥 Покупатели</div>
+            <div style={CARD_VALUE}>{paidEmailsInPeriod.size}</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>
+              новых {newCustomers} · повторных {returningCustomers}
+            </div>
+          </div>
+
+          <div style={{ ...CARD, background: emailHealthPct >= 95 ? '#F0FDF4' : '#FEF2F2' }}>
+            <div style={CARD_LABEL}>✉️ Письма доставлены</div>
+            <div style={CARD_VALUE}>{emailHealthPct}%</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>{emailSentCount} из {paid.length}</div>
+          </div>
+
+          <div style={{ ...CARD, background: '#FEF9E7' }}>
+            <div style={CARD_LABEL}>⭐ Отзывы</div>
+            <div style={CARD_VALUE}>{reviewsAgg.count > 0 ? `★ ${reviewsAgg.avg}` : '—'}</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>{reviewsAgg.count} опубликовано</div>
+          </div>
         </div>
       </div>
 
