@@ -149,7 +149,11 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
 
   const inPeriod = (o: OrderRow) => !from || o.created_at >= from;
   const ordersInPeriod = allOrders.filter(inPeriod);
-  const paid = ordersInPeriod.filter((o) => o.status === 'paid');
+  // Revenue/money metrics are keyed off paid_at (when the money actually moved), not
+  // created_at (when checkout started) — otherwise a payment provider's own dashboard
+  // (which reports by payment date) never lines up with ours, especially for orders that
+  // took a while to confirm (e.g. a card needing bank/3-D Secure review).
+  const paid = allOrders.filter((o) => o.status === 'paid' && o.paid_at && (!from || o.paid_at >= from));
   const failed = ordersInPeriod.filter((o) => o.status === 'canceled' || o.status === 'failed');
   const reviewsAgg = await getReviewsAgg(from);
 
