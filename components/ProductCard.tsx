@@ -47,6 +47,7 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        height: '100%',
         transform: cardHovered ? 'translateY(-5px)' : 'none',
         boxShadow: cardHovered
           ? '0 12px 36px rgba(0,0,0,0.11)'
@@ -146,6 +147,7 @@ export default function ProductCard({ product, inCart, onAdd, onSelect, onPlay }
             lineHeight: 1.35,
             color: '#1A1A2E',
             marginBottom: 0,
+            minHeight: 15 * 1.35 * 2,
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
