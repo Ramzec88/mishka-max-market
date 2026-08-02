@@ -21,7 +21,8 @@ alter table followup_emails enable row level security;
 alter table admin_outreach enable row level security;
 alter table reviews enable row level security;
 alter table promo_codes enable row level security;
-alter table demos enable row level security;
+-- Note: "demos" is a Storage bucket (supabaseAdmin.storage.from('demos')), not a table —
+-- it has its own bucket-level access policies, unrelated to this migration.
 
 -- Re-assert the one legitimate public policy: the storefront's server-rendered catalog
 -- reads active products with the anon key (app/(main)/page.tsx getProducts()).
@@ -31,6 +32,6 @@ create policy "Public read active products"
   using (is_active = true);
 
 -- No policies are added for orders / download_tokens / followup_emails / admin_outreach /
--- reviews / promo_codes / demos — with RLS enabled and zero policies, anon/authenticated
+-- reviews / promo_codes — with RLS enabled and zero policies, anon/authenticated
 -- requests are denied by default. Only service_role (used exclusively server-side) can
 -- read or write them, matching how the app already accesses them today.
