@@ -10,9 +10,17 @@ export interface HeroSlide {
 interface Props {
   slides: HeroSlide[];
   intervalMs?: number;
+  /** Fixes the carousel's box height via CSS aspect-ratio (e.g. "1200/450") instead of
+   *  deriving it from the first slide's content — gives every slide (including future
+   *  banner images) one exact, predictable size to design for. */
+  aspectRatio?: string;
+  /** Overrides aspectRatio below mobileBreakpoint (e.g. "3/4"). */
+  mobileAspectRatio?: string;
+  /** Width (px) at which mobileAspectRatio kicks in. Default 480. */
+  mobileBreakpoint?: number;
 }
 
-export default function HeroCarousel({ slides, intervalMs = 5000 }: Props) {
+export default function HeroCarousel({ slides, intervalMs = 5000, aspectRatio, mobileAspectRatio, mobileBreakpoint = 480 }: Props) {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,10 +41,23 @@ export default function HeroCarousel({ slides, intervalMs = 5000 }: Props) {
       onMouseLeave={() => setPaused(false)}
       style={{ position: 'relative' }}
     >
-      {/* Height anchor: first slide rendered invisible — sets wrapper height */}
-      <div style={{ visibility: 'hidden', pointerEvents: 'none' }}>
-        {slides[0]?.content}
-      </div>
+      {/* Height anchor: either a fixed aspect-ratio box, or (fallback) the first slide
+          rendered invisible so its natural content height sets the wrapper height. */}
+      {aspectRatio ? (
+        <>
+          <style>{`
+            .hero-ratio-anchor { aspect-ratio: ${aspectRatio}; }
+            @media (max-width: ${mobileBreakpoint}px) {
+              .hero-ratio-anchor { aspect-ratio: ${mobileAspectRatio ?? aspectRatio}; }
+            }
+          `}</style>
+          <div className="hero-ratio-anchor" style={{ width: '100%' }} />
+        </>
+      ) : (
+        <div style={{ visibility: 'hidden', pointerEvents: 'none' }}>
+          {slides[0]?.content}
+        </div>
+      )}
 
       {/* All slides overlay the anchor, absolutely positioned */}
       {slides.map((slide, idx) => (

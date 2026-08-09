@@ -194,9 +194,11 @@ export default function Catalog({ products, latestReviews }: CatalogProps) {
         .section-grid { grid-template-columns: repeat(4, 1fr); }
         @media (max-width: 900px) { .section-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 580px) { .section-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 600px) {
+        @media (max-width: 800px) {
           .hero-inner { flex-direction: column !important; }
           .hero-mascot { display: none !important; }
+        }
+        @media (max-width: 480px) {
           .carousel-arrow { display: none !important; }
         }
       `}</style>
@@ -209,6 +211,9 @@ export default function Catalog({ products, latestReviews }: CatalogProps) {
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 0' }}>
         <HeroCarousel
           intervalMs={5000}
+          aspectRatio="1200/600"
+          mobileAspectRatio="3/4"
+          mobileBreakpoint={750}
           slides={[
             {
               key: 'main',
@@ -217,11 +222,14 @@ export default function Catalog({ products, latestReviews }: CatalogProps) {
                   background: '#fff',
                   borderRadius: 28,
                   boxShadow: '0 4px 32px rgba(0,0,0,0.07)',
-                  padding: 'clamp(28px, 5vw, 52px)',
+                  padding: 'clamp(24px, 5vw, 52px)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 'clamp(24px, 4vw, 56px)',
                   position: 'relative',
+                  height: '100%',
+                  boxSizing: 'border-box',
+                  overflow: 'hidden',
                 }}>
                   {/* Left */}
                   <div style={{ flex: '1 1 0', minWidth: 0 }}>
