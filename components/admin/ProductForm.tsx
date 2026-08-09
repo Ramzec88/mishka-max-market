@@ -395,6 +395,11 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
               Заполняется автоматически из названия. Только латиница и дефисы. Нельзя изменить после создания.
             </div>
           )}
+          {!isEdit && id.trim() !== '' && allProducts.some(p => p.id === id.trim()) && (
+            <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 600, marginTop: 4 }}>
+              ⚠️ Товар с таким ID уже существует — измените название или впишите свой ID
+            </div>
+          )}
         </div>
 
         <div style={{ marginBottom: 18 }}>
