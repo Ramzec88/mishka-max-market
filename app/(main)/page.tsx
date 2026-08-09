@@ -7,6 +7,13 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
+export interface HeroBanner {
+  id: string;
+  desktopUrl: string;
+  mobileUrl: string;
+  linkUrl: string | null;
+}
+
 const FALLBACK_PRODUCTS: Product[] = [
   {
     id: 'songs-graduation',
@@ -161,15 +168,37 @@ async function getLatestReviews(): Promise<LatestReview[]> {
   }
 }
 
+async function getBanners(): Promise<HeroBanner[]> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('banners')
+      .select('id, desktop_image_key, mobile_image_key, link_url')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) return [];
+
+    return (data ?? []).map((b) => ({
+      id: b.id,
+      desktopUrl: getPublicUrl(b.desktop_image_key),
+      mobileUrl: getPublicUrl(b.mobile_image_key),
+      linkUrl: b.link_url,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export default async function HomePage() {
-  const [products, ratings, latestReviews] = await Promise.all([
+  const [products, ratings, latestReviews, banners] = await Promise.all([
     getProducts(),
     getRatings(),
     getLatestReviews(),
+    getBanners(),
   ]);
   const productsWithCovers: ProductDisplay[] = attachCoverUrls(products).map((p) => {
     const r = ratings.get(p.id);
     return r ? { ...p, avg_rating: r.avg, review_count: r.count } : p;
   });
-  return <Catalog products={productsWithCovers} latestReviews={latestReviews} />;
+  return <Catalog products={productsWithCovers} latestReviews={latestReviews} banners={banners} />;
 }

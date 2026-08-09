@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import BannerManager from '@/components/admin/BannerManager';
 
 export default function SettingsPage() {
   const [email, setEmail] = useState('');
@@ -31,9 +32,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 640, margin: '40px auto', padding: '0 24px', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ maxWidth: 760, margin: '40px auto', padding: '0 24px', fontFamily: 'system-ui, sans-serif' }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Настройки</h1>
       <p style={{ color: '#888', marginBottom: 32, fontSize: 14 }}>Диагностика и проверка работы сервисов</p>
+
+      <BannerManager />
 
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24, marginBottom: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>📧 Проверка SMTP-почты</h2>

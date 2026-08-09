@@ -31,12 +31,20 @@ interface LatestReview {
   product_title: string;
 }
 
+interface HeroBanner {
+  id: string;
+  desktopUrl: string;
+  mobileUrl: string;
+  linkUrl: string | null;
+}
+
 interface CatalogProps {
   products: ProductDisplay[];
   latestReviews?: LatestReview[];
+  banners?: HeroBanner[];
 }
 
-export default function Catalog({ products, latestReviews }: CatalogProps) {
+export default function Catalog({ products, latestReviews, banners = [] }: CatalogProps) {
   const [activeSection, setActiveSection] = useState<'all' | Category>('all');
   const [search, setSearch] = useState(() =>
     typeof window !== 'undefined' ? ((window as any).__catalogSearch ?? '') : ''
@@ -297,34 +305,40 @@ export default function Catalog({ products, latestReviews }: CatalogProps) {
                 </div>
               ),
             },
-            {
-              key: 'azbuka',
-              content: (
-                <a
-                  href="/?product=azbuka-s-mishkoy-maksom-polnyy-kurs-izucheniya-bukv-8-seriy"
-                  style={{ display: 'block', position: 'absolute', inset: 0, borderRadius: 28, overflow: 'hidden', background: '#87CEEB' }}
-                >
-                  <picture style={{ position: 'absolute', inset: 0, display: 'block' }}>
-                    <source media="(max-width: 600px)" srcSet="/hero-azbuka-mobile.png?v=3" />
-                    <source media="(min-width: 601px)" srcSet="/hero-azbuka.png?v=3" />
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/hero-azbuka.png?v=3"
-                      alt="Азбука Мишки Макса"
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                        objectPosition: 'center',
-                        display: 'block',
-                      }}
-                    />
-                  </picture>
-                </a>
-              ),
-            },
+            ...banners.map((banner) => {
+              const picture = (
+                <picture style={{ position: 'absolute', inset: 0, display: 'block' }}>
+                  <source media="(max-width: 750px)" srcSet={banner.mobileUrl} />
+                  <source media="(min-width: 751px)" srcSet={banner.desktopUrl} />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={banner.desktopUrl}
+                    alt=""
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      objectPosition: 'center',
+                      display: 'block',
+                    }}
+                  />
+                </picture>
+              );
+              return {
+                key: `banner-${banner.id}`,
+                content: banner.linkUrl ? (
+                  <a href={banner.linkUrl} style={{ display: 'block', position: 'absolute', inset: 0, borderRadius: 28, overflow: 'hidden' }}>
+                    {picture}
+                  </a>
+                ) : (
+                  <div style={{ position: 'absolute', inset: 0, borderRadius: 28, overflow: 'hidden' }}>
+                    {picture}
+                  </div>
+                ),
+              };
+            }),
           ]}
         />
       </section>
