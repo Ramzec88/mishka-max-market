@@ -7,7 +7,7 @@ import RichTextEditor from './RichTextEditor';
 interface Props {
   product?: Product;
   initialCoverUrl?: string | null;
-  allProducts?: Pick<Product, 'id' | 'title' | 'category' | 'cover_emoji'>[];
+  allProducts?: Pick<Product, 'id' | 'title' | 'category' | 'cover_emoji' | 'storage_paths'>[];
 }
 
 const LABEL: React.CSSProperties = {
@@ -159,6 +159,10 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
   const [isBundle, setIsBundle] = useState(product?.is_bundle ?? false);
   const [bundleIds, setBundleIds] = useState<string[]>(product?.bundle_product_ids ?? []);
   const [bundleOpen, setBundleOpen] = useState((product?.bundle_product_ids ?? []).length > 0);
+  // childProductId -> storage_paths withheld from this bundle (default: everything included)
+  const [bundleFileExclusions, setBundleFileExclusions] = useState<Record<string, string[]>>(
+    product?.bundle_file_exclusions ?? {},
+  );
   const [notifying, setNotifying] = useState(false);
   const [notifyResult, setNotifyResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -332,6 +336,9 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
         cover_image: newCoverKey,
         recommended_product_ids: recommendedIds,
         bundle_product_ids: bundleIds,
+        bundle_file_exclusions: Object.fromEntries(
+          Object.entries(bundleFileExclusions).filter(([childId, paths]) => bundleIds.includes(childId) && paths.length > 0),
+        ),
         is_bundle: isBundle,
         letter_s3_key: letterS3Key || null,
         bump_price: bumpPrice ? Number(bumpPrice) : null,
@@ -934,37 +941,73 @@ export default function ProductForm({ product, initialCoverUrl, allProducts = []
                   .map((p, idx, arr) => {
                     const checked = bundleIds.includes(p.id);
                     const isLast = idx === arr.length - 1;
+                    const hasFiles = checked && p.storage_paths.length > 0;
+                    const excludedPaths = bundleFileExclusions[p.id] ?? [];
                     return (
-                      <div
-                        key={p.id}
-                        onClick={() => {
-                          if (checked) setBundleIds(prev => prev.filter(id => id !== p.id));
-                          else setBundleIds(prev => [...prev, p.id]);
-                        }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '10px 14px',
-                          borderBottom: isLast ? 'none' : '1px solid #f0f0f0',
-                          background: checked ? '#EFF6FF' : '#fff',
-                          cursor: 'pointer', transition: 'background 0.15s',
-                        }}
-                      >
-                        <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{p.cover_emoji ?? '📦'}</span>
-                        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#1a1a1a', lineHeight: 1.3 }}>{p.title}</span>
-                        <span style={{ fontSize: 11, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 8 }}>{p.category}</span>
-                        <div style={{
-                          width: 36, height: 20, borderRadius: 100, flexShrink: 0,
-                          background: checked ? '#3B82F6' : '#e5e7eb',
-                          position: 'relative', transition: 'background 0.2s',
-                        }}>
+                      <div key={p.id} style={{ borderBottom: isLast ? 'none' : '1px solid #f0f0f0' }}>
+                        <div
+                          onClick={() => {
+                            if (checked) setBundleIds(prev => prev.filter(id => id !== p.id));
+                            else setBundleIds(prev => [...prev, p.id]);
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '10px 14px',
+                            background: checked ? '#EFF6FF' : '#fff',
+                            cursor: 'pointer', transition: 'background 0.15s',
+                          }}
+                        >
+                          <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{p.cover_emoji ?? '📦'}</span>
+                          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#1a1a1a', lineHeight: 1.3 }}>{p.title}</span>
+                          <span style={{ fontSize: 11, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 8 }}>{p.category}</span>
                           <div style={{
-                            position: 'absolute', top: 2,
-                            left: checked ? 18 : 2,
-                            width: 16, height: 16, borderRadius: '50%',
-                            background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                            transition: 'left 0.2s',
-                          }} />
+                            width: 36, height: 20, borderRadius: 100, flexShrink: 0,
+                            background: checked ? '#3B82F6' : '#e5e7eb',
+                            position: 'relative', transition: 'background 0.2s',
+                          }}>
+                            <div style={{
+                              position: 'absolute', top: 2,
+                              left: checked ? 18 : 2,
+                              width: 16, height: 16, borderRadius: '50%',
+                              background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                              transition: 'left 0.2s',
+                            }} />
+                          </div>
                         </div>
+
+                        {hasFiles && (
+                          <div style={{ padding: '2px 14px 10px 52px', background: '#F9FAFB' }}>
+                            <div style={{ fontSize: 11, color: '#999', margin: '6px 0' }}>
+                              Файлы в комплекте (по умолчанию все включены — снимите галочку, чтобы не включать в этот комплект):
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                              {p.storage_paths.map(path => {
+                                const fileName = path.split('/').pop() || path;
+                                const excluded = excludedPaths.includes(path);
+                                return (
+                                  <label
+                                    key={path}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: excluded ? '#aaa' : '#444', cursor: 'pointer' }}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={!excluded}
+                                      onChange={() => setBundleFileExclusions(prev => {
+                                        const current = prev[p.id] ?? [];
+                                        const next = current.includes(path)
+                                          ? current.filter(x => x !== path)
+                                          : [...current, path];
+                                        return { ...prev, [p.id]: next };
+                                      })}
+                                      style={{ width: 14, height: 14, flexShrink: 0 }}
+                                    />
+                                    <span style={{ textDecoration: excluded ? 'line-through' : 'none' }}>{fileName}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

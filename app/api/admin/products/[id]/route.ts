@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { deleteS3Objects } from '@/lib/storage';
 
+function sanitizeBundleFileExclusions(input: unknown): Record<string, string[]> {
+  if (!input || typeof input !== 'object') return {};
+  const result: Record<string, string[]> = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (Array.isArray(value)) result[key] = value.filter((v): v is string => typeof v === 'string');
+  }
+  return result;
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
@@ -44,6 +53,7 @@ export async function PUT(
       format: body.format || null,
       storage_paths: body.storage_paths || [],
       bundle_product_ids: Array.isArray(body.bundle_product_ids) ? body.bundle_product_ids : [],
+      bundle_file_exclusions: sanitizeBundleFileExclusions(body.bundle_file_exclusions),
       is_bundle: Boolean(body.is_bundle),
       demo_url: body.demo_url || null,
       boosty_url: body.boosty_url || null,

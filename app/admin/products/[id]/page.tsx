@@ -34,7 +34,7 @@ export default async function EditProductPage({ params }: Props) {
 
   const { data: allProductsRaw, error: productsError } = await supabaseAdmin
     .from('products')
-    .select('id, title, category, cover_emoji')
+    .select('id, title, category, cover_emoji, storage_paths')
     .eq('is_active', true)
     .order('sort_order');
 
@@ -42,7 +42,7 @@ export default async function EditProductPage({ params }: Props) {
     console.error('Failed to load products for recommendations:', productsError.message);
   }
 
-  const allProducts = (allProductsRaw ?? []) as Pick<Product, 'id' | 'title' | 'category' | 'cover_emoji'>[];
+  const allProducts = (allProductsRaw ?? []) as Pick<Product, 'id' | 'title' | 'category' | 'cover_emoji' | 'storage_paths'>[];
 
   return <ProductForm product={product} initialCoverUrl={initialCoverUrl} allProducts={allProducts} />;
 }
