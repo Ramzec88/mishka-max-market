@@ -45,14 +45,15 @@ export async function resolveProductsForOrder(itemIds: string[]): Promise<Resolv
     bundledProducts = (data ?? []) as ProductRow[];
   }
 
-  // Merge: purchased first, then bundled — deduplicate by ID
-  // Bundle products themselves have no files; only their included products do
+  // Merge: purchased first, then bundled — deduplicate by ID. Bundle containers are
+  // normally skipped (their included products carry the actual files), but a bundle can
+  // also have its own directly-attached files (e.g. a combined summary PDF) — keep those.
   const all = [...purchasedList, ...bundledProducts];
   const seen = new Set<string>();
   const resolvedProducts = all.filter(p => {
     if (seen.has(p.id)) return false;
     seen.add(p.id);
-    return (p.bundle_product_ids ?? []).length === 0; // skip bundle containers
+    return (p.bundle_product_ids ?? []).length === 0 || p.storage_paths.length > 0;
   });
 
   return resolvedProducts.map((product): ResolvedProduct => {

@@ -137,15 +137,13 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
       return `
     <tr>
       <td style="padding: 14px 0; border-bottom: 1px solid #F0E4D6;">
-        <details open>
-          <summary style="font-weight: 700; font-size: 15px; color: #1F1B16; cursor: pointer;">
-            ${group.title}
-            <span style="font-weight: 400; color: #aaa; font-size: 13px;">
-              (${count} ${countLabel}${group.format ? ` · ${group.format}` : ''})
-            </span>
-          </summary>
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;">${filesHtml}</table>
-        </details>
+        <div style="font-weight: 700; font-size: 15px; color: #1F1B16;">
+          ${group.title}
+          <span style="font-weight: 400; color: #aaa; font-size: 13px;">
+            (${count} ${countLabel}${group.format ? ` · ${group.format}` : ''})
+          </span>
+        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;">${filesHtml}</table>
       </td>
     </tr>
   `;
