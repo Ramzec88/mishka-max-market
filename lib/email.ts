@@ -85,10 +85,11 @@ export interface SendOrderEmailParams {
   reviewItems?: ReviewItem[];
   cloudItems?: CloudItem[];
   subject?: string; // override default subject
+  bcc?: string; // sent as a real BCC header — invisible to the "to" recipient
 }
 
 export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void> {
-  const { to, orderId, items, siteUrl, recommendations, reviewItems, cloudItems } = params;
+  const { to, orderId, items, siteUrl, recommendations, reviewItems, cloudItems, bcc } = params;
 
   const templatePath = join(process.cwd(), 'emails', 'order-delivery.html');
   let html = readFileSync(templatePath, 'utf-8');
@@ -251,6 +252,7 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
   await transport.sendMail({
     from: process.env.SMTP_FROM || '"Мишка Макс" <info@mishka-max.ru>',
     to,
+    bcc: bcc || undefined,
     subject: params.subject ?? 'Ваши материалы от Мишки Макса 🧸',
     html,
   });

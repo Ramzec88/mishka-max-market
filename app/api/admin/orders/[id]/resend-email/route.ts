@@ -5,10 +5,13 @@ import { getFileSizeBytes } from '@/lib/storage';
 import { getTokenExpiry } from '@/lib/tokens';
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const body = await request.json().catch(() => ({}));
+    const bcc: boolean = Boolean(body?.bcc);
+
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .select('id, email, status, items')
@@ -78,6 +81,7 @@ export async function POST(
       items,
       siteUrl,
       cloudItems: cloudItemsCheck.length > 0 ? cloudItemsCheck : undefined,
+      bcc: bcc ? 'info@mishka-max.ru' : undefined,
     });
 
     await supabaseAdmin

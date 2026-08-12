@@ -6,15 +6,20 @@ export default function OrderActions({ orderId, isPaid }: { orderId: string; isP
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [bccAdmin, setBccAdmin] = useState(false);
 
   async function handleResend() {
     if (!confirm('Отправить письмо со ссылками на скачивание повторно?')) return;
     setLoading(true);
     setResult(null);
     try {
-      const res = await fetch(`/api/admin/orders/${orderId}/resend-email`, { method: 'POST' });
+      const res = await fetch(`/api/admin/orders/${orderId}/resend-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bcc: bccAdmin }),
+      });
       const data = await res.json();
-      if (res.ok) setResult('✓ Письмо отправлено');
+      if (res.ok) setResult(bccAdmin ? '✓ Письмо отправлено, копия ушла на info@mishka-max.ru' : '✓ Письмо отправлено');
       else setResult(`Ошибка: ${data.error}`);
     } catch {
       setResult('Ошибка сети');
@@ -70,6 +75,16 @@ export default function OrderActions({ orderId, isPaid }: { orderId: string; isP
           {resetting ? 'Обновляем...' : '🔄 Обновить лимит'}
         </button>
       </div>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 13, color: '#555', cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={bccAdmin}
+          onChange={(e) => setBccAdmin(e.target.checked)}
+          style={{ width: 15, height: 15 }}
+        />
+        Отправить скрытую копию на info@mishka-max.ru — покупатель её не увидит
+      </label>
 
       {result && (
         <div style={{

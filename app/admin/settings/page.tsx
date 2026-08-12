@@ -1,12 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BannerManager from '@/components/admin/BannerManager';
+
+interface ProductOption {
+  id: string;
+  title: string;
+  cover_emoji: string | null;
+  is_bundle: boolean;
+}
 
 export default function SettingsPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [testProductId, setTestProductId] = useState('');
+  const [testEmail, setTestEmail] = useState('');
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/admin/products')
+      .then((r) => r.json())
+      .then((data) => Array.isArray(data) && setProducts(data))
+      .catch(() => {});
+  }, []);
+
+  async function handleTestOrderEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setTestLoading(true);
+    setTestResult(null);
+    try {
+      const res = await fetch('/api/admin/test-order-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: testProductId, to: testEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTestResult({ ok: true, message: `✓ Тестовое письмо отправлено на ${testEmail} (${data.itemCount} файл(ов))` });
+      } else {
+        setTestResult({ ok: false, message: `Ошибка: ${data.error}` });
+      }
+    } catch {
+      setTestResult({ ok: false, message: 'Ошибка сети' });
+    } finally {
+      setTestLoading(false);
+    }
+  }
 
   async function handleTestEmail(e: React.FormEvent) {
     e.preventDefault();
@@ -80,6 +123,69 @@ export default function SettingsPage() {
             wordBreak: 'break-all',
           }}>
             {result.message}
+          </div>
+        )}
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24, marginBottom: 24 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>🧪 Проверка письма с материалами</h2>
+        <p style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>
+          Отправит письмо с реальной вёрсткой (включая группировку файлов у комплектов) для выбранного товара —
+          без создания заказа и без реальных ссылок для скачивания. Удобно проверить, как будет выглядеть письмо
+          у большого комплекта, до того как его увидит покупатель.
+        </p>
+        <form onSubmit={handleTestOrderEmail} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <select
+            value={testProductId}
+            onChange={(e) => setTestProductId(e.target.value)}
+            required
+            style={{
+              flex: '1 1 220px', padding: '10px 14px', borderRadius: 8,
+              border: '1.5px solid #e5e7eb', fontSize: 14, fontFamily: 'inherit',
+              outline: 'none', background: '#fff',
+            }}
+          >
+            <option value="">— выберите товар —</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.is_bundle ? '📦 ' : ''}{p.cover_emoji ? `${p.cover_emoji} ` : ''}{p.title}
+              </option>
+            ))}
+          </select>
+          <input
+            type="email"
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            placeholder="Ваш email для теста"
+            required
+            style={{
+              flex: '1 1 220px', padding: '10px 14px', borderRadius: 8,
+              border: '1.5px solid #e5e7eb', fontSize: 14, fontFamily: 'inherit',
+              outline: 'none',
+            }}
+          />
+          <button
+            type="submit"
+            disabled={testLoading}
+            style={{
+              background: testLoading ? '#ffb899' : '#FF7A3D', color: '#fff',
+              border: 'none', borderRadius: 8, padding: '10px 20px',
+              fontWeight: 700, fontSize: 14, cursor: testLoading ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit', whiteSpace: 'nowrap',
+            }}
+          >
+            {testLoading ? 'Отправка...' : 'Отправить тест'}
+          </button>
+        </form>
+
+        {testResult && (
+          <div style={{
+            marginTop: 12, padding: '10px 14px', borderRadius: 8, fontSize: 13,
+            background: testResult.ok ? '#dcfce7' : '#fee2e2',
+            color: testResult.ok ? '#166534' : '#dc2626',
+            wordBreak: 'break-all',
+          }}>
+            {testResult.message}
           </div>
         )}
       </div>
