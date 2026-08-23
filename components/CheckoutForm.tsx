@@ -5,6 +5,16 @@ import Link from 'next/link';
 import { clearCart, getBumpedItems, saveBumpedItems } from '@/lib/cart';
 import { calcDiscount, MICRO_MAX_PRICE_RUB } from '@/lib/discount';
 
+// Temporary — mail.ru's IP-reputation block is currently rejecting our delivery emails
+// for their whole domain family. Remove this once Timeweb confirms the block is lifted.
+const MAILRU_DELIVERY_ISSUE = true;
+const MAILRU_DOMAINS = ['mail.ru', 'bk.ru', 'inbox.ru', 'list.ru', 'internet.ru'];
+
+function isMailRuDomain(email: string): boolean {
+  const domain = email.trim().toLowerCase().split('@')[1];
+  return !!domain && MAILRU_DOMAINS.includes(domain);
+}
+
 interface CheckoutFormProps {
   total: number;
   items: string[];
@@ -475,6 +485,20 @@ export default function CheckoutForm({ total, items, cartItemsForDiscount, onSuc
           <span style={{ color: volumeDiscountAmount > 0 ? '#2E7D32' : 'inherit' }}>{finalTotal} ₽</span>
         </div>
       </div>
+
+      {MAILRU_DELIVERY_ISSUE && isMailRuDomain(email) && (
+        <div style={{
+          background: '#FFF7ED', border: '1px solid #FED7AA',
+          borderRadius: 10, padding: '10px 14px', marginBottom: 12,
+          fontSize: 13, color: '#92400E', lineHeight: 1.5,
+        }}>
+          ⚠️ Сейчас у почтовых сервисов mail.ru, bk.ru, inbox.ru и list.ru временные проблемы
+          с приёмом писем от нас. Заказ и материалы сохранятся в любом случае, но если письмо
+          не придёт в течение 15 минут (проверьте и папку «Спам») — напишите нам на{' '}
+          <a href="mailto:info@mishka-max.ru" style={{ color: '#92400E', fontWeight: 700 }}>info@mishka-max.ru</a>,
+          мы вышлем материалы вручную. Либо укажите другой email, если он у вас есть.
+        </div>
+      )}
 
       {formError && (
         <div style={{
