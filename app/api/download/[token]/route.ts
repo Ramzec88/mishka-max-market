@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { createPresignedDownloadUrl } from '@/lib/storage';
+import { createPresignedDownloadUrl, downloadFileBuffer } from '@/lib/storage';
+
+const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
+
+function hasUtf8Bom(buf: Buffer): boolean {
+  return buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf;
+}
 
 export async function GET(
   _request: NextRequest,
@@ -41,6 +47,24 @@ export async function GET(
       last_downloaded_at: new Date().toISOString(),
     })
     .eq('token', token);
+
+  const fileName = downloadToken.file_path.split('/').pop() || 'file';
+
+  // .txt files are proxied (not redirected) so we can guarantee a UTF-8 BOM — without one,
+  // some text editors guess the wrong encoding for short Cyrillic text and show mojibake,
+  // even though the file itself is valid UTF-8. Everything else keeps the cheap redirect.
+  if (fileName.toLowerCase().endsWith('.txt')) {
+    const buffer = await downloadFileBuffer(downloadToken.file_path);
+    if (!buffer) return new NextResponse('File not available', { status: 503 });
+    const body = hasUtf8Bom(buffer) ? buffer : Buffer.concat([UTF8_BOM, buffer]);
+    return new NextResponse(new Uint8Array(body), {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+        'Content-Length': String(body.length),
+      },
+    });
+  }
 
   // Генерируем presigned URL Beget S3 (TTL 60 секунд — только для редиректа)
   try {

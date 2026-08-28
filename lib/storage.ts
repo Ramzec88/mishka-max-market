@@ -31,12 +31,33 @@ export async function createPresignedDownloadUrl(
 ): Promise<string> {
   const client = getS3Client();
   const fileName = filePath.split('/').pop() || 'file';
+  // Without an explicit charset, some browsers guess the encoding of a downloaded/opened
+  // .txt file themselves — and occasionally guess wrong for short Cyrillic text, showing
+  // mojibake even though the file itself is perfectly valid UTF-8 on the server.
+  const responseContentType = fileName.toLowerCase().endsWith('.txt')
+    ? 'text/plain; charset=utf-8'
+    : undefined;
   const command = new GetObjectCommand({
     Bucket: getBucket(),
     Key: filePath,
     ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    ResponseContentType: responseContentType,
   });
   return getSignedUrl(client, command, { expiresIn });
+}
+
+export async function downloadFileBuffer(key: string): Promise<Buffer | null> {
+  try {
+    const client = getS3Client();
+    const res = await client.send(new GetObjectCommand({ Bucket: getBucket(), Key: key }));
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of res.Body as AsyncIterable<Uint8Array>) {
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
+  } catch {
+    return null;
+  }
 }
 
 export async function getFileSizeBytes(key: string): Promise<number | null> {
