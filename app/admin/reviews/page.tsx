@@ -3,20 +3,10 @@ export const dynamic = 'force-dynamic';
 import { unstable_noStore as noStore } from 'next/cache';
 import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { Review } from '@/types/review';
 import ReviewModerationRow from './ReviewModerationRow';
 
-interface Review {
-  id: string;
-  order_id: string;
-  product_id: string;
-  email: string;
-  name: string | null;
-  rating: number;
-  body: string | null;
-  is_published: boolean;
-  created_at: string;
-  products: { title: string } | null;
-}
+type ReviewWithProduct = Review & { products: { title: string } | null };
 
 export default async function AdminReviewsPage() {
   noStore();
@@ -26,7 +16,7 @@ export default async function AdminReviewsPage() {
     .select('*, products(title)')
     .order('created_at', { ascending: false });
 
-  const reviews = (data || []) as Review[];
+  const reviews = (data || []) as ReviewWithProduct[];
   const pending = reviews.filter((r) => !r.is_published);
   const published = reviews.filter((r) => r.is_published);
 

@@ -27,6 +27,8 @@ interface LatestReview {
   rating: number;
   body: string | null;
   created_at: string;
+  admin_reply: string | null;
+  admin_reply_at: string | null;
   product_id: string;
   product_title: string;
 }

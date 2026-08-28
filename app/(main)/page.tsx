@@ -118,6 +118,8 @@ interface LatestReview {
   rating: number;
   body: string | null;
   created_at: string;
+  admin_reply: string | null;
+  admin_reply_at: string | null;
   product_id: string;
   product_title: string;
 }
@@ -147,7 +149,7 @@ async function getLatestReviews(): Promise<LatestReview[]> {
   try {
     const { data, error } = await supabaseAdmin
       .from('reviews')
-      .select('id, name, rating, body, created_at, product_id, products(title)')
+      .select('id, name, rating, body, created_at, admin_reply, admin_reply_at, product_id, products(title)')
       .eq('is_published', true)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -160,6 +162,8 @@ async function getLatestReviews(): Promise<LatestReview[]> {
       rating: r.rating,
       body: r.body,
       created_at: r.created_at,
+      admin_reply: r.admin_reply,
+      admin_reply_at: r.admin_reply_at,
       product_id: r.product_id,
       product_title: (r.products as { title: string } | null)?.title ?? '',
     }));

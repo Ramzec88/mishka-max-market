@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { data, error } = await supabaseAdmin
       .from('reviews')
-      .select('id, name, rating, body, created_at')
+      .select('id, name, rating, body, created_at, admin_reply, admin_reply_at')
       .eq('product_id', productId)
       .eq('is_published', true)
       .order('created_at', { ascending: false });

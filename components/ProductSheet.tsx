@@ -10,6 +10,8 @@ interface ReviewPublic {
   rating: number;
   body: string | null;
   created_at: string;
+  admin_reply: string | null;
+  admin_reply_at: string | null;
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -431,6 +433,19 @@ export default function ProductSheet({ product, inCart, onAdd, onClose, onPlay }
                       <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.55, margin: 0 }}>
                         {review.body}
                       </p>
+                    )}
+                    {review.admin_reply && (
+                      <div style={{
+                        marginTop: 10, background: '#FFF8F3', border: '1px solid #F0E4D6',
+                        borderRadius: 8, padding: '8px 12px',
+                      }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#FF7A3D', marginBottom: 3 }}>
+                          🐻 Ответ Мишки Макса
+                        </div>
+                        <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5, margin: 0 }}>
+                          {review.admin_reply}
+                        </p>
+                      </div>
                     )}
                   </div>
                 ))}
