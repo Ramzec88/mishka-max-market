@@ -151,6 +151,19 @@ export async function POST(request: NextRequest) {
     const receiptItems = [...discountedApplicable, ...nonApplicableItems];
     void nonApplicableTotal;
 
+    // YooKassa rejects the payment (receipt.items.amount) unless the receipt's total
+    // matches the charged amount exactly. applyDiscount() only reconciles the promo-code
+    // portion — independent per-item rounding of the volume discount above can still drift
+    // the sum by a few kopecks with several line items, so correct the last item here too.
+    if (receiptItems.length > 0) {
+      const receiptSum = receiptItems.reduce((s, i) => s + i.amount * i.quantity, 0);
+      const diff = finalAmount - receiptSum;
+      if (diff !== 0) {
+        const last = receiptItems[receiptItems.length - 1];
+        last.amount = Math.max(1, last.amount + diff);
+      }
+    }
+
     // Создаём платёж в YooKassa
     const payment = await createPayment({
       orderId: order.id,
