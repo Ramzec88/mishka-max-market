@@ -12,7 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', overflowX: 'hidden' }}>
       <nav
         style={{
           background: '#fff',
@@ -22,60 +22,62 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           alignItems: 'center',
           gap: 24,
           height: 56,
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
-        <span style={{ fontWeight: 900, fontSize: 17, color: '#1a1a1a', marginRight: 8 }}>
+        <span style={{ fontWeight: 900, fontSize: 17, color: '#1a1a1a', marginRight: 8, flexShrink: 0, whiteSpace: 'nowrap' }}>
           Мишка Макс — Админ
         </span>
         <Link
           href="/admin"
-          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           Дашборд
         </Link>
         <Link
           href="/admin/products"
-          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           Товары
         </Link>
         <Link
           href="/admin/orders"
-          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           Заказы
         </Link>
         <Link
           href="/admin/customers"
-          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           Клиенты
         </Link>
         <Link
           href="/admin/promo-codes"
-          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           Промокоды
         </Link>
         <Link
           href="/admin/followup"
-          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           Письма Мишки
         </Link>
         <Link
           href="/admin/reviews"
-          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           Отзывы
         </Link>
         <Link
           href="/admin/settings"
-          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none' }}
+          style={{ fontWeight: 600, fontSize: 14, color: '#FF7A3D', textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           Настройки
         </Link>
-        <div style={{ marginLeft: 'auto' }}>
+        <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
           <button
             onClick={handleLogout}
             style={{
@@ -87,13 +89,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               fontWeight: 600,
               cursor: 'pointer',
               color: '#666',
+              whiteSpace: 'nowrap',
             }}
           >
             Выйти
           </button>
         </div>
       </nav>
-      <div style={{ padding: '24px' }}>{children}</div>
+      <div style={{ padding: '24px', maxWidth: '100%', boxSizing: 'border-box', overflowX: 'hidden' }}>{children}</div>
     </div>
   );
 }
