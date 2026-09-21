@@ -98,10 +98,13 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
 
   // Group files belonging to the same product (e.g. one series of a bundle) so a bundle's
   // email doesn't repeat the same title for every file — one header, files listed underneath.
-  const itemGroups = new Map<string, { title: string; format: string | null; files: DownloadItem[] }>();
+  // Deliberately not showing product.format here: it describes the product's *full* file
+  // set, but a bundle can include only some of those files (bundle_file_exclusions) — the
+  // format string would then claim files that aren't actually in this email.
+  const itemGroups = new Map<string, { title: string; files: DownloadItem[] }>();
   for (const item of items) {
     const key = item.productId || item.title;
-    if (!itemGroups.has(key)) itemGroups.set(key, { title: item.title, format: item.format, files: [] });
+    if (!itemGroups.has(key)) itemGroups.set(key, { title: item.title, files: [] });
     itemGroups.get(key)!.files.push(item);
   }
 
@@ -141,7 +144,7 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
         <div style="font-weight: 700; font-size: 15px; color: #1F1B16;">
           ${group.title}
           <span style="font-weight: 400; color: #aaa; font-size: 13px;">
-            (${count} ${countLabel}${group.format ? ` · ${group.format}` : ''})
+            (${count} ${countLabel})
           </span>
         </div>
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;">${filesHtml}</table>
