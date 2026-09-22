@@ -42,6 +42,29 @@ function createTransport() {
   });
 }
 
+// SMTP occasionally times out during connection (ETIMEDOUT/CONN) under transient
+// network or server load — retry a few times with backoff before giving up.
+async function sendMailWithRetry(
+  transport: nodemailer.Transporter,
+  mailOptions: nodemailer.SendMailOptions,
+  attempts = 3,
+): Promise<void> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      await transport.sendMail(mailOptions);
+      return;
+    } catch (err) {
+      lastErr = err;
+      console.error(`sendMail attempt ${i + 1}/${attempts} failed:`, err);
+      if (i < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 2000 * (i + 1)));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 export interface DownloadItem {
   title: string;
   format: string | null;
@@ -252,7 +275,7 @@ export async function sendOrderEmail(params: SendOrderEmailParams): Promise<void
     .replace(/\{\{SITE_URL\}\}/g, siteUrl);
 
   const transport = createTransport();
-  await transport.sendMail({
+  await sendMailWithRetry(transport, {
     from: process.env.SMTP_FROM || '"Мишка Макс" <info@mishka-max.ru>',
     to,
     bcc: bcc || undefined,
@@ -328,7 +351,7 @@ export async function sendAbandonedCartEmail(params: SendAbandonedCartEmailParam
     .replace(/\{\{SITE_URL\}\}/g, siteUrl);
 
   const transport = createTransport();
-  await transport.sendMail({
+  await sendMailWithRetry(transport, {
     from: process.env.SMTP_FROM || '"Мишка Макс" <info@mishka-max.ru>',
     to,
     subject: 'Вы не завершили покупку 🧸',
@@ -425,7 +448,7 @@ export async function sendFollowupEmail(params: SendFollowupEmailParams): Promis
     .replace(/\{\{SITE_URL\}\}/g, siteUrl);
 
   const transport = createTransport();
-  await transport.sendMail({
+  await sendMailWithRetry(transport, {
     from: process.env.SMTP_FROM || '"Мишка Макс" <info@mishka-max.ru>',
     to,
     subject,
