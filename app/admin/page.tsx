@@ -40,11 +40,51 @@ const PERIOD_LABEL: Record<string, string> = {
   all: 'Всё время',
 };
 
+// Order timestamps elsewhere in the admin panel (e.g. /admin/orders) are displayed in
+// Europe/Moscow. The dashboard's day/month/year boundaries must use the same timezone,
+// not the server's local clock (typically UTC) — otherwise a payment made shortly after
+// midnight Moscow time gets bucketed into "yesterday" here while showing up as "today"
+// in the orders list, and the two revenue totals stop matching.
+const MSK_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+function mskDateParts(d: Date): { y: number; m: number; day: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Moscow',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+  return { y: get('year'), m: get('month'), day: get('day') };
+}
+
+function mskMidnight(y: number, m: number, day: number): Date {
+  return new Date(Date.UTC(y, m - 1, day, 0, 0, 0) - MSK_OFFSET_MS);
+}
+
+function mskDayStart(d: Date): Date {
+  const { y, m, day } = mskDateParts(d);
+  return mskMidnight(y, m, day);
+}
+
+function mskMonthStart(d: Date, monthOffset = 0): Date {
+  const { y, m } = mskDateParts(d);
+  const total = m - 1 + monthOffset;
+  const year = y + Math.floor(total / 12);
+  const month = ((total % 12) + 12) % 12;
+  return mskMidnight(year, month + 1, 1);
+}
+
+function mskYearStart(d: Date): Date {
+  const { y } = mskDateParts(d);
+  return mskMidnight(y, 1, 1);
+}
+
 function periodFrom(period: string): string | null {
   const now = new Date();
-  if (period === 'today') return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  if (period === 'today') return mskDayStart(now).toISOString();
   if (period === 'week') return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  if (period === 'month') return mskMonthStart(now).toISOString();
   return null;
 }
 
@@ -245,15 +285,16 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   const topPromoCodes = Array.from(promoCodeMap.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, 5);
 
   // ── Daily revenue trend (last 14 days, independent of period filter) ──
-  const days: { label: string; revenue: number }[] = [];
   const now = new Date();
+  const todayStart = mskDayStart(now);
+  const days: { label: string; revenue: number }[] = [];
   for (let i = 13; i >= 0; i--) {
-    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const day = new Date(todayStart.getTime() - i * 24 * 60 * 60 * 1000);
     const dayEnd = new Date(day.getTime() + 24 * 60 * 60 * 1000);
     const dayRevenue = allOrders
       .filter((o) => o.status === 'paid' && o.paid_at && new Date(o.paid_at) >= day && new Date(o.paid_at) < dayEnd)
       .reduce((s, o) => s + o.amount, 0);
-    days.push({ label: day.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }), revenue: dayRevenue });
+    days.push({ label: day.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Moscow' }), revenue: dayRevenue });
   }
   const maxDayRevenue = Math.max(1, ...days.map((d) => d.revenue));
 
@@ -263,11 +304,10 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   const sumBetween = (from: Date, to: Date) => paidOrdersAll.filter((o) => o.paid_at && new Date(o.paid_at) >= from && new Date(o.paid_at) < to);
   const revenueOf = (rows: OrderRow[]) => rows.reduce((s, o) => s + o.amount, 0);
 
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const yearStart = new Date(now.getFullYear(), 0, 1);
+  const monthStart = mskMonthStart(now);
+  const prevMonthStart = mskMonthStart(now, -1);
+  const yearStart = mskYearStart(now);
 
   const todayOrders = sumSince(todayStart);
   const yesterdayOrders = sumBetween(yesterdayStart, todayStart);
@@ -291,8 +331,8 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   const monthlyRevenue = new Map<string, number>(); // "YYYY-MM" -> kopecks
   for (const o of paidOrdersAll) {
     if (!o.paid_at) continue;
-    const d = new Date(o.paid_at);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const { y, m } = mskDateParts(new Date(o.paid_at));
+    const key = `${y}-${String(m).padStart(2, '0')}`;
     monthlyRevenue.set(key, (monthlyRevenue.get(key) || 0) + o.amount);
   }
   let bestMonthKey: string | null = null;
